@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>الخطط الذكية — عرض تعريفي</title>
+<meta name="theme-color" content="#0f8a94">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap">
+<style>
+:root{--bg:#f5fafb;--surface:#ffffff;--soft:#eef8fa;--ink:#0d2b45;--ink2:#3d566b;--muted:#71859a;--line:#e2edf1;--brand:#0f8a94;--brand2:#0c6f82;--brandsoft:#e3f6f7;--ok:#1f9d63;--bad:#d23f4f;--acc:#f0a530;--acc2:#d98e12;--gold:#ffd98a;
+--grad:linear-gradient(135deg,#18a4ab,#0c6f82);--hv:linear-gradient(135deg,#0b5f73 0%,#0f8a94 52%,#2bb3b8 100%);--shadow:0 6px 20px rgba(13,59,102,.07);
+--lab-navy:#102c3b;--lab-teal:#39a6a3;--lab-blue:#3f7592;--lab-orange:#f0a530;--font:"Tajawal","Segoe UI",Tahoma,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#0a2f3a;font-family:var(--font);color:var(--ink);-webkit-font-smoothing:antialiased}
+.ico{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+#viewport{position:fixed;inset:0;display:grid;place-items:center;overflow:hidden;background:radial-gradient(circle at 30% 20%,#0f4b58,#071f28 70%)}
+#stage{position:absolute;left:50%;top:50%;width:1600px;height:900px;transform-origin:center;border-radius:6px;overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,.45)}
+.slide{position:absolute;inset:0;background:var(--bg);opacity:0;visibility:hidden;transition:opacity .6s ease,visibility .6s;display:flex;flex-direction:column;padding:96px 88px 84px}
+.slide.on{opacity:1;visibility:visible}
+/* reveal */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.2,.8,.2,1),transform .7s cubic-bezier(.2,.8,.2,1);transition-delay:var(--d,0s)}
+.rv.z{transform:scale(.88)}.rv.l{transform:translateX(-30px)}.rv.r{transform:translateX(30px)}
+.slide.on .rv:not(.st),.slide.on .st.in{opacity:1;transform:none}
+.st{transition-delay:0s}
+.hint{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:8px;background:rgba(8,32,42,.78);color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:99px;padding:8px 18px;font-size:15px;transition:opacity .4s;pointer-events:none}
+.hint.off{opacity:0}
+#steps{display:flex;gap:4px;align-items:center;padding:0 4px}#steps i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25)}#steps i.on{background:#ffd98a}
+/* chrome on light slides */
+.top{position:absolute;top:0;left:0;right:0;height:72px;display:flex;align-items:center;gap:14px;padding:0 88px;background:var(--surface);border-bottom:1px solid var(--line)}
+.bm{display:flex;align-items:center;gap:10px}.bm svg{width:38px;height:38px}
+.bm b{display:block;font-size:19px;font-weight:800}.bm small{display:block;font-size:13px;color:var(--muted)}
+.top .sp{flex:1}
+.moe{display:flex;flex-direction:column;align-items:center;line-height:1.2;padding-inline-start:12px;border-inline-start:2px solid var(--brand)}.moe b{font-size:16px}.moe small{font-size:11px;color:var(--muted)}
+.foot{position:absolute;bottom:0;left:0;right:0;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 88px;font-size:15px;color:var(--muted);border-top:1px solid var(--line);background:var(--surface)}
+.foot .pg{direction:ltr;font-weight:800;color:var(--brand2);font-variant-numeric:tabular-nums}
+/* section header */
+.sh{display:flex;align-items:center;gap:20px;margin-bottom:34px}
+.sh>span{flex:none;width:72px;height:72px;border-radius:22px;background:var(--grad);color:#fff;display:grid;place-items:center;font-weight:800;font-size:28px;box-shadow:0 10px 24px rgba(12,111,130,.28)}
+.kick{display:inline-block;font-size:15px;font-weight:700;color:var(--acc2);background:#fdf3e2;border-radius:99px;padding:3px 14px;margin-bottom:6px}
+.sh h2{font-size:48px;font-weight:800;line-height:1.15}
+.sh p{font-size:21px;color:var(--muted);margin-top:4px}
+.body{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow)}
+.ib{width:58px;height:58px;border-radius:18px;display:grid;place-items:center;background:var(--brandsoft);color:var(--brand);font-size:28px;flex:none}
+/* hero slides */
+.hero{background:var(--hv);color:#fff;padding:80px 100px}
+.blob{position:absolute;border-radius:50%;filter:blur(60px);opacity:.5;pointer-events:none}
+.blob.b1{width:520px;height:520px;background:#2bd0d4;top:-160px;left:-120px;animation:drift 14s ease-in-out infinite alternate}
+.blob.b2{width:460px;height:460px;background:#f0a530;bottom:-200px;right:30%;opacity:.28;animation:drift 18s ease-in-out infinite alternate-reverse}
+.gridbg{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(circle at 30% 50%,#000,transparent 75%);-webkit-mask-image:radial-gradient(circle at 30% 50%,#000,transparent 75%)}
+@keyframes drift{to{transform:translate(60px,40px) scale(1.1)}}
+.chip{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);border-radius:99px;padding:7px 18px;font-size:19px;font-weight:500}
+.chip .ico{color:var(--gold)}
+.hero h1{font-size:150px;font-weight:800;line-height:1.05;margin:22px 0 14px}
+.hero h1 span{background:linear-gradient(90deg,#ffd98a,#fff3d0,#ffd98a);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 6s linear infinite}
+@keyframes shine{to{background-position:200% 0}}
+.sub{font-size:28px;line-height:1.85;max-width:760px;opacity:.96}.sub b{color:var(--gold)}
+.words{display:flex;gap:12px;margin-top:30px}
+.words span{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);border-radius:99px;padding:9px 20px;font-weight:700;font-size:21px;animation:bob 4s ease-in-out infinite;animation-delay:calc(var(--k)*.4s)}
+.words .ico{color:var(--gold)}
+@keyframes bob{50%{transform:translateY(-6px)}}
+.htop{display:flex;align-items:center;justify-content:space-between;position:relative}
+.htop .bm b{color:#fff}.htop .bm small{color:rgba(255,255,255,.8)}
+.htop .moe{border-color:var(--gold)}.htop .moe small{color:rgba(255,255,255,.75)}
+/* device mock */
+.dev{position:absolute;left:110px;top:210px;width:520px;height:420px;border-radius:30px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(10px);padding:26px;box-shadow:0 40px 80px rgba(0,0,0,.25);transform:rotate(-4deg);animation:float 7s ease-in-out infinite}
+@keyframes float{50%{transform:rotate(-4deg) translateY(-14px)}}
+.dev .bar{display:flex;gap:8px;margin-bottom:24px}.dev .bar i{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.45)}
+.dev .row{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.14);border-radius:16px;padding:14px;margin-bottom:12px}
+.dev .row span{width:36px;height:36px;border-radius:12px;background:var(--gold)}.dev .row em{flex:1;height:12px;border-radius:9px;background:rgba(255,255,255,.4)}
+.dev .row.r2 span{background:#7de3e6}.dev .row.r3 span{background:#fff}
+.dev .row.r1 em{max-width:70%}.dev .row.r3 em{max-width:50%}
+.dev .ch{display:flex;align-items:flex-end;gap:16px;height:110px;margin-top:20px;padding:0 10px}
+.dev .ch i{flex:1;height:var(--h);border-radius:10px 10px 4px 4px;background:linear-gradient(180deg,#ffd98a,rgba(255,255,255,.35));animation:grow 1.4s cubic-bezier(.2,.8,.2,1) both}
+@keyframes grow{from{height:0}}
+.fly{position:absolute;width:70px;height:70px;border-radius:22px;background:#fff;color:var(--brand);display:grid;place-items:center;font-size:32px;box-shadow:0 18px 36px rgba(0,0,0,.2);animation:float2 6s ease-in-out infinite}
+@keyframes float2{50%{transform:translateY(-16px) rotate(6deg)}}
+/* slide-specific */
+.what{display:grid;grid-template-columns:1.1fr .9fr;gap:60px;align-items:center}
+.what h2{font-size:64px;font-weight:800;margin:6px 0 18px}
+.what p{font-size:26px;line-height:1.9;color:var(--ink2)}.what p b{color:var(--brand2)}
+.eq{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:46px 30px}
+.eqi{display:flex;flex-direction:column;align-items:center;gap:12px;width:130px;text-align:center}
+.eqi i{width:92px;height:92px;border-radius:28px;display:grid;place-items:center;background:var(--brandsoft);color:var(--brand);font-size:42px;box-shadow:inset 0 0 0 1px rgba(15,138,148,.2)}
+.eqi b{font-size:20px}
+.eqi.res i{background:var(--grad);color:#fff;box-shadow:0 14px 30px rgba(12,111,130,.3)}
+.eqi.res b{color:var(--brand2);font-size:22px}
+.eq em{font-style:normal;font-size:40px;font-weight:800;color:var(--acc);margin-bottom:34px}
+.ps{display:flex;flex-direction:column;gap:16px}
+.psh{display:grid;grid-template-columns:1fr 64px 1fr;font-weight:800;font-size:20px;margin-bottom:-4px}
+.psh span:first-child{color:var(--bad)}.psh span:last-child{color:var(--ok)}
+.pr{display:grid;grid-template-columns:1fr 64px 1fr;align-items:center}
+.pc{display:flex;gap:18px;align-items:center;padding:20px 24px}
+.pc b{display:block;font-size:24px;margin-bottom:2px}.pc p{font-size:19px;color:var(--ink2);line-height:1.5}
+.pc.p{background:#fdf3f4;border-color:#f6d9dd}.pc.p .ib{background:#fbe3e6;color:var(--bad)}
+.pc.c{background:#eefaf4;border-color:#cdeedd}.pc.c .ib{background:#d9f3e6;color:var(--ok)}
+.arr{display:grid;place-items:center;color:var(--brand);font-size:30px}
+.vm{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+.vc{position:relative;overflow:hidden;padding:36px 32px}
+.vc::after{content:"";position:absolute;inset:auto -30% -60% auto;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(15,138,148,.12),transparent 70%)}
+.vn{position:absolute;top:18px;left:24px;font-size:64px;font-weight:800;color:var(--brandsoft)}
+.vc .ib{width:70px;height:70px;font-size:34px;background:var(--grad);color:#fff;margin-bottom:18px}
+.vc b{font-size:32px;display:block;margin-bottom:10px}.vc p{font-size:22px;line-height:1.75;color:var(--ink2)}
+.goals{display:flex;justify-content:center;gap:14px;margin-top:34px;flex-wrap:wrap}
+.goals span{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:10px 20px;font-size:20px;font-weight:700;color:var(--brand2);box-shadow:var(--shadow)}
+.goals .ico{font-size:22px;color:var(--acc)}
+.flow{display:grid;grid-template-columns:520px 1fr;gap:70px;align-items:center}
+.cyc{position:relative;width:500px;height:500px}
+.cyc svg{width:100%;height:100%;overflow:visible}
+.ring{fill:none;stroke:rgba(15,138,148,.1);stroke-width:30}
+.ring2{fill:none;stroke:rgba(15,138,148,.3);stroke-width:1.5;stroke-dasharray:4 7;transform-origin:200px 200px;animation:spin 40s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.arc{fill:none;stroke:#0f8a94;stroke-width:3;stroke-linecap:round;stroke-dasharray:400;stroke-dashoffset:400}
+.slide.on .arc{animation:draw 1.1s cubic-bezier(.2,.8,.2,1) forwards;animation-delay:calc(var(--d) + .4s)}
+@keyframes draw{to{stroke-dashoffset:0}}
+.core-t{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center}
+.core-t b{font-size:34px;font-weight:800}.core-t small{font-size:16px;opacity:.92;max-width:130px;line-height:1.5}
+.node{position:absolute;transform:translate(-50%,-50%) scale(.6);opacity:0;display:flex;flex-direction:column;align-items:center;gap:8px;width:130px;transition:transform .6s cubic-bezier(.3,1.6,.5,1),opacity .5s;transition-delay:calc(var(--d) + .2s)}
+.slide.on .node{transform:translate(-50%,-50%) scale(1);opacity:1}
+.node i{width:70px;height:70px;border-radius:50%;background:#fff;border:3px solid var(--brand);display:grid;place-items:center;color:var(--brand);font-size:30px;box-shadow:0 10px 22px rgba(13,59,102,.15)}
+.node b{font-size:19px;background:#fff;border:1px solid var(--line);border-radius:99px;padding:2px 12px;box-shadow:var(--shadow);white-space:nowrap}
+.fl{list-style:none;display:flex;flex-direction:column;gap:14px}
+.fl li{display:flex;gap:18px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px 22px;box-shadow:var(--shadow)}
+.fl li>span{flex:none;width:48px;height:48px;border-radius:15px;background:var(--grad);color:#fff;display:grid;place-items:center;font-weight:800;font-size:22px}
+.fl b{font-size:25px;display:block}.fl p{font-size:19px;color:var(--ink2)}
+.bento{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.bt{padding:22px 24px;display:flex;flex-direction:column;gap:8px}.bth{display:flex;align-items:center;gap:14px}
+.bt.w2{grid-column:span 2}
+.bt .ib{width:50px;height:50px;font-size:25px}
+.bt b{font-size:23px}.bt p{font-size:18px;color:var(--ink2);line-height:1.55}
+.bt.acc{background:var(--grad);border-color:transparent;color:#fff}.bt.acc p{color:rgba(255,255,255,.9)}.bt.acc .ib{background:rgba(255,255,255,.18);color:#fff}
+.who{display:grid;grid-template-columns:540px 1fr;gap:70px;align-items:center}
+.hub{position:relative;width:520px;height:520px}
+.hub svg{width:100%;height:100%}
+.spoke{stroke:rgba(15,138,148,.35);stroke-width:2;stroke-dasharray:5 6}
+.orb{fill:none;stroke:rgba(15,138,148,.18);stroke-width:2}.orb.o2{stroke-dasharray:3 6;transform-origin:200px 200px;animation:spin 50s linear infinite reverse}
+.hubc{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:150px;height:150px;border-radius:50%;background:var(--grad);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;box-shadow:0 18px 40px rgba(12,111,130,.35);font-size:38px}
+.hubc b{font-size:20px}
+.hn{position:absolute;transform:translate(-50%,-50%) scale(.6);opacity:0;display:flex;flex-direction:column;align-items:center;text-align:center;width:150px;transition:transform .6s cubic-bezier(.3,1.6,.5,1),opacity .5s;transition-delay:var(--d)}
+.slide.on .hn{transform:translate(-50%,-50%) scale(1);opacity:1}
+.hn i{width:66px;height:66px;border-radius:20px;background:#fff;border:2px solid var(--brand);display:grid;place-items:center;color:var(--brand);font-size:28px;box-shadow:var(--shadow);margin-bottom:6px}
+.hn b{font-size:18px;background:#fff;border-radius:99px;padding:0 8px}
+.wl{list-style:none;display:flex;flex-direction:column;gap:14px}
+.wl li{display:flex;align-items:center;gap:18px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px 22px;box-shadow:var(--shadow)}
+.wl li .ib{width:52px;height:52px;font-size:26px}
+.wl b{font-size:25px;min-width:200px}.wl span{font-size:21px;color:var(--ink2)}
+.ba{display:flex;flex-direction:column;gap:12px}
+.bar2,.bah{display:grid;grid-template-columns:260px 1fr 56px 1fr;align-items:center;gap:0}
+.bah{font-weight:800;font-size:21px;padding:0 6px 4px}
+.bah .b{color:var(--bad);display:flex;align-items:center;gap:8px}.bah .a{color:var(--ok);display:flex;align-items:center;gap:8px}
+.bar2>b{font-size:23px;color:var(--brand2);padding:0 18px}
+.bar2 .b,.bar2 .a{font-size:21px;padding:18px 22px;border-radius:16px}
+.bar2 .b{background:#fdf3f4;color:#8c3742;text-decoration:line-through;text-decoration-color:rgba(210,63,79,.35)}
+.bar2 .a{background:#eefaf4;color:#17643f;font-weight:700}
+.bar2{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:8px;box-shadow:var(--shadow)}
+.sw{display:grid;place-items:center;color:var(--brand);font-size:26px}
+.jt{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.jc{display:flex;gap:18px;padding:28px 26px;align-items:flex-start}
+.jc b{display:block;font-size:25px;margin-bottom:6px}.jc p{font-size:20px;line-height:1.65;color:var(--ink2)}
+.jc:nth-child(odd) .ib{background:#fdf3e2;color:var(--acc2)}
+.arch{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:26px}
+.wire{position:absolute;top:44px;left:10%;right:10%;height:4px;border-radius:4px;background:linear-gradient(90deg,var(--brandsoft),var(--brand),var(--brandsoft))}
+.wire i{position:absolute;top:-4px;width:12px;height:12px;border-radius:50%;background:var(--acc);box-shadow:0 0 12px var(--acc);animation:pulse 3.9s linear infinite;animation-delay:var(--o,0s)}
+@keyframes pulse{from{right:0}to{right:100%}}
+.nd{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px}
+.ndi{position:relative;width:92px;height:92px;border-radius:28px;background:var(--grad);color:#fff;display:grid;place-items:center;font-size:42px;box-shadow:0 14px 30px rgba(12,111,130,.3);margin-bottom:10px}
+.ndi em{position:absolute;top:-8px;left:-8px;width:32px;height:32px;border-radius:50%;background:var(--acc);color:#fff;font-style:normal;font-weight:800;font-size:17px;display:grid;place-items:center;border:3px solid var(--bg)}
+.nd small{font-size:16px;font-weight:700;color:var(--acc2)}
+.nd b{font-size:27px}.nd p{font-size:19px;color:var(--ink2);line-height:1.6;min-height:92px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+.chips span{font-size:16px;font-weight:700;background:var(--brandsoft);color:var(--brand2);border-radius:99px;padding:4px 12px;direction:ltr}
+.sec{display:flex;justify-content:center;gap:16px;margin-top:40px}
+.sec span{display:inline-flex;align-items:center;gap:10px;background:var(--lab-navy);color:#fff;border-radius:99px;padding:12px 24px;font-size:20px;font-weight:700}
+.sec .ico{color:#7de3e6;font-size:22px}
+.faq{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.fq{padding:22px 26px}
+.fq b{display:flex;align-items:center;gap:12px;font-size:23px;margin-bottom:8px;color:var(--brand2)}
+.fq b .ico{font-size:26px;color:var(--acc)}
+.fq p{font-size:19px;line-height:1.7;color:var(--ink2)}
+/* end */
+.end{justify-content:center;align-items:center;text-align:center}
+.end h2{font-size:84px;font-weight:800;margin:20px 0 12px;position:relative}
+.end h2 span{color:var(--gold)}
+.end .lead{font-size:28px;opacity:.95;position:relative}
+.sig{display:flex;gap:24px;margin-top:50px;position:relative}
+.sig>div{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(8px);border-radius:24px;padding:24px 40px;min-width:380px;border-top:5px solid var(--gold)}
+.sig small{display:block;font-size:17px;opacity:.8}.sig b{display:block;font-size:30px;margin:4px 0}.sig span{font-size:19px;opacity:.9}
+.go{display:inline-flex;align-items:center;gap:10px;margin-top:40px;background:#fff;color:var(--brand2);font-weight:800;font-size:23px;padding:14px 30px;border-radius:16px;text-decoration:none;position:relative;box-shadow:0 14px 30px rgba(0,0,0,.2)}
+.lab{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);display:inline-flex;align-items:center;gap:14px;padding:12px 20px 12px 16px;border-radius:18px;background:var(--lab-navy);color:#fff;box-shadow:0 10px 24px rgba(16,44,59,.3)}
+.lab svg{width:46px;height:46px}
+.lab small{display:block;font-size:14px;color:#9fd3d1}.lab b{font-size:19px;font-weight:800;white-space:nowrap}
+.ai{font-style:normal;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--lab-teal),var(--lab-blue) 60%,var(--lab-orange));padding:2px 7px;border-radius:6px;vertical-align:3px;margin-inline-start:4px}
+.labm{display:inline-flex;align-items:center;gap:8px;padding:5px 12px 5px 8px;border-radius:12px;background:var(--lab-navy);color:#fff;box-shadow:0 6px 14px rgba(16,44,59,.18)}
+.labm svg{width:28px;height:28px}.labm small{display:block;font-size:11px;color:#9fd3d1;line-height:1.2}.labm b{display:block;font-size:13px;font-weight:800;white-space:nowrap;line-height:1.3}.labm .ai{font-size:10px;padding:1px 5px;vertical-align:1px}
+.footl{display:flex;align-items:center;gap:18px}
+.hero .labm.fix{position:absolute;bottom:28px;left:100px;background:rgba(16,44,59,.55);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(6px)}
+.bm-ring{fill:none;stroke:var(--lab-teal);stroke-width:2;stroke-dasharray:3 4;transform-origin:24px 24px;animation:spin 18s linear infinite}
+/* controls */
+#prog{position:fixed;top:0;right:0;left:0;height:4px;z-index:5;background:rgba(255,255,255,.08)}
+#prog span{display:block;height:100%;width:0;margin-inline-start:0;background:linear-gradient(90deg,#ffd98a,#2bb3b8);transition:width .5s}
+#ctl{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:6px;background:rgba(8,32,42,.78);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:99px;padding:6px;color:#fff;transition:opacity .4s}
+#ctl button{width:42px;height:42px;border-radius:50%;border:0;background:transparent;color:#fff;font-size:20px;display:grid;place-items:center;cursor:pointer}
+#ctl button:hover{background:rgba(255,255,255,.14)}
+#ctl button:focus-visible{outline:2px solid #ffd98a}
+#cnt{font-size:15px;font-weight:700;min-width:64px;text-align:center;font-variant-numeric:tabular-nums}
+#toc{position:fixed;inset:0;z-index:6;background:rgba(5,22,30,.86);backdrop-filter:blur(8px);display:none;place-items:center}
+#toc.open{display:grid}
+#toc .in{background:#fff;border-radius:24px;padding:26px;width:min(560px,92vw);max-height:86vh;overflow:auto}
+#toc h3{font-size:22px;margin-bottom:14px;color:var(--brand2)}
+#toc button{display:flex;align-items:center;gap:12px;width:100%;text-align:right;border:0;background:transparent;font:inherit;font-size:18px;padding:10px 12px;border-radius:12px;cursor:pointer;color:var(--ink)}
+#toc button:hover,#toc button.cur{background:var(--brandsoft)}
+#toc button span{width:34px;height:34px;border-radius:10px;background:var(--grad);color:#fff;display:grid;place-items:center;font-weight:800;font-size:15px;flex:none}
+body.idle #ctl{opacity:0}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.rv{opacity:1!important;transform:none!important}.arc{stroke-dashoffset:0}}
+</style>
+</head>
+<body>
+<div id="prog"><span></span></div>
+<div id="viewport"><div id="stage"></div></div>
+<div id="ctl" role="toolbar" aria-label="التحكم في العرض">
+  <button id="bPrev" type="button" aria-label="الشريحة السابقة">→</button>
+  <span id="cnt" dir="ltr" aria-live="polite">1 / 12</span><span id="steps" aria-hidden="true"></span>
+  <button id="bNext" type="button" aria-label="الشريحة التالية">←</button>
+  <button id="bToc" type="button" aria-label="فهرس الشرائح">☰</button>
+  <button id="bFs" type="button" aria-label="ملء الشاشة">⛶</button>
+</div>
+<div class="hint" id="hint">اضغط في أي مكان لإظهار العنصر التالي</div>
+<div id="toc" role="dialog" aria-label="فهرس الشرائح"><div class="in"><h3>فهرس العرض</h3><div id="tocL"></div></div></div>
+<script>
+const IC={layers:'<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',check:'<path d="M4 12l5 5L20 6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',users:'<circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M17 11a4 4 0 0 0 0-8M22 21a7 7 0 0 0-5-6.7"/>',plan:'<path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',grid:'<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3z"/>',home:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/>',rep:'<path d="M6 3h9l4 4v14H6z"/><path d="M9 13h7M9 17h7"/>',star:'<path d="M12 2c1 6 4 9 10 10-6 1-9 4-10 10-1-6-4-9-10-10 6-1 9-4 10-10z"/>',bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',shield2:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',phone:'<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>',bolt:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01"/>',swap:'<path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/>',news:'<rect x="3" y="5" width="14" height="15" rx="2"/><path d="M17 9h3v9a2 2 0 0 1-2 2M7 9h6M7 13h6M7 17h4"/>',link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>'};
+const ic=n=>`<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${IC[n]||''}</svg>`;
+const LOGO=`<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22b3b8"/><stop offset="1" stop-color="#0d3b66"/></linearGradient></defs><path d="M30 4c2 14 8 20 24 24-16 4-22 10-24 26-2-16-8-22-24-26 16-4 22-10 24-24z" fill="url(#lg)"/><path d="M50 4c.8 5 3 7.2 8 8-5 .8-7.2 3-8 8-.8-5-3-7.2-8-8 5-.8 7.2-3 8-8z" fill="#22b3b8"/></svg>`;
+const LOGOW=LOGO.replace('url(#lg)','#ffffff').replace('fill="#22b3b8"/></svg>','fill="#ffd98a"/></svg>');
+const MOE=`<span class="moe"><b>وزارة التعليم</b><small>Ministry of Education</small></span>`;
+const LABSVG=`<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" fill="#fff"/><circle class="bm-ring" cx="24" cy="24" r="15"/><text x="24" y="31" text-anchor="middle" fill="#102c3b" style="font:700 20px Tajawal,sans-serif">ع</text><circle cx="39" cy="10" r="4.5" fill="#f0a530"/></svg>`;
+const LABM=(c='')=>`<span class="labm ${c}">${LABSVG}<span><small>أحد منتجات</small><b>مختبر الأفكار — عبدالعزيز المديني<i class="ai">AI</i></b></span></span>`;
+const BRAND=l=>`<div class="bm">${l}<span><b>الخطط الذكية</b><small>مدرسة لبيد بن ربيعة المتوسطة</small></span></div>`;
+
+/* ===== المحتوى (من صفحة «تعرف علينا») ===== */
+const pains=[['bulb','متابعة ورقية متفرقة','ملفات ونماذج متعددة لكل خطة، يصعب معها معرفة ما نُفّذ وما تأخر.'],['rep','شواهد مبعثرة','صور وتقارير موزعة بين الأجهزة والمحادثات، يصعب جمعها وقت الحاجة.'],['clock','اكتشاف متأخر للتعثر','لا تنبيه يكشف البرنامج المتأخر قبل نهاية الفصل، ولا سجلّ لأسبابه.'],['chart','قياس يدوي للإنجاز','حصر متكرر للتنفيذ حسب الخطة والمجال والمنفذ يستهلك الوقت والجهد.']];
+const cures=[['layers','بوابة واحدة للخطط','كل الخطط والبرامج ومواعيدها في مكان واحد، محدّثة لحظيًا.'],['grid','شواهد مرتبطة بالبرنامج','لكل تنفيذ صوره ومرفقاته وخبره وتقريره في صفحة واحدة.'],['bell','تنبيه مبكر','إظهار المتأخر والمتعثر في وقته مع تسجيل سبب التعثر.'],['target','قياس تلقائي','مؤشرات تُحسب ذاتيًا من التوثيق دون حصر يدوي.']];
+const flow=[['plan','خطّط','إدراج البرامج في الخطة بمواعيدها ومنفذيها'],['clock','نفّذ','تنفيذ البرنامج في موعده مع تذكير المنفذ'],['rep','وثّق','رفع الصور والمرفقات ووصف التنفيذ ونتائجه'],['check','اعتمد','مراجعة المنسق للتوثيق واعتماد الحالة'],['news','انشر','ظهور الخبر والتقرير للمجتمع المدرسي']];
+const bento=[['home','بوابة عامة للاستعراض','يتصفح الزائر الخطط والبرامج ومواعيدها دون تسجيل دخول، من الجوال أو الحاسب.','w2'],['cal','رزنامة وخط زمني','عرض البرامج حسب الأسبوع والشهر، ومخطط زمني للعام كله.',''],['chart','لغة الأرقام','لوحة مؤشرات حيّة للإنجاز والالتزام بالمواعيد.',''],['news','أخبار التنفيذ','لكل تنفيذ صفحة خبر مصوّرة تُصنّف حسب الخطة والمجال.',''],['rep','تقرير رسمي جاهز','تقرير A4 بالبيانات والصور والتوقيعات، يُطبع أو يُحفظ PDF بضغطة.','w2 acc'],['grid','لوحة تحكم للمنسق','متابعة واعتماد وتنبيهات، وإدارة الخطة والمستخدمين.',''],['phone','تذكير عبر واتساب','رسالة جاهزة تُرسل لمنفذ البرنامج مباشرة.',''],['star','شواهد للتقويم الذاتي','كل تنفيذ يتحول إلى شاهد منظم يخدم التقويم الذاتي والزيارات الإشرافية.',''],['shield2','صلاحيات آمنة','الاستعراض للجميع، والتعديل والتوثيق والاعتماد للمحررين المسجلين فقط.','w2']];
+const who=[['users','قيادة المدرسة','صورة لحظية عن سير الخطط'],['target','منسق الخطة','متابعة واعتماد في مكان واحد'],['user','المنفذون','تذكير وتوثيق وتقرير جاهز'],['shield2','الجهات المشرفة','شواهد منظمة عند الزيارة'],['home','المجتمع المدرسي','اطلاع مستمر على المنجزات']];
+const ba=[['متابعة الخطة','ملفات ونماذج متفرقة','بوابة واحدة محدّثة لحظيًا'],['الشواهد','موزعة بين الأجهزة والمحادثات','مرتبطة بكل برنامج في مكان واحد'],['التقارير','إعداد يدوي لكل برنامج','تقرير يُنشأ تلقائيًا من التوثيق'],['التعثر','يُكتشف في نهاية الفصل','تنبيه مبكر مع تسجيل السبب'],['قياس الإنجاز','حصر يدوي متكرر','مؤشرات حيّة تلقائية'],['التواصل مع المنفذين','متابعة فردية متفرقة','تذكير جاهز عبر واتساب']];
+const just=[['link','ارتباط مباشر بالخطط المعتمدة','تنطلق البوابة من خطط المدرسة المعتمدة نفسها، فلا ازدواجية في العمل.'],['star','دعم التقويم الذاتي','شواهد منظمة لكل برنامج تخدم التقويم الذاتي والزيارات الإشرافية.'],['clock','اختصار الوقت والجهد','التقرير والخبر يُنشآن تلقائيًا من بيانات التوثيق بصيغة موحدة.'],['bell','قرار في وقته','كشف التأخر والتعثر مبكرًا يدعم قرارات التحسين قبل فوات الأوان.'],['bolt','تحول رقمي حقيقي','تعمل من أي جهاز دون تثبيت برامج، وبتجربة استخدام سهلة.'],['layers','قابلية التعميم','يمكن نقلها إلى مدارس أخرى بتغيير بيانات الخطة والمدرسة فقط.']];
+const stack=[['phone','الأجهزة','المستخدم','يتصفح البوابة من الجوال أو الحاسب أو الجهاز اللوحي دون تثبيت أي برنامج.',['جوال','حاسب','لوحي']],['home','الواجهة','العرض','موقع ويب سريع متجاوب، يُنشر ويُستضاف عبر GitHub Pages.',['HTML','CSS','JavaScript']],['shield2','الصلاحيات','الحماية','تسجيل دخول للمحررين فقط، وسياسات تمنع أي تعديل دون صلاحية.',['تسجيل دخول','سياسات وصول']],['layers','البيانات','التخزين','قاعدة بيانات سحابية ومخزن للصور، بتحديث فوري لكل الزوار.',['Supabase','تخزين الصور']]];
+const faq=[['من يستطيع التعديل على بيانات البوابة؟','المحررون المسجلون فقط، بحسابات يُنشئها مسؤول البوابة، والتسجيل العام مغلق. أما الزوار فيستعرضون الخطط والبرامج والمنجزات دون أن يتمكنوا من تعديل شيء.'],['أين تُحفظ البيانات والصور؟','في قاعدة بيانات سحابية ومخزن ملفات تابع لها، تحكمهما سياسات صلاحيات تمنع الإضافة أو الحذف دون تسجيل دخول.'],['كيف تُستخرج الشواهد عند الزيارة الإشرافية؟','من صفحة «البرامج المنفذة» يُفتح خبر كل تنفيذ وتقريره الرسمي، ويُطبع أو يُحفظ PDF مباشرة، مع التصفية حسب الخطة والمنفذ والمجال.'],['كيف يُعرف البرنامج المتأخر أو المتعثر؟','تُظهر لوحة المنسق البرامج التي تجاوزت موعدها دون توثيق، ويُسجَّل سبب التعثر لكل برنامج متعثر، فيُعالج في وقته.'],['هل تحتاج البوابة إلى تثبيت أو تكلفة تشغيل؟','لا؛ تعمل من المتصفح على الجوال والحاسب دون تثبيت، وتعتمد على استضافة منخفضة التكلفة.'],['هل يمكن تعميم البوابة على مدارس أخرى؟','نعم؛ تُستبدل بيانات الخطة والمدرسة فقط، وتبقى الواجهة ولوحة التحكم والتقارير كما هي.']];
+
+const d=k=>`style="--d:${k}s"`;
+const SH=(n,t,s,k)=>`<div class="sh rv"><span>${n}</span><div><small class="kick">${k}</small><h2>${t}</h2><p>${s}</p></div></div>`;
+
+const R=150,cx=200,cy=200,nodes=flow.map((f,k)=>{const a=(-90+k*72)*Math.PI/180;return{x:cx+R*Math.cos(a),y:cy+R*Math.sin(a),f,k}});
+const cycle=`<div class="cyc rv z"><svg viewBox="0 0 400 400" aria-hidden="true"><defs><linearGradient id="axg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#0f8a94"/><stop offset="1" stop-color="#f0a530"/></linearGradient><marker id="axa" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#0f8a94"/></marker></defs>
+<circle cx="200" cy="200" r="${R}" class="ring"/><circle cx="200" cy="200" r="${R}" class="ring2"/>
+${nodes.map((n,k)=>{const m=nodes[(k+1)%5],a1=Math.atan2(n.y-cy,n.x-cx)+.24,a2=Math.atan2(m.y-cy,m.x-cx)-.24,p1=[cx+R*Math.cos(a1),cy+R*Math.sin(a1)],p2=[cx+R*Math.cos(a2),cy+R*Math.sin(a2)];return `<path d="M${p1[0].toFixed(1)} ${p1[1].toFixed(1)} A${R} ${R} 0 0 1 ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}" class="arc" style="--d:${k*.35}s" marker-end="url(#axa)"/>`}).join('')}
+<circle cx="200" cy="200" r="72" fill="url(#axg)"/></svg>
+<div class="core-t"><b>الخطة</b><small>من التخطيط إلى النشر</small></div>
+${nodes.map(n=>`<div class="node" style="left:${n.x/4}%;top:${n.y/4}%;--d:${n.k*.12}s"><i>${ic(n.f[0])}</i><b>${n.k+1}. ${n.f[1]}</b></div>`).join('')}</div>`;
+const hub=`<div class="hub rv z"><svg viewBox="0 0 400 400" aria-hidden="true">${who.map((w,k)=>{const a=(-90+k*72)*Math.PI/180;return `<line x1="200" y1="200" x2="${(200+150*Math.cos(a)).toFixed(1)}" y2="${(200+150*Math.sin(a)).toFixed(1)}" class="spoke"/>`}).join('')}<circle cx="200" cy="200" r="150" class="orb"/><circle cx="200" cy="200" r="98" class="orb o2"/></svg>
+<div class="hubc">${ic('star')}<b>الخطط الذكية</b></div>
+${who.map((w,k)=>{const a=(-90+k*72)*Math.PI/180;return `<div class="hn" style="left:${(50+37.5*Math.cos(a)).toFixed(2)}%;top:${(50+37.5*Math.sin(a)).toFixed(2)}%;--d:${.2+k*.12}s"><i>${ic(w[0])}</i><b>${w[1]}</b></div>`}).join('')}</div>`;
+
+const S=[];
+const light=(title,body)=>({title,html:`<div class="top">${BRAND(LOGO)}<span class="sp"></span>${MOE}</div><div class="body">${body}</div><div class="foot"><span>الخطط الذكية – 1448هـ • مدرسة لبيد بن ربيعة المتوسطة</span><span class="footl">${LABM()}<span class="pg"></span></span></div>`});
+
+S.push({title:'الغلاف',cls:'hero',html:`<span class="blob b1"></span><span class="blob b2"></span><span class="gridbg"></span>
+<div class="htop rv">${BRAND(LOGOW)}${MOE}</div>
+<div style="position:relative;flex:1;display:flex;flex-direction:column;justify-content:center;max-width:860px">
+ <span class="chip rv" style="align-self:flex-start;--d:.1s">${ic('star')} مدرسة لبيد بن ربيعة المتوسطة • 1448هـ</span>
+ <h1 class="rv" style="--d:.2s">الخطط <span>الذكية</span></h1>
+ <p class="sub rv st">بوابة رقمية تحوّل الخطة المدرسية من ورقٍ متفرق إلى منظومة حيّة؛ <b>تُخطَّط</b> فيها البرامج، و<b>تُنفَّذ</b> في وقتها، و<b>توثَّق</b> بشواهدها، و<b>تُعتمد</b> وتُنشر للجميع.</p>
+ <div class="words rv st">${['وضوح','توثيق','متابعة','شفافية'].map((w,k)=>`<span style="--k:${k}">${ic(['target','rep','bell','users'][k])}${w}</span>`).join('')}</div>
+</div>
+<div class="dev rv z" style="--d:.35s"><div class="bar"><i></i><i></i><i></i></div><div class="row r1"><span></span><em></em></div><div class="row r2"><span></span><em></em></div><div class="row r3"><span></span><em></em></div><div class="ch"><i style="--h:40%"></i><i style="--h:65%"></i><i style="--h:50%"></i><i style="--h:85%"></i><i style="--h:70%"></i></div></div>
+${[['plan',90,170,0],['check',600,180,1],['rep',70,610,2],['bell',590,620,3],['news',340,720,4]].map(([i,l,t,k])=>`<span class="fly" style="left:${l}px;top:${t}px;animation-delay:${k*.7}s">${ic(i)}</span>`).join('')}${LABM('fix')}`});
+
+S.push(light('التعريف',`<div class="what"><div class="rv"><small class="kick">تعريف المشروع</small><h2>ما «الخطط الذكية»؟</h2><p>بوابة إلكترونية لمتابعة تنفيذ الخطط والبرامج المدرسية لمدرسة لبيد بن ربيعة المتوسطة للعام 1448هـ. تجمع في مكان واحد كل ما تحتاجه الخطة: <b>البرنامج وموعده ومنفذه</b>، و<b>شواهد تنفيذه</b>، و<b>تقريره الرسمي</b>، و<b>حالته واعتماده</b>؛ لتكون الخطة مرئية للجميع ومتابَعة يومًا بيوم.</p></div>
+<div class="card eq rv z st">${[['plan','خطة معتمدة'],['rep','توثيق موحّد'],['bell','متابعة استباقية']].map(([i,t],k)=>`<span class="eqi"><i>${ic(i)}</i><b>${t}</b></span>${k<2?'<em>+</em>':''}`).join('')}<em>=</em><span class="eqi res"><i>${ic('star')}</i><b>خطة ذكية</b></span></div></div>`));
+
+S.push(light('سبب النشأة',SH('01','سبب النشأة','من التحدي إلى الحل: لكل مشكلة في المتابعة التقليدية معالجة داخل البوابة.','لماذا البوابة؟')+`<div class="ps"><div class="psh rv"><span>التحدي</span><span></span><span>الحل في البوابة</span></div>${pains.map((p,k)=>`<div class="pr rv st"><div class="card pc p"><span class="ib">${ic(p[0])}</span><div><b>${p[1]}</b><p>${p[2]}</p></div></div><span class="arr">${ic('swap')}</span><div class="card pc c rv l st"><span class="ib">${ic(cures[k][0])}</span><div><b>${cures[k][1]}</b><p>${cures[k][2]}</p></div></div></div>`).join('')}</div>`));
+
+S.push(light('الرؤية والهدف',SH('02','الرؤية والرسالة والهدف','البوصلة التي بُنيت عليها البوابة.','الاتجاه')+`<div class="vm">${[['target','الرؤية','خطة مدرسية واضحة للجميع، وكل برنامج فيها موثّق بشواهده، وكل تعثر معروف في وقته.'],['news','الرسالة','توظيف التقنية لتيسير متابعة الخطط وتوثيقها، وتعزيز الشفافية والمشاركة في العمل المدرسي.'],['check','الهدف','رقمنة دورة الخطة كاملة: من التخطيط والتنفيذ إلى التوثيق والاعتماد والنشر.']].map(([i,t,x],k)=>`<div class="card vc rv st"><span class="vn">0${k+1}</span><span class="ib">${ic(i)}</span><b>${t}</b><p>${x}</p></div>`).join('')}</div>
+<div class="goals rv st">${[['layers','رقمنة متابعة الخطط'],['rep','توثيق موحّد للتنفيذ'],['bell','متابعة استباقية'],['star','دعم التقويم الذاتي'],['users','الشفافية والمشاركة']].map(([i,t])=>`<span>${ic(i)}${t}</span>`).join('')}</div>`));
+
+S.push(light('دورة العمل',SH('03','دورة العمل في البوابة','خمس مراحل متصلة تربط التخطيط بالتنفيذ والتوثيق والاعتماد والنشر.','كيف تعمل؟')+`<div class="flow">${cycle}<ol class="fl">${flow.map(([i,t,x],k)=>`<li class="rv l st"><span>${k+1}</span><div><b>${t}</b><p>${x}</p></div></li>`).join('')}</ol></div>`));
+
+S.push(light('المزايا',SH('04','المزايا','ما تقدمه البوابة لكل من يتابع الخطة أو ينفذها.','ماذا تقدم؟')+`<div class="bento">${bento.map(([i,t,x,c],k)=>`<div class="card bt ${c} rv st"><div class="bth"><span class="ib">${ic(i)}</span><b>${t}</b></div><p>${x}</p></div>`).join('')}</div>`));
+
+S.push(light('المستفيدون',SH('05','المستفيدون','بوابة واحدة تخدم خمس فئات، لكل منها قيمتها.','لمن؟')+`<div class="who">${hub}<ul class="wl">${who.map((w,k)=>`<li class="rv l st"><span class="ib">${ic(w[0])}</span><b>${w[1]}</b><span>${w[2]}</span></li>`).join('')}</ul></div>`));
+
+S.push(light('قبل وبعد',SH('06','قبل البوابة وبعدها','الفرق الذي تُحدثه البوابة في متابعة الخطط يومًا بيوم.','الأثر')+`<div class="ba"><div class="bah rv"><span></span><span class="b">${ic('x')} قبل البوابة</span><span></span><span class="a">${ic('check')} مع البوابة</span></div>${ba.map(([a,b,c],k)=>`<div class="bar2 rv st"><b>${a}</b><span class="b">${b}</span><span class="sw">${ic('swap')}</span><span class="a rv l st">${c}</span></div>`).join('')}</div>`));
+
+S.push(light('المبررات',SH('07','المبررات','لماذا تستحق البوابة الاعتماد والتعميم.','القيمة')+`<div class="jt">${just.map(([i,t,x],k)=>`<div class="card jc rv st ${k%2?'l':'r'}"><span class="ib">${ic(i)}</span><div><b>${t}</b><p>${x}</p></div></div>`).join('')}</div>`));
+
+S.push(light('البنية التقنية',SH('08','البنية التقنية','رحلة البيانات من جهاز المستخدم إلى قاعدة البيانات، محمية بالصلاحيات في كل خطوة.','كيف بُنيت؟')+`<div class="arch"><div class="wire" aria-hidden="true"><i></i><i style="--o:1.3s"></i><i style="--o:2.6s"></i></div>${stack.map(([i,t,r,x,ch],k)=>`<div class="nd rv st"><span class="ndi">${ic(i)}<em>${k+1}</em></span><small>${r}</small><b>${t}</b><p>${x}</p><div class="chips">${ch.map(c=>`<span>${c}</span>`).join('')}</div></div>`).join('')}</div>
+<div class="sec rv st">${[['shield2','الزائر يستعرض فقط'],['check','المحرر يعدّل بعد تسجيل الدخول'],['bolt','التحديث يصل للجميع فورًا']].map(([i,t])=>`<span>${ic(i)}${t}</span>`).join('')}</div>`));
+
+S.push(light('أسئلة متوقعة',SH('09','أسئلة متوقعة','إجابات مختصرة لما يُسأل عنه عادة عند عرض البوابة.','استفسارات')+`<div class="faq">${faq.map(([q,a],k)=>`<div class="card fq rv st"><b>${ic('help')}${q}</b><p class="rv st">${a}</p></div>`).join('')}</div>`));
+
+S.push({title:'الختام',cls:'hero end',html:`<span class="blob b1"></span><span class="blob b2"></span><span class="gridbg"></span>
+<span class="chip rv" style="position:relative">${ic('star')} الخطط الذكية – 1448هـ</span>
+<h2 class="rv" style="--d:.1s">شكرًا لكم… <span>والخطة الآن حيّة</span></h2>
+<p class="lead rv" style="--d:.2s">من التخطيط إلى التنفيذ والتوثيق والاعتماد والنشر — في بوابة واحدة.</p>
+<div class="sig rv st"><div><small>إعداد وتطوير</small><b>أ/ عبدالعزيز بن يوسف المديني</b><span>منسق التقويم الذاتي • مدرسة لبيد بن ربيعة المتوسطة</span></div><div><small>بإشراف</small><b>أ/ خالد بن عبدالرحمن الباش</b><span>مدير المدرسة</span></div></div>
+<a class="go rv st" href="https://labeedsch.github.io/1448/" target="_blank" rel="noopener">${ic('home')} ادخل إلى البوابة: labeedsch.github.io/1448</a>
+<div class="lab"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" fill="#fff"/><circle class="bm-ring" cx="24" cy="24" r="15"/><text x="24" y="31" text-anchor="middle" fill="#102c3b" style="font:700 20px Tajawal,sans-serif">ع</text><circle cx="39" cy="10" r="4.5" fill="#f0a530"/></svg><span><small>أحد منتجات</small><b>مختبر الأفكار — عبدالعزيز المديني<i class="ai">AI</i></b></span></div>`});
+
+/* ===== المحرك ===== */
+const stage=document.getElementById('stage'),N=S.length;
+stage.innerHTML=S.map((s,k)=>`<section class="slide ${s.cls||''}" id="sl${k}" aria-label="${s.title}" aria-hidden="true">${s.html}</section>`).join('');
+const els=[...stage.children];els.forEach((e,k)=>{const p=e.querySelector('.pg');if(p)p.textContent=(k+1)+' / '+N});
+document.getElementById('tocL').innerHTML=S.map((s,k)=>`<button type="button" data-go="${k}"><span>${k+1}</span>${s.title}</button>`).join('');
+let cur=-1,step=0;
+const STEPS=els.map(e=>[...e.querySelectorAll('.st')]);
+function fit(){const s=Math.min(innerWidth/1600,innerHeight/900);stage.style.transform=`translate(-50%,-50%) scale(${s})`}
+function paintSteps(){const L=STEPS[cur];STEPS[cur].forEach((x,k)=>x.classList.toggle('in',k<step));
+  document.getElementById('steps').innerHTML=L.length?L.map((_,k)=>`<i class="${k<step?'on':''}"></i>`).join(''):'';
+  document.getElementById('steps').style.display=L.length&&L.length<=14?'flex':'none'}
+function show(i,push,full){i=Math.max(0,Math.min(N-1,i));if(i===cur)return;
+  if(cur>=0){els[cur].classList.remove('on');els[cur].setAttribute('aria-hidden','true')}
+  cur=i;step=full?STEPS[i].length:0;const e=els[i];paintSteps();void e.offsetWidth;e.classList.add('on');e.setAttribute('aria-hidden','false');
+  document.getElementById('cnt').textContent=(i+1)+' / '+N;
+  document.querySelector('#prog span').style.width=((i+1)/N*100)+'%';
+  document.querySelectorAll('#tocL button').forEach((b,k)=>b.classList.toggle('cur',k===i));
+  if(push!==false){try{history.replaceState(null,'','#s'+(i+1))}catch(_){}}}
+let hinted=false;
+function next(){if(!hinted){hinted=true;document.getElementById('hint').classList.add('off')}
+  if(step<STEPS[cur].length){step++;paintSteps()}else show(cur+1)}
+function prev(){if(step>0){step--;paintSteps()}else if(cur>0)show(cur-1,true,true)}
+
+document.getElementById('bNext').onclick=next;document.getElementById('bPrev').onclick=prev;
+const toc=document.getElementById('toc');
+document.getElementById('bToc').onclick=()=>toc.classList.add('open');
+toc.onclick=e=>{const b=e.target.closest('[data-go]');if(b)show(+b.dataset.go);toc.classList.remove('open')};
+document.getElementById('bFs').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen()}catch(_){}};
+addEventListener('keydown',e=>{if(toc.classList.contains('open')){if(e.key==='Escape')toc.classList.remove('open');return}
+  if(['ArrowLeft','PageDown',' ','Enter'].includes(e.key)){e.preventDefault();next()}
+  else if(['ArrowRight','PageUp','Backspace'].includes(e.key)){e.preventDefault();prev()}
+  else if(e.key==='Home')show(0);else if(e.key==='End')show(N-1);else if(e.key==='f'||e.key==='F')document.getElementById('bFs').click()});
+document.getElementById('viewport').addEventListener('click',e=>{if(e.target.closest('a'))return;next()});
+document.getElementById('viewport').addEventListener('contextmenu',e=>{e.preventDefault();prev()});
+let tx=null,ty=null;addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY},{passive:true});
+addEventListener('touchend',e=>{if(tx==null)return;const dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){dx>0?next():prev()}tx=null},{passive:true});
+let it;const wake=()=>{document.body.classList.remove('idle');clearTimeout(it);it=setTimeout(()=>document.body.classList.add('idle'),3000)};addEventListener('mousemove',wake);addEventListener('touchstart',wake,{passive:true});wake();
+const fromHash=()=>{const m=/^#s(\d+)$/.exec(location.hash);return m?+m[1]-1:0};
+addEventListener('hashchange',()=>show(fromHash(),false));
+addEventListener('resize',fit);fit();show(fromHash(),false);
+</script>
+</body>
+</html>

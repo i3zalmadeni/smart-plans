@@ -1,0 +1,107 @@
+/* ===== الخطط التعريفية + نوع الخطة على بطاقات البرامج ===== */
+
+/* وسم الخطة على بطاقة البرنامج */
+.pl-tag{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;max-width:100%;margin:0 0 6px;padding:4px 10px;border-radius:99px;font-size:.78rem;font-weight:700;text-decoration:none;color:color-mix(in srgb,var(--f) 78%,#000);background:color-mix(in srgb,var(--f) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--f) 32%,transparent);transition:background .2s}
+.pl-tag .ico{width:14px;height:14px;flex:none;color:var(--f)}
+.pl-tag span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-tag:hover{background:color-mix(in srgb,var(--f) 24%,var(--surface))}
+
+/* رسم رأس الصفحة */
+.pln-art{position:relative;width:100%;height:100%;min-height:220px;display:grid;place-items:center}
+.pln-doc{position:absolute;width:150px;height:196px;border-radius:16px;background:#fff;box-shadow:0 18px 40px rgba(0,0,0,.22);padding:22px 18px;display:flex;flex-direction:column;gap:10px;transform:rotate(-6deg) translate(-26px,6px);animation:plnFloat 6s ease-in-out infinite alternate}
+.pln-doc.b{transform:rotate(7deg) translate(46px,-14px);opacity:.75;z-index:0;animation-delay:-3s}
+.pln-doc:not(.b){z-index:1}
+.pln-doc i{display:block;height:8px;border-radius:6px;background:#dcecef}
+.pln-doc i.h{height:12px;width:70%;background:#0f8a94}
+.pln-doc i.s{width:60%}
+.pln-tag{position:absolute;inset:auto auto 14px 14px;background:#e5484d;color:#fff;font-weight:800;font-size:.8rem;padding:4px 10px;border-radius:8px;letter-spacing:.06em}
+.pln-ok{position:absolute;z-index:2;inset:16% 18% auto auto;width:46px;height:46px;border-radius:50%;background:#f0a530;display:grid;place-items:center;box-shadow:0 10px 20px rgba(0,0,0,.2)}
+.pln-ok .ico{color:#fff}
+@keyframes plnFloat{to{translate:0 -10px}}
+
+/* فهرس الخطط */
+.pln-sec{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.pln-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;margin-bottom:28px}
+.pln-c{position:relative;display:flex;flex-direction:column;gap:12px;padding:20px;border-radius:22px;background:linear-gradient(160deg,color-mix(in srgb,var(--f) 13%,var(--surface)),var(--surface) 55%);border:1px solid color-mix(in srgb,var(--f) 30%,var(--line));box-shadow:var(--shadow);overflow:hidden;transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s}
+.pln-c::before{content:"";position:absolute;inset:0 0 auto;height:5px;background:var(--f)}
+.pln-c:hover{transform:translateY(-5px);box-shadow:0 16px 32px color-mix(in srgb,var(--f) 22%,transparent)}
+.pln-top{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--ink)}
+.pln-top i{flex:none;width:50px;height:50px;border-radius:15px;background:var(--f);display:grid;place-items:center;box-shadow:0 8px 16px color-mix(in srgb,var(--f) 35%,transparent)}
+.pln-top i .ico{color:#fff;width:24px;height:24px}
+.pln-top b{display:block;font-size:1.08rem;line-height:1.5}
+.pln-top small{color:var(--muted)}
+.pln-d{margin:0;color:var(--ink2,var(--ink));line-height:1.9;font-size:.93rem;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pln-own{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;background:var(--surface);border:1px solid var(--line)}
+.pln-own>.ico{width:40px;height:40px;padding:9px;border-radius:50%;background:color-mix(in srgb,var(--f,var(--brand)) 14%,var(--surface));color:var(--f,var(--brand));flex:none}
+.pln-own span{display:flex;flex-direction:column;min-width:0}
+.pln-own small{color:var(--muted);font-size:.76rem}
+.pln-own b{font-size:.98rem}
+.pln-own em{font-style:normal;color:var(--muted);font-size:.8rem}
+.pln-own.none b{color:var(--muted);font-weight:600}
+.pln-n{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pln-n span{display:flex;flex-direction:column;align-items:center;padding:8px 4px;border-radius:14px;background:color-mix(in srgb,var(--f) 9%,var(--surface))}
+.pln-n b{font-size:1.25rem;color:color-mix(in srgb,var(--f) 80%,#000)}
+.pln-n small{color:var(--muted);font-size:.78rem}
+.pln-c .bar span{background:var(--f)}
+.pln-f{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:auto}
+.pln-pdfb .ico,.pln-hx .ico,.pln-fa .ico{width:18px;height:18px}
+.pln-pdfb .ico{color:#e5484d}
+
+/* صفحة الخطة */
+.pln-hx{display:flex;gap:8px;flex-wrap:wrap}
+.pln-info{display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:16px;align-items:stretch;margin:6px 0 24px}
+.pln-info .pln-own{flex-direction:column;justify-content:center;text-align:center;gap:10px;padding:20px;border-radius:22px;border-top:5px solid var(--f);box-shadow:var(--shadow)}
+.pln-info .pln-own span{align-items:center}
+.pln-info .pln-own b{font-size:1.15rem}
+.pln-info .pln-own>.ico{width:52px;height:52px;padding:12px}
+.pln-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.pln-facts>div{display:flex;align-items:center;gap:12px;padding:14px;border-radius:18px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.pln-facts i{flex:none;width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:color-mix(in srgb,var(--f) 14%,var(--surface))}
+.pln-facts i .ico{color:var(--f)}
+.pln-facts span{display:flex;flex-direction:column;min-width:0}
+.pln-facts small{color:var(--muted);font-size:.8rem}
+.pln-facts b{font-size:1.02rem}
+.pln-file{margin:0 0 26px}
+.pln-file h2{display:flex;align-items:center;gap:8px}
+.pln-file h2 .ico{color:#e5484d;width:24px;height:24px}
+.pln-fc{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 16px;border-radius:18px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.pln-fi{flex:none;width:52px;height:52px;border-radius:14px;display:grid;place-items:center;background:#fdecec}
+.pln-fi .ico{color:#e5484d;width:28px;height:28px}
+.pln-fn{flex:1;min-width:180px;display:flex;flex-direction:column}
+.pln-fn b{word-break:break-word}
+.pln-fn small{color:var(--muted)}
+.pln-fa{display:flex;gap:8px;flex-wrap:wrap}
+/* معاينة ملف الخطة بنمط معاينة التقرير */
+.pln-file .rpv-t .ico{color:#e5484d;width:22px;height:22px}
+.pln-file .rpv-a .ico{width:17px;height:17px}
+.pln-pv{padding:18px 12px;min-height:260px}
+.pln-pages{display:flex;flex-direction:column;align-items:center;gap:18px;width:100%}
+.pln-pg{position:relative;max-width:100%;background:#fff;box-shadow:0 10px 30px rgba(10,40,60,.18);border-top:4px solid var(--f)}
+.pln-pg canvas{display:block;width:100%;height:100%}
+.pln-no{position:absolute;inset:auto 50% -14px auto;transform:translateX(50%);background:#14263a;color:#fff;font-size:.72rem;font-weight:700;padding:2px 10px;border-radius:99px;opacity:.75}
+.pln-load{align-self:center;margin:auto;display:flex;flex-direction:column;align-items:center;gap:10px;color:#4b6273;font-weight:700;padding:60px 10px;text-align:center}
+.pln-load.err .ico{width:40px;height:40px;color:#e5484d}.pln-load.err span{font-weight:400;font-size:.9rem}
+.pln-spin{width:34px;height:34px;border-radius:50%;border:4px solid rgba(15,138,148,.2);border-top-color:#0f8a94;animation:plnSpin .8s linear infinite}
+@keyframes plnSpin{to{transform:rotate(360deg)}}
+.pln-none{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:30px 20px;border-radius:20px;border:2px dashed color-mix(in srgb,var(--f) 40%,var(--line));background:color-mix(in srgb,var(--f) 5%,var(--surface))}
+.pln-none>.ico{width:44px;height:44px;color:color-mix(in srgb,var(--f) 70%,var(--muted))}
+
+/* حقل الملف في نموذج الخطة */
+.pl-pdf{display:flex;flex-direction:column;gap:6px}
+.pl-pdf-cur{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:8px 12px;border-radius:12px;background:var(--brandsoft,#e6f5f6);font-size:.9rem}
+.pl-pdf-cur a{font-weight:700;word-break:break-word}
+.pl-pdf-rm{display:inline-flex;align-items:center;gap:6px;font-weight:400!important;margin:0!important}
+
+@media (max-width:980px){.pln-info{grid-template-columns:1fr}.pln-facts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.pln-pv{padding:12px 8px}.pln-facts{grid-template-columns:1fr 1fr;gap:8px}.pln-facts>div{padding:10px;gap:8px}.pln-facts i{width:34px;height:34px}.pln-art{min-height:180px}.pln-doc{width:110px;height:146px;padding:16px 12px;gap:7px}}
+@media (prefers-reduced-motion:reduce){.pln-doc{animation:none}.pln-c{transition:none}}
+@media print{.pln-hx,.pln-file .rpv-a{display:none!important}}
+
+/* شريط الخطط في الرئيسية يتفاعل مع الفرز */
+.ps.ps2{transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s,opacity .3s,filter .3s}
+.ps.ps2 .ps-bar span{transition:width .6s cubic-bezier(.22,1,.36,1)}
+.ps.ps2.dim{opacity:.5;filter:saturate(.45)}
+.ps.ps2.dim:hover{opacity:.85;filter:none}
+.ps.ps2.on{box-shadow:0 0 0 3px var(--f),0 14px 28px color-mix(in srgb,var(--f) 28%,transparent);transform:translateY(-3px)}
+@media (prefers-reduced-motion:reduce){.ps.ps2,.ps.ps2 .ps-bar span{transition:none}}
+.tl-card .pl-tag{margin:2px 0 0;font-size:.74rem;padding:3px 9px}
