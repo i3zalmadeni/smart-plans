@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ترحيل بيانات الخطط الذكية إلى النواة</title>
+<style>body{font-family:system-ui,sans-serif;max-width:720px;margin:24px auto;padding:0 16px;line-height:1.8}button{padding:8px 16px;font-size:1rem}pre{background:#f4f6f8;padding:12px;border-radius:8px;white-space:pre-wrap}</style></head>
+<body>
+<h1>ترحيل بيانات الخطط الذكية</h1>
+<p>يُشغَّل مرة واحدة من متصفح مستخدم مسجّل الدخول في النواة وله صلاحية <code>smart_plans:add</code> و<code>smart_plans:edit</code>. ينقل السجلات والصور من القاعدة القديمة، ويتجاهل سجلات الأسماء/المنفذين القديمة وأرقام الجوال.</p>
+<p><button id="go">بدء الترحيل</button> <label><input type="checkbox" id="dry" checked> تجربة دون كتابة</label></p>
+<pre id="log">جاهز.</pre>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="assets/config.js"></script>
+<script>
+const L=t=>{log.textContent+='\n'+t};
+const C=window.SMART_PLANS_CONFIG;
+go.onclick=async()=>{
+  go.disabled=true;
+  try{
+    const cfg=C||{};
+    const core=supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
+    const old=supabase.createClient(cfg.legacy.url,cfg.legacy.key);
+    const {data:{session}}=await core.auth.getSession();
+    if(!session)throw new Error('سجّل الدخول في الخطط الذكية أولًا ثم أعد فتح هذه الصفحة.');
+    const {data:rows,error}=await old.from('records').select('*').order('created_at',{ascending:true});
+    if(error)throw error;
+    L('سجلات قديمة: '+rows.length);
+    const skip=['person','person-remove','rename'];
+    const bucketOld=cfg.legacy.bucket,bucketNew=cfg.bucket,dry=dry.checked;
+    const pubOld=p=>cfg.legacy.url+'/storage/v1/object/public/'+bucketOld+'/'+p;
+    let ok=0,ign=0,img=0;
+    const mv=async a=>{ // ينسخ صورة/مرفق ويعيد {id,url} الجديد
+      if(!a||!a.id)return a;
+      if(dry){img++;return a}
+      const r=await fetch(a.url||pubOld(a.id));if(!r.ok)return a;
+      const b=await r.blob();
+      const {error:e}=await core.storage.from(bucketNew).upload(a.id,b,{contentType:b.type||undefined,upsert:true});
+      if(e){L('تعذر نسخ '+a.id+': '+e.message);return a}
+      img++;return {...a,url:core.storage.from(bucketNew).getPublicUrl(a.id).data.publicUrl};
+    };
+    const scrub=o=>{if(Array.isArray(o))return o.map(scrub);if(o&&typeof o==='object'){const n={};for(const k in o){if(/phone|mobile|جوال/i.test(k))continue;n[k]=scrub(o[k])}return n}return o};
+    for(const r of rows){
+      let d=r.data||{};
+      if(skip.includes(d.type)){ign++;continue}
+      d=scrub(d);
+      for(const k of ['images','attachments'])if(Array.isArray(d[k]))d[k]=await Promise.all(d[k].map(mv));
+      if(!dry){
+        const {error:e}=await core.from('sp_records').insert({col:r.col,data:d});
+        if(e){L('فشل سجل: '+e.message);continue}
+      }
+      ok++;
+    }
+    L((dry?'[تجربة] ':'')+'منقول: '+ok+' • متجاهل: '+ign+' • ملفات: '+img);
+  }catch(e){L('خطأ: '+(e.message||e))}
+  go.disabled=false;
+};
+</script></body></html>

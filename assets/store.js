@@ -1,8 +1,8 @@
 /*
  * الخطط الذكية — طبقة البيانات وتسجيل الدخول
  * ---------------------------------------------------------------
- * - مع إعداد Supabase في assets/config.js: البيانات مشتركة بين الجميع،
- *   والاستعراض متاح للكل، والإضافة والحذف لمن سجّل الدخول فقط.
+ * - مع إعداد Supabase في assets/config.js (قاعدة النواة الرقمية): البيانات مشتركة بين الجميع،
+ *   والاستعراض متاح للكل، والإضافة والتعديل والاعتماد والحذف بصلاحيات smart_plans:* من النواة.
  * - بدون إعداد: وضع تجريبي يحفظ في هذا المتصفح فقط (للتجربة قبل الربط).
  * - داخل Claude: لا يفعل هذا الملف شيئًا.
  */
@@ -11,7 +11,7 @@
 
   var CFG = window.SMART_PLANS_CONFIG || {};
   var CLOUD = !!(CFG.supabaseUrl && CFG.supabaseAnonKey && window.supabase && window.supabase.createClient);
-  var BUCKET = CFG.bucket || 'evidence';
+  var BUCKET = CFG.bucket || 'sp-evidence';
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 10); }
   function blobToDataUrl(b) {
     return new Promise(function (res, rej) { var f = new FileReader(); f.onload = function () { res(f.result); }; f.onerror = rej; f.readAsDataURL(b); });
@@ -31,21 +31,65 @@
     return { docs: rows.map(function (r) { return { id: r.id, data: function () { return r.data; } }; }) };
   }
 
-  /* =============== الوضع السحابي: Supabase =============== */
+  /* =============== الوضع السحابي: قاعدة النواة الرقمية =============== */
   if (CLOUD) {
+    // مفتاح تخزين الجلسة الافتراضي نفسه الذي تستعمله بقية أنظمة النواة على الأصل نفسه:
+    // من دخل في أي نظام يُعرَف هنا دون دخول جديد، والعكس.
     var sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey);
-    var sessionP = sb.auth.getSession().then(function (r) { return (r && r.data && r.data.session) || null; }).catch(function () { return null; });
+    var TABLE = 'sp_records';
+    var LOGIN_DOMAIN = CFG.loginDomain || 'id.invalid';
+    var toAuthEmail = function (v) { v = String(v || '').trim().toLowerCase(); return v.indexOf('@') >= 0 ? v : v + '@' + LOGIN_DOMAIN; };
+    var photoUrl = function (p) { return p ? CFG.supabaseUrl + '/storage/v1/object/public/public-photos/' + String(p).split('/').map(encodeURIComponent).join('/') : null; };
 
+    /* ---------- الهوية والصلاحيات ودليل المنفذين (من النواة) ---------- */
+    var SP = window.SP = {
+      sb: sb, signedIn: false, access: null, dir: {}, staff: [],
+      can: function (level) { return !!(SP.access && SP.access[level]); },
+      login: null, signOut: null, ready: null
+    };
+    SP.ready = (async function () {
+      var s = null;
+      try { s = (await sb.auth.getSession()).data.session; } catch (e) { s = null; }
+      SP.signedIn = !!s;
+      if (s) {
+        try { var r = await sb.rpc('sp_my_access'); SP.access = (r && r.data) || {}; } catch (e) { SP.access = {}; }
+      }
+      // أسماء المنفذين المرتبطين فقط (عام): الاسم والمسمى والصورة المنشورة
+      try {
+        var pub = await sb.from('sp_executors_public').select('id,full_name,job_title_ar,photo_path');
+        (pub.data || []).forEach(function (x) { SP.dir[x.id] = { id: x.id, name: x.full_name, title: x.job_title_ar || '', photo: photoUrl(x.photo_path), phone: '', active: true }; });
+      } catch (e) { /* العرض العام يعمل دون الدليل */ }
+      if (s) {
+        try {
+          var jt = await sb.from('job_titles').select('code,name_ar'), jm = {};
+          (jt.data || []).forEach(function (j) { jm[j.code] = j.name_ar; });
+          var st = await sb.from('staff_members').select('id,full_name,job_title,is_active,publish_public,public_photo_path').order('full_name');
+          (st.data || []).forEach(function (x) {
+            var o = { id: x.id, name: x.full_name, title: jm[x.job_title] || x.job_title || '', photo: x.publish_public ? photoUrl(x.public_photo_path) : null, phone: '', active: !!x.is_active };
+            SP.dir[x.id] = o; if (x.is_active) SP.staff.push(o);
+          });
+        } catch (e) { /* يبقى الدليل العام */ }
+        // أرقام الجوال: تُقرأ بقدر ما تسمح به صلاحيات النواة (staff_private) ولا تُخزَّن في هذا النظام
+        if (SP.can('edit')) {
+          try {
+            var ph = await sb.from('staff_private').select('staff_id,phone');
+            (ph.data || []).forEach(function (x) { if (SP.dir[x.staff_id]) SP.dir[x.staff_id].phone = x.phone || ''; });
+          } catch (e) { /* لا أرقام */ }
+        }
+      }
+    })();
+
+    /* ---------- مستمعو التغييرات ---------- */
     var emit = function (col) {
-      sb.from('records').select('id,data').eq('col', col).order('created_at', { ascending: true }).then(function (r) {
+      sb.from(TABLE).select('id,data').eq('col', col).order('created_at', { ascending: true }).then(function (r) {
         if (r.error) { (listeners[col] || []).forEach(function (l) { l.err && l.err(r.error); }); return; }
         var snap = makeSnap(r.data || []);
         (listeners[col] || []).forEach(function (l) { try { l.cb(snap); } catch (e) { console.error(e); } });
       });
     };
     try {
-      sb.channel('records-live')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, function () { Object.keys(listeners).forEach(emit); })
+      sb.channel('sp-records-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: TABLE }, function () { Object.keys(listeners).forEach(emit); })
         .subscribe();
     } catch (e) { /* التحديث الفوري اختياري */ }
 
@@ -57,20 +101,20 @@
           return function () { listeners[col] = (listeners[col] || []).filter(function (l) { return l.cb !== cb; }); };
         },
         add: function (data) {
-          return sb.from('records').insert({ col: col, data: data }).select('id').single().then(fail)
+          return sb.from(TABLE).insert({ col: col, data: data }).select('id').single().then(fail)
             .then(function (r) { emit(col); return { id: r.data.id }; });
         },
         doc: function (id) {
           return {
             delete: function () {
               // احذف صور السجل من التخزين ثم السجل نفسه
-              return sb.from('records').select('data').eq('id', id).maybeSingle().then(function (r) {
+              return sb.from(TABLE).select('data').eq('id', id).maybeSingle().then(function (r) {
                 var d0 = (r.data && r.data.data) || {}; var paths = (d0.images || []).concat(d0.attachments || []).map(function (a) { return a.id; }).filter(Boolean);
                 return paths.length ? sb.storage.from(BUCKET).remove(paths).catch(function () {}) : null;
               }).then(function () {
-                return sb.from('records').delete().eq('id', id).select('id').then(fail);
+                return sb.from(TABLE).delete().eq('id', id).select('id').then(fail);
               }).then(function (r) {
-                if (!r.data || !r.data.length) throw new Error('لا تملك صلاحية الحذف. سجّل الدخول ثم أعد المحاولة.');
+                if (!r.data || !r.data.length) throw new Error('لا تملك صلاحية الحذف في الخطط الذكية.');
                 emit(col);
               });
             }
@@ -80,7 +124,7 @@
     };
 
     var services = {
-      db: { collection: collection },
+      db: { collection: collection, refresh: function () { Object.keys(listeners).forEach(emit); } },
       assets: {
         upload: function (blob) {
           var m = /\.([A-Za-z0-9]{1,6})$/.exec((blob && blob.name) || '');
@@ -90,33 +134,41 @@
             .then(function () { return { id: path, url: sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl }; });
         }
       },
-      downloads: downloads,
-      user: null
+      downloads: downloads
     };
 
     window.claude = {
       cloud: true,
       use: function (name) {
-        if (name === 'db' || name === 'downloads') return Promise.resolve(services[name]);
-        // الإضافة والحذف مرتبطة بخدمة الرفع؛ لا تُتاح إلا بعد تسجيل الدخول
-        if (name === 'assets' || name === 'user') return sessionP.then(function (s) {
-          if (!s) throw new Error('signed-out');
-          return name === 'assets' ? services.assets : { id: function () { return Promise.resolve(s.user.email || s.user.id); } };
+        if (name === 'downloads') return Promise.resolve(services.downloads);
+        // الدليل والجلسة يُحمَّلان قبل أول لقطة بيانات حتى تُعرض أسماء المنفذين من النواة من البداية
+        return SP.ready.then(function () {
+          if (name === 'db') return services.db;
+          // الإضافة والحذف والتعديل لا تُتاح إلا لمن يملك صلاحية «الخطط الذكية» في النواة
+          if (name === 'assets' || name === 'user') {
+            if (!SP.can('add')) throw new Error('no-access');
+            return name === 'assets' ? services.assets : { id: function () { return Promise.resolve((SP.access && SP.access.name) || 'محرر'); } };
+          }
+          throw new Error('unavailable');
         });
-        return Promise.reject(new Error('unavailable'));
       }
     };
 
-    /* ---------- واجهة الدخول والخروج ---------- */
+    /* ---------- الدخول الموحد (النواة الرقمية): معرّف دخول وكلمة مرور ---------- */
     var esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-    var loginForm = function () {
-      var m = document.createElement('div'); m.className = 'modal';
+    var goHome = function () { location.replace(location.pathname + location.search); };
+    SP.signOut = function () { return sb.auth.signOut().then(goHome, goHome); };
+    SP.login = function () {
+      if (document.getElementById('lg-modal')) return;
+      var m = document.createElement('div'); m.className = 'modal'; m.id = 'lg-modal';
       m.innerHTML = '<div role="dialog" aria-modal="true" aria-labelledby="lg-t" style="width:100%;max-width:400px">' +
-        '<h3 id="lg-t" style="margin-bottom:6px">دخول المحررين</h3><p class="muted small" style="margin:0 0 14px">الدخول لإضافة التنفيذات والبرامج وحذفها. الاستعراض متاح للجميع دون دخول.</p>' +
+        '<img src="assets/core-logo.svg" alt="النواة الرقمية" width="72" height="72" style="display:block;margin:0 auto 8px">' +
+        '<h3 id="lg-t" style="text-align:center;margin:0 0 4px">النواة الرقمية</h3>' +
+        '<p class="muted small" style="text-align:center;margin:0 0 14px">دخول موحد لأنظمة المدرسة. الاستعراض في الخطط الذكية متاح للجميع دون دخول.</p>' +
         '<form class="frm" id="lg-f" style="grid-template-columns:1fr">' +
-        '<div><label for="lg-e">البريد الإلكتروني</label><input id="lg-e" type="email" autocomplete="username" required dir="ltr"></div>' +
+        '<div><label for="lg-e">معرّف الدخول</label><input id="lg-e" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required dir="ltr" placeholder="أرقام أو حروف إنجليزية"></div>' +
         '<div><label for="lg-p">كلمة المرور</label><input id="lg-p" type="password" autocomplete="current-password" required dir="ltr"></div>' +
-        '</form><div id="lg-m"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn pri" type="submit" form="lg-f" id="lg-b">دخول</button><button class="btn" type="button" data-x>إلغاء</button></div></div>';
+        '</form><div id="lg-m" role="alert"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn pri" type="submit" form="lg-f" id="lg-b">دخول</button><button class="btn" type="button" data-x>إلغاء</button></div></div>';
       document.body.append(m);
       var close = function () { m.remove(); };
       m.querySelector('[data-x]').onclick = close;
@@ -126,29 +178,33 @@
         e.preventDefault();
         var b = m.querySelector('#lg-b'), msg = m.querySelector('#lg-m');
         b.disabled = true; b.textContent = 'جارٍ الدخول…'; msg.innerHTML = '';
-        sb.auth.signInWithPassword({ email: m.querySelector('#lg-e').value.trim(), password: m.querySelector('#lg-p').value })
+        sb.auth.signInWithPassword({ email: toAuthEmail(m.querySelector('#lg-e').value), password: m.querySelector('#lg-p').value })
           .then(function (r) {
             if (r.error) throw r.error;
             location.reload();
           }).catch(function (err) {
             b.disabled = false; b.textContent = 'دخول';
-            var t = /invalid/i.test(err && err.message || '') ? 'البريد أو كلمة المرور غير صحيحة.' : (err && err.message || 'تعذّر الدخول');
+            var t = /banned/.test((err && err.code) || '') ? 'هذا الحساب موقوف. راجع مدير النواة.'
+              : (err && (err.code === 'invalid_credentials' || err.status === 400)) ? 'بيانات الدخول غير صحيحة.' : 'تعذّر الاتصال بالخادم، حاول مرة أخرى.';
             msg.innerHTML = '<div class="msg err">' + esc(t) + '</div>';
           });
       };
     };
     var mountAuth = function () {
       var top = document.querySelector('header .top'); if (!top) return;
-      var box = document.createElement('div'); box.className = 'auth-box';
+      var box = document.createElement('div'); box.className = 'auth-box'; box.id = 'auth-box';
       box.style.cssText = 'display:flex;align-items:center;gap:8px';
       top.appendChild(box);
-      sessionP.then(function (s) {
-        if (s) {
-          box.innerHTML = '<span class="muted small" title="' + esc(s.user.email || '') + '">محرر</span><button class="btn" type="button" id="lg-out">خروج</button>';
-          box.querySelector('#lg-out').onclick = function () { sb.auth.signOut().finally(function () { location.reload(); }); };
+      SP.ready.then(function () {
+        if (SP.signedIn) {
+          var nm = (SP.access && SP.access.name) || 'مستخدم';
+          box.innerHTML = '<span class="muted small" id="lg-name">' + esc(nm) + '</span>' +
+            (SP.can('add') ? '<a class="btn pri" href="#admin" id="lg-panel">لوحة التحكم</a>' : '') +
+            '<button class="btn" type="button" id="lg-out">خروج</button>';
+          box.querySelector('#lg-out').onclick = function () { SP.signOut(); };
         } else {
-          box.innerHTML = '<button class="btn soft" type="button" id="lg-in">دخول المحررين</button>';
-          box.querySelector('#lg-in').onclick = loginForm;
+          box.innerHTML = '<button class="btn soft" type="button" id="lg-in">دخول</button>';
+          box.querySelector('#lg-in').onclick = SP.login;
         }
       });
     };

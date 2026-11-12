@@ -13,7 +13,7 @@ const D=Object.assign({mode:'plan',plan:null,week:null,dom:null,own:null,fs:'',q
 D.fs='';D.q='';D.pq='';D.uq='';
 const saveUI=()=>ls.set(UIK,{pmode:D.pmode,mplan:D.mplan,mode:D.mode,plan:D.plan,week:D.week,dom:D.dom,own:D.own,grace:D.grace});
 const ORIG={};BASEP.forEach(p=>{ORIG[p.id]=JSON.parse(JSON.stringify(p))});
-const CO_COL='executions';
+const CO_COL='executions';let LASTUP=new Date();
 let CO=[],SUB=false,WHO='',REMOVED=[];let PEOPLE={};
 const WAICON='<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.2-.2-.4-.3z"/></svg>';
 const ROLES=['معلم','وكيل الشؤون التعليمية','وكيل شؤون الطلاب','الموجه الطلابي','رائد النشاط','منسق الجودة','منسق التقويم الذاتي','أمين مصادر التعلم','محضر المختبر','المرشد الصحي','إداري'];
@@ -28,6 +28,7 @@ const addDays=(s,n)=>{const x=new Date(s+'T12:00:00');x.setDate(x.getDate()+n);r
 const daysBetween=(a,b)=>Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5);
 const t12=t=>{if(!t)return '';let[h,m]=t.split(':').map(Number);const am=h<12;h=h%12||12;return h+':'+String(m).padStart(2,'0')+(am?' ص':' م')};
 const fmtWhen=iso=>{try{const d=new Date(iso);const m=Math.round((Date.now()-d)/6e4);if(m<1)return 'الآن';if(m<60)return 'قبل '+m+' د';if(m<1440)return 'قبل '+Math.round(m/60)+' س';return dmy(iso.slice(0,10))}catch(e){return ''}};
+const canApprove=()=>!(window.SP&&SP.can)||SP.can('approve');
 const ownerOf=p=>{const n=(p.owner_name||'').trim();return !n||/^[—\-–]+$/.test(n)?'غير محدد':n};
 const planOf=id=>(typeof PL!=='undefined'?PL:[]).find(x=>String(x.id)===String(id))||DATA.plans.find(x=>String(x.id)===String(id))||{id,name:'—'};
 
@@ -54,6 +55,7 @@ function setFields(p,f){
   }
 }
 function apply(){
+  LASTUP=new Date();
   for(let i=BASEP.length-1;i>=0;i--)if(BASEP[i]._co)BASEP.splice(i,1);
   for(const p of BASEP){const o=ORIG[p.id];if(!o)continue;for(const k of Object.keys(p))if(!(k in o))delete p[k];Object.assign(p,JSON.parse(JSON.stringify(o)))}
   const docs=CO.slice().sort((a,b)=>(a.at||'').localeCompare(b.at||''));
@@ -74,24 +76,41 @@ function apply(){
   const allP=BASEP.concat(XP);REMOVED=[...gone].map(id=>{const x=allP.find(p=>String(p.id)===id),g=gname[id]||{};return {id,name:x?x.name:(g.name||'برنامج محذوف'),plan:x?x.plan_name:'',owner:x?ownerOf(x):'',at:g.at||'',by:g.by||'',docs:x?exFor(x.id).length:0}}).sort((a,b)=>(b.at||'').localeCompare(a.at||''));
   P=allP.filter(p=>!gone.has(String(p.id)));
   PEOPLE={};
-  for(const d of docs){
-    if(d.type==='edit'&&d.fields){const p=P.find(x=>String(x.id)===String(d.progId));if(p)setFields(p,d.fields)}
-    else if(d.type==='person'&&d.person)PEOPLE[d.person]={role:d.role||'',photo:d.photo||null,phone:d.phone||''};
-    else if(d.type==='person-remove'&&d.person)delete PEOPLE[d.person];
-    else if(d.type==='rename'&&d.from&&d.to){for(const p of P)if(ownerOf(p)===d.from)p.owner_name=d.to;if(PEOPLE[d.from]){PEOPLE[d.to]=PEOPLE[d.from];delete PEOPLE[d.from]}}
-  }
+  const DIR=(window.SP&&SP.dir)||{};
+  for(const id of Object.keys(DIR)){const m=DIR[id];PEOPLE[m.name]={role:m.title||'',photo:m.photo?{id:'',url:m.photo}:null,phone:normPhone(m.phone)||'',id}}
+  for(const d of docs){if(d.type==='edit'&&d.fields){const p=P.find(x=>String(x.id)===String(d.progId));if(p)setFields(p,d.fields)}}
+  linkOwners(docs);
   for(const p of P){const x=PL.find(y=>String(y.id)===String(p.plan_id));if(x)p.plan_name=x.name}
 }
 const _merge=mergeUnplanned;
 mergeUnplanned=function(docs){_merge(docs);apply()};
 
+/* ---------- المنفذون من منسوبي النواة ---------- */
+// لا نسخ للبيانات: يُحفظ معرّف المنسوب (owner_staff_id) ويُعرض اسمه الحالي من النواة.
+const normN=t=>String(t||'').replace(/[\u064B-\u0652\u0640]/g,'').replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/[^\u0621-\u064Aa-zA-Z0-9]+/g,' ').trim();
+let OLINK={},OGROUP={};
+const dirOf=()=>(window.SP&&SP.dir)||{};
+function ownerSid(name,sid){const DIR=dirOf();if(sid&&DIR[sid])return sid;const n=(name||'').trim();if(!n)return null;
+  if(OLINK[n]&&DIR[OLINK[n]])return OLINK[n];
+  const k=normN(n),c=Object.values(DIR).filter(m=>normN(m.name)===k);return c.length===1?c[0].id:null}
+function linkOwners(docs){const DIR=dirOf();OLINK={};OGROUP={};
+  for(const d of docs)if(d.type==='owner-link'&&d.from){delete OLINK[d.from];delete OGROUP[d.from];if(d.group)OGROUP[d.from]=true;else if(d.staff_id)OLINK[d.from]=d.staff_id}
+  for(const p of P){const sid=ownerSid(p.owner_name,p.owner_staff_id);if(sid){p.owner_staff_id=sid;p.owner_name=DIR[sid].name}else delete p.owner_staff_id}
+  for(const x of PL){const sid=ownerSid(x.owner,x.owner_staff_id);if(sid){x.owner_staff_id=sid;x.owner=DIR[sid].name}else delete x.owner_staff_id}}
+function staffIdByName(n){n=(n||'').trim();if(!n)return null;const m=((window.SP&&SP.staff)||[]).filter(x=>x.name===n);return m.length?m[0].id:null}
+// كل كتابة تحمل معرّف المنفذ إن اختير من النواة (يتحقق الحارس في القاعدة من وجوده)
+function linkDoc(doc){const t=(o,k)=>{if(o&&typeof o==='object'&&k in o)o.owner_staff_id=staffIdByName(o[k])};
+  t(doc.fields,'owner_name');t(doc.data,'owner_name');t(doc.fields,'owner');t(doc.plan,'owner');return doc}
+window.CD_staffId=staffIdByName;
+
 async function write(doc){
   if(!DB)throw new Error('قاعدة البيانات غير متاحة');
   if(!WHO&&USER){try{WHO=await USER.id()}catch(e){}}
-  await DB.collection(CO_COL).add({...doc,kind:'coordinator',at:new Date().toISOString(),by:WHO||''});
+  await DB.collection(CO_COL).add({...linkDoc(doc),kind:'coordinator',at:new Date().toISOString(),by:WHO||''});
 }
 async function saveEdit(p,fields,label){
   const f={};for(const[k,v]of Object.entries(fields))if(String(p[k]??'')!==String(v??''))f[k]=v;
+  if(!canApprove()&&'approved_at' in f)delete f.approved_at; // الاعتماد بصلاحية smart_plans:approve فقط
   if(!Object.keys(f).length)return false;
   await write({type:'edit',progId:String(p.id),name:p.name,fields:f,summary:label||('عدّل '+Object.keys(f).map(k=>FL[k]||k).join('، '))});
   return true;
@@ -110,9 +129,10 @@ function avatar(name,size){const pp=PEOPLE[name]||{};const sz=size||40;
   if(pp.photo)return `<img class="cd-av" src="${esc(imgUrl(pp.photo))}" alt="صورة ${esc(name)}" width="${sz}" height="${sz}" style="width:${sz}px;height:${sz}px" loading="lazy">`;
   let h=0;for(const ch of String(name))h=(h*31+ch.charCodeAt(0))>>>0;const i=h%6;
   return `<span class="cd-av" style="width:${sz}px;height:${sz}px;--b:var(--c${i}b);--f:var(--c${i}f);font-size:${Math.round(sz*.36)}px" role="img" aria-label="صورة افتراضية لـ ${esc(name)}"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="15" r="7" fill="var(--f)" opacity=".22"/><path d="M6 38c2-9 8-13 14-13s12 4 14 13" fill="var(--f)" opacity=".22"/></svg><b>${esc(initials(name))}</b></span>`}
-const peopleNames=()=>[...new Set([...Object.keys(PEOPLE),...P.map(ownerOf)])].filter(n=>n!=='غير محدد').sort((a,b)=>a.localeCompare(b,'ar'));
-function ownerSelect(cur,attrs){const names=peopleNames();cur=cur&&cur!=='غير محدد'?cur:'';
-  return `<select ${attrs}><option value="">— بدون منفذ —</option>${names.map(n=>`<option value="${esc(n)}"${n===cur?' selected':''}>${esc(n)}${PEOPLE[n]&&PEOPLE[n].role?' — '+esc(PEOPLE[n].role):''}</option>`).join('')}${cur&&!names.includes(cur)?`<option selected value="${esc(cur)}">${esc(cur)}</option>`:''}</select>`}
+const peopleNames=()=>[...new Set([...Object.values(dirOf()).map(m=>m.name),...P.map(ownerOf)])].filter(n=>n!=='غير محدد').sort((a,b)=>a.localeCompare(b,'ar'));
+function ownerSelect(cur,attrs){const st=(window.SP&&SP.staff)||[];cur=cur&&cur!=='غير محدد'?cur:'';const names=new Set(st.map(m=>m.name));
+  return `<select ${attrs}><option value="">— بدون منفذ —</option>${st.map(m=>`<option value="${esc(m.name)}"${m.name===cur?' selected':''}>${esc(m.name)}${m.title?' — '+esc(m.title):''}</option>`).join('')}${cur&&!names.has(cur)?`<option selected value="${esc(cur)}">${esc(cur)} — غير مرتبط بالنواة</option>`:''}</select>`}
+window.CD_ownerSelect=ownerSelect;
 const domainList=()=>[...new Set([...(LOOK().domain||[]),...P.map(p=>p.domain).filter(Boolean)])];
 function domainSelect(cur,attrs){const l=domainList();return `<select ${attrs}><option value="">— اختر المجال —</option>${l.map(d=>`<option value="${esc(d)}"${d===cur?' selected':''}>${esc(d)}</option>`).join('')}${cur&&!l.includes(cur)?`<option selected>${esc(cur)}</option>`:''}</select>`}
 const legend=keys=>`<div class="cd-legend">${keys.map(s=>`<span style="--sc:${SC[s]}"><i></i>${SL[s]}</span>`).join('')}</div>`;
@@ -173,7 +193,7 @@ const showPhone=d=>!d?'':/^9665\d{8}$/.test(d)?'0'+d.slice(3):'+'+d;
 const waLink=(phone,text)=>`https://wa.me/${phone||''}${text?'?text='+encodeURIComponent(text):''}`;
 const wa=(p,kind)=>{const t=kind==='late'?`تذكير من منسق الخطة: برنامج «${p.name}» (${p.plan_name}) انتهت فترته في ${dmy(endOf(p))} ولم يُوثَّق تنفيذه بعد. نأمل رفع التوثيق والشواهد في بوابة الخطط الذكية، أو إفادتنا بسبب التأخر.`:`تذكير من منسق الخطة: موعد برنامج «${p.name}» ${startOf(p)?'يبدأ '+dayName(startOf(p))+' '+dmy(startOf(p)):''}${p.time?' الساعة '+t12(p.time):''}${p.location?' في '+p.location:''}. نأمل التنفيذ في موعده ورفع التوثيق والشواهد بعده.`;const ph=(PEOPLE[ownerOf(p)]||{}).phone;return `<a class="btn cd-sm cd-wa" href="${waLink(ph,t)}" target="_blank" rel="noopener" title="فتح واتساب برسالة تذكير جاهزة">${ic('bell')} تذكير</a>`};
 const dayName=d=>{try{return new Date(d+'T12:00:00').toLocaleDateString('ar-SA-u-ca-gregory-nu-latn',{weekday:'long'})}catch(e){return ''}};
-const dash=()=>buildDash('main'),alertsPage=()=>buildDash('alerts');
+const tasksPage=()=>buildDash('tasks'),alertsPage=()=>buildDash('alerts');
 function buildDash(view){
   if(!READY)return '<div class="empty">جارٍ تحميل بيانات المتابعة…</div>';
   const ED=canAdd(),today=T(),cw=curWeek(),L=P,total=L.length,cnt=countBy(L);
@@ -185,7 +205,7 @@ function buildDash(view){
   const row=(p,kind,meta,acts)=>`<div class="cd-al" style="--sc:${SC[kind]}"><i></i><a href="#p-${pid(p)}">${esc(p.name)}</a>${meta}${acts?`<span class="acts">${acts}</span>`:''}</div>`;
   const lateRow=p=>row(p,'متأخر',`<span class="m">انتهت فترته ${dmy(endOf(p))} • منذ ${daysBetween(endOf(p),today)} يومًا • ${esc(ownerOf(p))} • ${esc(p.plan_name)}</span>`,ED?`<button class="btn pri cd-sm" data-doc="${pid(p)}">${ic('rep')} توثيق</button><button class="btn cd-sm" data-stall="${pid(p)}">تسجيل التعثر</button><button class="btn cd-sm" data-edit="${pid(p)}">تعديل الموعد</button>${wa(p,'late')}`:'');
   const stallRow=p=>row(p,'متعثر',`<span class="why">السبب: ${esc(p.stall_note||'لم يُكتب سبب')}</span><span class="m">${esc(ownerOf(p))} • ${esc(p.plan_name)}</span>`,ED?`<button class="btn cd-sm" data-stall="${pid(p)}">تعديل السبب</button><button class="btn cd-sm" data-edit="${pid(p)}">إعادة جدولة</button>`:'');
-  const apprRow=p=>{const ex=exFor(p.id),last=ex[ex.length-1]||{};return row(p,'مكتمل',`<span class="m">وُثّق ${ex.length>1?ex.length+' مرات':''} • آخر تنفيذ ${dmy(last.date||'')} • ${esc(last.executor||ownerOf(p))} • ${(last.images||[]).length} صور</span>`,`<a class="btn cd-sm" href="#p-${pid(p)}">مراجعة التوثيق</a>${ED?`<button class="btn pri cd-sm" data-approve="${pid(p)}">${ic('check')} اعتماد</button>`:''}`)};
+  const apprRow=p=>{const ex=exFor(p.id),last=ex[ex.length-1]||{};return row(p,'مكتمل',`<span class="m">وُثّق ${ex.length>1?ex.length+' مرات':''} • آخر تنفيذ ${dmy(last.date||'')} • ${esc(last.executor||ownerOf(p))} • ${(last.images||[]).length} صور</span>`,`<a class="btn cd-sm" href="#p-${pid(p)}">مراجعة التوثيق</a>${ED&&canApprove()?`<button class="btn pri cd-sm" data-approve="${pid(p)}">${ic('check')} اعتماد</button>`:''}`)};
   if(!['late','stall','appr'].includes(D.at))D.at='late';
   const TABS=[['late','متأخرة التوثيق',need.length,'متأخر'],['stall','متعثرة',stl.length,'متعثر'],['appr','بانتظار الاعتماد',appr.length,'مكتمل']];
   const lists={late:need,stall:stl,appr},cur=lists[D.at],shown=D.all?cur:cur.slice(0,6),rf={late:lateRow,stall:stallRow,appr:apprRow}[D.at];
@@ -213,32 +233,20 @@ function buildDash(view){
    <section class="panel"><div class="cd-ph"><h2>${ic('cal')} القادم</h2><div class="cd-tabs sm" role="tablist">${upW.this?`<button type="button" class="${D.up==='this'?'on':''}" data-up="this">هذا الأسبوع</button>`:''}${upW.next?`<button type="button" class="${D.up==='next'?'on':''}" data-up="next">الأسبوع ${upW.next.number}</button>`:''}</div></div>
     ${uw?`<p class="muted small" style="margin:0 0 6px">الأسبوع ${uw.number} • ${dmy(uw.start_date)} – ${dmy(uw.end_date)} • ${upL.length} برامج</p>${upL.length?upL.map(upRow).join(''):'<div class="cd-empty">لا توجد برامج مجدولة في هذا الأسبوع.</div>'}`:'<div class="cd-empty">لا توجد أسابيع دراسية قادمة.</div>'}</section>
   </div></div>`;
-  const wins=EX.filter(e=>e&&e.programId!=null&&(e.images||[]).length).map(e=>({e,p:P.find(x=>x.id===e.programId)})).filter(x=>x.p).sort((a,b)=>(b.e.date||'').localeCompare(a.e.date||'')).slice(0,6);
-  const winsHTML=`<section class="panel cd-wins"><div class="cd-ph"><h2>${ic('check')} أحدث المنجزات</h2><a class="btn soft cd-sm" href="#reports">كل التقارير المنفذة</a></div>${wins.length?`<div class="cd-wl">${wins.map(({e,p})=>`<a class="cd-w" href="#p-${esc(String(p.id))}"><span class="im"><img src="${esc(imgUrl(e.images[0]))}" alt="" loading="lazy"><em>${ic('rep')} ${e.images.length}</em></span><b>${esc(p.name)}</b><small>${esc(dmy(e.date||''))} • ${esc(p.plan_name)}</small></a>`).join('')}</div>`:'<div class="cd-empty">لم يُوثَّق تنفيذ بالصور بعد. تظهر هنا أحدث البرامج المنفذة فور توثيقها.</div>'}</section>`;
-  return `<div class="cd">
-  <section class="cd-hero"><div><span class="cd-eyebrow">لوحة التحكم</span><h1>متابعة تنفيذ الخطط والبرامج</h1><p class="muted">${esc(greg(today))} • ${esc(hijri(today))}</p>
-   <div class="cd-chips">${cw?`<span class="cd-chip now">${ic('cal')} الأسبوع ${cw.number} من ${CAL().length}</span>`:`<span class="cd-chip">${ic('cal')} خارج أسابيع الدراسة</span>`}<span class="cd-chip">${ic('layers')} ${plansUsed.length} خطط • ${total} برنامجًا</span>${need.length?`<a class="cd-chip cd-chip-al" href="#admin-alerts">${ic('bell')} ${need.length} تحتاج إجراء</a>`:''}</div>
-   ${ED?'':'<div class="cd-lock">العرض متاح للجميع. سجّل الدخول من «دخول المحررين» لتعديل البرامج واعتماد حالتها.</div>'}</div>
-   <div class="cd-rings">${ring(total?cnt['مكتمل']/total*100||0:0,'نسبة الإنجاز',`${cnt['مكتمل']||0} من ${total} برنامجًا`,'var(--ok)')}${ring(dueL.length?dueDone/dueL.length*100:100,'الالتزام بالجدول',`${dueDone} من ${dueL.length} حان موعدها`,'var(--brand)')}${ring(CAL().length?passed/CAL().length*100:0,'الزمن المنقضي',`${passed} من ${CAL().length} أسبوعًا`,'var(--info)')}</div></section>
-  <div class="cd-kpis">${kpi('','كل البرامج',total,'var(--brand)')}${kpi('مكتمل','مكتمل',cnt['مكتمل']||0,SC['مكتمل'])}${kpi('قيد التنفيذ','قيد التنفيذ',cnt['قيد التنفيذ']||0,SC['قيد التنفيذ'])}${kpi('لم يبدأ','مخطط',cnt['لم يبدأ']||0,'var(--cd-gray)')}${kpi('متأخر','متأخر التوثيق',cnt['متأخر']||0,SC['متأخر'])}${kpi('متعثر','متعثر',cnt['متعثر']||0,SC['متعثر'])}</div>
-  ${winsHTML}
-
-
-  ${sh('cd-s-an','التحليل','صورة شاملة لسير الخطط؛ اضغط أي عنصر لفتح برامجه في إدارة الخطة')}
-  <section class="panel"><div class="cd-ph"><h2>مسار التنفيذ عبر الأسابيع</h2>${legend(ORDER.filter(s=>cnt[s]))}</div>${weekChart()}<p class="muted small" style="margin:8px 0 0">اضغط عمود أي أسبوع لعرض برامجه وتعديلها في «إدارة الخطة».</p></section>
-  <div class="cd-grid eq">
-   <section class="panel"><div class="cd-ph"><h2>تقدّم الخطط</h2></div><div class="cd-plans">${plansUsed.map(pl=>{const l=P.filter(p=>p.plan_id===pl.id),c=countBy(l);return `<button type="button" class="cd-plan" data-plan="${pl.id}"><span class="t"><span>${esc(pl.name)}</span><b>${Math.round((c['مكتمل']||0)/l.length*100)}%</b></span>${stack(c,l.length)}<small>${ORDER.filter(s=>c[s]).map(s=>SL[s]+' '+c[s]).join(' • ')}</small></button>`}).join('')}</div></section>
-   <section class="panel"><div class="cd-ph"><h2>توزيع الحالات</h2><span class="muted">اضغط حالة للتصفية</span></div><div class="cd-donut">${donut(cnt,total)}<div class="cd-dl">${ORDER.filter(s=>cnt[s]).map(s=>`<button type="button" class="${D.fs===s?'on':''}" style="--sc:${SC[s]}" data-fs="${s}"><i></i><span>${SL[s]}</span><b>${cnt[s]}</b><small>${Math.round(cnt[s]/total*100)}%</small></button>`).join('')}</div></div></section>
-  </div>
-  <div class="cd-grid eq">
-   <section class="panel"><div class="cd-ph"><h2>الإنجاز حسب المجال</h2><div class="cd-legend"><span style="--sc:var(--ok)"><i></i>مكتمل</span><span style="--sc:color-mix(in srgb,var(--brand) 28%,transparent)"><i></i>إجمالي البرامج</span></div></div><div class="cd-hb">${domRows.map(([k,l])=>{const d=l.filter(p=>ds(p)==='مكتمل').length;return `<div class="cd-hr cd-go" data-dom="${esc(k)}" tabindex="0" role="button" data-tip="${esc(k+'\n'+d+' مكتمل من '+l.length)}"><span class="n">${esc(k)}</span><span class="tr"><span class="a" style="width:${l.length/dmax*100}%"></span><span class="d" style="width:${d/dmax*100}%"></span></span><span class="c">${d}/${l.length}</span></div>`}).join('')}</div></section>
-   <section class="panel"><div class="cd-ph"><h2>آخر التعديلات</h2></div>${log.length?`<div class="cd-log">${log.map(d=>`<div><i></i><span><b>${esc(d.name||d.person||(d.data&&d.data.name)||'')}</b> — ${esc(d.type==='add'?'أُضيف برنامج جديد':d.type==='remove'?'حُذف البرنامج':d.type==='restore'?'استُعيد البرنامج':d.type==='plan-add'?'أُضيفت خطة جديدة':d.type==='plan-edit'?'عُدّلت الخطة':d.type==='plan-remove'?'حُذفت الخطة':d.type==='person'?'حُدّثت بيانات المنفذ':d.type==='rename'?'غُيّر اسم المنفذ (كان: '+(d.from||'')+')':d.type==='person-remove'?'حُذف من قائمة المنفذين':(d.summary||'تعديل'))}</span><small>${esc(fmtWhen(d.at||''))}</small></div>`).join('')}</div>`:'<div class="cd-empty">لم تُسجَّل تعديلات بعد. كل تعديل من لوحة التحكم يظهر هنا.</div>'}</section>
-  </div>
-
-  ${sh('cd-s-pp','فريق التنفيذ','')}
-  <section class="panel" id="cd-people"><div class="cd-ph"><h2>منفذو البرامج</h2><span class="muted">${ownAll.length} منفذًا • الأكثر حاجة للمتابعة أولًا${ED?' • أضف الصفة والصورة من زر «تعديل»':''}</span></div>
-   <div class="cd-tw"><table class="cd-t cd-pt"><thead><tr><th>المنفذ</th><th>الصفة</th><th>البرامج</th><th>مكتمل</th><th>متأخر / متعثر</th><th>الإنجاز</th><th></th></tr></thead><tbody>${ownAll.map(o=>{const pp=PEOPLE[o.n]||{};return `<tr><td><span class="cd-pn">${avatar(o.n,40)}<b>${esc(o.n)}</b></span></td><td>${pp.role?esc(pp.role):'<span class="muted small">لم تُحدد</span>'}</td><td>${o.t}</td><td>${o.d}</td><td class="${o.b?'cd-badn':''}">${o.b||'—'}</td><td><span class="cd-pb">${stack(o.c,o.t)}<small>${Math.round(o.d/o.t*100)}%</small></span></td><td><span class="cd-dcell"><button class="btn soft cd-sm" data-own="${esc(o.n)}">برامجه</button>${ED?`<button class="btn cd-sm" data-person="${esc(o.n)}">${ic('edit')} تعديل</button>`:''}</span></td></tr>`}).join('')}</tbody></table></div></section>
-  </div>`}
+  // لوحة المهام: طوابير عمل بإجراءات مباشرة (لا مؤشرات إحصائية)
+  const unassigned=L.filter(p=>ownerOf(p)==='غير محدد'),legacyN=new Set(L.filter(p=>ownerOf(p)!=='غير محدد'&&!p.owner_staff_id&&!OGROUP[ownerOf(p)]).map(ownerOf));
+  const sec=(id,icon,title,n,body,more)=>`<section class="panel cp-sec" id="${id}"><div class="cd-ph"><h2>${ic(icon)} ${title}<b class="cp-n${n?'':' z'}">${n}</b></h2>${more||''}</div>${body}</section>`;
+  const lim=(list,fn,empty,max)=>{max=max||5;return list.length?list.slice(0,max).map(fn).join('')+(list.length>max?`<p class="muted small cp-more">و${list.length-max} أخرى…</p>`:''):`<p class="muted cp-empty">${empty}</p>`};
+  const all=k=>`<a class="btn soft cd-sm" href="#admin-alerts" data-gotab="${k}">عرض الكل</a>`;
+  const unRow=p=>row(p,'لم يبدأ',`<span class="m">${esc(p.plan_name)} • ${startOf(p)?dmy(startOf(p)):'بلا موعد'}</span>`,`<button class="btn pri cd-sm" data-edit="${pid(p)}">${ic('users')} إسناد منفذ</button>`);
+  return `<div class="cd cp-board"><div class="cp-grid">
+   ${sec('t-appr','check','بانتظار الاعتماد',appr.length,lim(appr,apprRow,'لا توجد برامج موثقة بانتظار الاعتماد.'),appr.length>5?all('appr'):'')}
+   ${sec('t-late','bell','متأخرة التوثيق',need.length,lim(need,lateRow,'لا توجد برامج متأخرة. كل ما انتهت فترته موثق أو مسجّلة حالته.'),need.length>5?all('late'):'')}
+   ${sec('t-stall','x','متعثرة',stl.length,lim(stl,stallRow,'لا توجد برامج مسجّلة متعثرة.'),stl.length>5?all('stall'):'')}
+   ${sec('t-week','cal',uw?(D.up==='next'?'الأسبوع القادم':'هذا الأسبوع'):'القادم',upL.length,uw?`<p class="muted small" style="margin:0 0 6px">الأسبوع ${uw.number} • ${dmy(uw.start_date)} – ${dmy(uw.end_date)}</p>${upL.length?upL.slice(0,6).map(upRow).join('')+(upL.length>6?`<p class="muted small cp-more">و${upL.length-6} أخرى…</p>`:''):'<p class="muted cp-empty">لا برامج مجدولة في هذا الأسبوع.</p>'}`:'<p class="muted cp-empty">لا أسابيع قادمة في التقويم.</p>','<a class="btn soft cd-sm" href="#week">الرزنامة</a>')}
+   ${sec('t-own','users','المنفذون',unassigned.length+legacyN.size,(legacyN.size?`<div class="cd-al" style="--sc:var(--warn)"><i></i><span class="m">${legacyN.size} اسمًا مكتوبًا يدويًا تحتاج ربطًا بمنسوبي النواة</span><span class="acts"><a class="btn pri cd-sm" href="#admin-people">${ic('users')} ربط الأسماء</a></span></div>`:'')+lim(unassigned,unRow,legacyN.size?'':'كل البرامج لها منفذ مرتبط بالنواة.'))}
+  </div></div>`;
+}
 
 /* ---------- النوافذ ---------- */
 function openModal(html){const m=document.createElement('div');m.className='modal';m.innerHTML=`<div class="big" role="dialog" aria-modal="true">${html}</div>`;document.body.append(m);const close=()=>{m.remove();route(true)};m.addEventListener('click',e=>{if(e.target===m)close()});m.addEventListener('keydown',e=>{if(e.key==='Escape')close()});m.querySelectorAll('[data-x]').forEach(b=>b.onclick=close);setTimeout(()=>{const f=m.querySelector('textarea,input,select');f&&f.focus()},30);return {m,close}}
@@ -290,29 +298,7 @@ function editor(id,preset){const isNew=id==null;const p0=isNew?null:P.find(x=>St
       else{const cmp={...f};const ch=await saveEdit(p0,{...cmp,planned_date:f.planned_date,planned_end:f.planned_end},null);close();toast(ch?'حُفظت التعديلات':'لا توجد تغييرات')}}
     catch(er){e.target.disabled=false;e.target.textContent=isNew?'إضافة البرنامج':'حفظ التعديلات';$('#cf-err').textContent=er.message||'تعذّر الحفظ'}}}
 
-function personDialog(name){const isNew=!name;const pp=(name&&PEOPLE[name])||{};let photo=pp.photo||null,blob=null,prevUrl='';const cnt=name?P.filter(p=>ownerOf(p)===name).length:0;
-  const {m,close}=openModal(`<div class="cd-mh"><h3>${isNew?'إضافة منفذ':'بيانات المنفذ'}</h3><button class="btn cd-sm" data-x aria-label="إغلاق">✕</button></div>
-  <div class="cd-pe"><div id="cd-pav">${avatar(name||'؟',96)}</div><div class="cd-form" style="flex:1;min-width:220px">
-   <div class="f full req"><label for="cd-pname">الاسم</label><input id="cd-pname" value="${esc(name||'')}" placeholder="الاسم كما يظهر في البرامج">${!isNew&&cnt?`<small class="muted">مرتبط بـ ${cnt} برامج؛ تغيير الاسم ينتقل إليها تلقائيًا.</small>`:''}</div>
-   <div class="f full"><label for="cd-role">الصفة</label><input id="cd-role" list="cd-roles" value="${esc(pp.role||'')}" placeholder="مثال: معلم رياضيات، رائد النشاط"><datalist id="cd-roles">${ROLES.map(r=>`<option value="${esc(r)}">`).join('')}</datalist></div>
-   <div class="f full"><label for="cd-pphone">رقم الجوال</label><input id="cd-pphone" type="tel" inputmode="tel" dir="ltr" value="${esc(showPhone(pp.phone||''))}" placeholder="05xxxxxxxx"></div>
-   <div class="f full"><label for="cd-ph">الصورة</label><span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><label class="btn soft cd-sm" for="cd-ph" style="cursor:pointer">${ic('plus')} اختيار صورة</label><input id="cd-ph" type="file" accept="image/*" hidden><button type="button" class="btn cd-sm" id="cd-phx"${photo?'':' hidden'}>إزالة الصورة</button><small class="muted">دون صورة تظهر صورة افتراضية بالحروف الأولى.</small></span></div>
-  </div></div><div class="cd-err" id="cd-pe"></div>
-  <div class="cd-ma"><span></span><span><button class="btn" data-x>إلغاء</button><button class="btn pri" id="cd-psave">${isNew?'إضافة المنفذ':'حفظ'}</button></span></div>`);
-  const $=s=>m.querySelector(s);
-  const show=()=>{if(prevUrl){$('#cd-pav').innerHTML=`<img class="cd-av" src="${esc(prevUrl)}" alt="" style="width:96px;height:96px">`;return}const nm=$('#cd-pname').value.trim()||'؟';const keep=PEOPLE[nm];PEOPLE[nm]={...(keep||{}),photo};$('#cd-pav').innerHTML=avatar(nm,96);if(keep)PEOPLE[nm]=keep;else delete PEOPLE[nm]};
-  $('#cd-pname').oninput=()=>{if(!prevUrl)show()};
-  $('#cd-ph').onchange=e=>{const f=e.target.files[0];if(!f)return;if(!/^image\//.test(f.type)){$('#cd-pe').textContent='اختر ملف صورة.';return}blob=f;if(prevUrl)URL.revokeObjectURL(prevUrl);prevUrl=URL.createObjectURL(f);show();$('#cd-phx').hidden=false};
-  $('#cd-phx').onclick=()=>{blob=null;photo=null;if(prevUrl)URL.revokeObjectURL(prevUrl);prevUrl='';show();$('#cd-phx').hidden=true};
-  $('#cd-psave').onclick=async e=>{const nn=$('#cd-pname').value.trim().replace(/\s+/g,' ');
-    if(!nn){$('#cd-pe').textContent='اكتب اسم المنفذ.';return}
-    const nph=normPhone($('#cd-pphone').value);if(nph===null){$('#cd-pe').textContent='رقم الجوال غير صحيح. اكتبه مثل 0551234567';return}
-    if(nn!==name&&peopleNames().includes(nn)){$('#cd-pe').textContent='هذا الاسم موجود في القائمة.';return}
-    e.target.disabled=true;e.target.textContent='جارٍ الحفظ…';
-    try{if(blob){if(!ASSETS)throw new Error('رفع الصور يتطلب تسجيل الدخول');const r=await ASSETS.upload(await shrink(blob).catch(()=>blob));photo={id:r.id,url:r.url}}
-      if(!isNew&&nn!==name)await write({type:'rename',from:name,to:nn,name:nn});
-      await write({type:'person',person:nn,name:nn,role:$('#cd-role').value.trim(),photo:photo||null,phone:nph});if(prevUrl)URL.revokeObjectURL(prevUrl);close();toast(isNew?'أُضيف المنفذ':'حُفظت بيانات المنفذ')}
-    catch(er){e.target.disabled=false;e.target.textContent='حفظ';$('#cd-pe').textContent=er.message||'تعذّر الحفظ'}}}
+function personDialog(name){toPlans('owner',{own:name})}
 
 /* ---------- إضافة خطة جديدة وتعديلها ---------- */
 const PCOLORS=[[0,'فيروزي'],[3,'أصفر'],[2,'بنفسجي'],[1,'أزرق'],[4,'أخضر'],[5,'وردي']];
@@ -381,25 +367,32 @@ function trashPage(){
   return `<div class="cd"><p class="cx-intro">البرامج المحذوفة لا تظهر في صفحات الموقع. «استعادة» تعيد البرنامج كما كان، ببياناته وتوثيقه وصوره.</p>
   <section class="panel">${REMOVED.length?`<div class="cd-tw"><table class="cd-t cd-trt"><thead><tr><th>البرنامج</th><th>الخطة</th><th>المنفذ</th><th>التوثيق</th><th>تاريخ الحذف</th><th></th></tr></thead><tbody>${REMOVED.map(r=>`<tr><td><b>${esc(r.name)}</b></td><td>${esc(r.plan||'—')}</td><td>${esc(r.owner||'—')}</td><td>${r.docs?`<span class="cd-doc ok">${ic('check')} موثق</span>`:'<span class="cd-doc">—</span>'}</td><td>${r.at?esc((d=>`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`)(new Date(r.at))):'—'}${r.by&&r.by.includes('@')?`<small class="cd-by">${esc(r.by)}</small>`:''}</td><td><button class="btn pri cd-sm" data-restore="${esc(r.id)}" data-rname="${esc(r.name)}">استعادة</button></td></tr>`).join('')}</tbody></table></div>`:`<div class="cd-empty">${ic('check')}<br>لا توجد برامج محذوفة. عند حذف برنامج من جداول لوحة التحكم يظهر هنا ويمكن استعادته.</div>`}</section></div>`}
 
-/* ---------- صفحة المستخدمين (المنفذون) — تحرير داخل الجدول ---------- */
+/* ---------- صفحة المنفذين — منسوبو النواة المسندة إليهم برامج ---------- */
+const sugg=n=>{const t=new Set(normN(n).split(' ').filter(w=>w.length>1&&!['بن','ابن','عبد'].includes(w)));let best=null,bs=0;
+  for(const m of ((window.SP&&SP.staff)||[])){let k=0;for(const w of normN(m.name).split(' '))if(t.has(w))k++;if(k>bs){bs=k;best=m}}
+  return bs>=2||(bs>=1&&t.size===1)?best:null};
 function peoplePage(){
-  if(!READY)return '<div class="empty">جارٍ تحميل المستخدمين…</div>';
-  const ED=canAdd(),names=peopleNames(),q=(D.uq||'').trim();
-  const rows=names.map(n=>({n,t:P.filter(p=>ownerOf(p)===n).length,pp:PEOPLE[n]||{}})).filter(r=>!q||(r.n+(r.pp.role||'')).includes(q));
-  const ph=(n,pp)=>ED?`<span class="cd-phc"><label class="cd-phl" title="تغيير الصورة">${avatar(n,44)}<input type="file" accept="image/*" data-pphoto="${esc(n)}" hidden aria-label="صورة ${esc(n)}"><i>${ic('edit')}</i></label>${pp.photo?`<button type="button" class="cd-phx" data-pphx="${esc(n)}" title="إزالة الصورة" aria-label="إزالة صورة ${esc(n)}">✕</button>`:''}</span>`:avatar(n,44);
-  return `<div class="cd">${pageHead('المستخدمون','المنفذون ومهامهم','عدّل الاسم والصفة والصورة من الجدول مباشرة؛ الأسماء هنا هي قائمة اختيار المنفذ في الخطط.')}
-  <section class="panel"><div class="cd-mgh"><input type="search" class="cd-srch" id="cd-uq" placeholder="ابحث بالاسم أو المهمة" value="${esc(D.uq||'')}" aria-label="بحث في المستخدمين"><span class="muted small">${names.length} مستخدمًا</span></div>
-   <datalist id="cd-roles">${ROLES.map(r=>`<option value="${esc(r)}">`).join('')}</datalist>
-   <div class="cd-tw"><table class="cd-t cd-ut"><thead><tr><th>الصورة</th><th>الاسم</th><th>المهمة / الوصف</th><th>رقم الجوال</th><th>البرامج</th>${ED?'<th></th>':''}</tr></thead><tbody>
-   ${rows.map(r=>`<tr data-pn="${esc(r.n)}"><td>${ph(r.n,r.pp)}</td>
-    <td>${ED?`<input class="un" data-pf="name" value="${esc(r.n)}" aria-label="اسم المستخدم">`:`<b>${esc(r.n)}</b>`}</td>
-    <td>${ED?`<input class="ur" data-pf="role" list="cd-roles" value="${esc(r.pp.role||'')}" placeholder="مثال: معلم رياضيات، رائد النشاط" aria-label="المهمة أو الوصف">`:esc(r.pp.role||'—')}</td>
-    <td>${ED?`<span class="cd-phw"><input class="up" data-pf="phone" type="tel" inputmode="tel" dir="ltr" value="${esc(showPhone(r.pp.phone||''))}" placeholder="05xxxxxxxx" aria-label="رقم جوال ${esc(r.n)}">${r.pp.phone?`<a class="cd-wab" href="${waLink(r.pp.phone,'')}" target="_blank" rel="noopener" title="مراسلة ${esc(r.n)} على واتساب" aria-label="واتساب ${esc(r.n)}">${WAICON}</a>`:''}</span>`:(r.pp.phone?`<a class="cd-wab" href="${waLink(r.pp.phone,'')}" target="_blank" rel="noopener">${WAICON}</a>`:'—')}</td>
-    <td>${r.t?`<button class="btn soft cd-sm" data-own="${esc(r.n)}">${r.t===1?'برنامج واحد':r.t===2?'برنامجان':r.t+(r.t<=10?' برامج':' برنامجًا')}</button>`:'<span class="muted small">لا برامج</span>'}</td>
-    ${ED?`<td>${!r.t&&PEOPLE[r.n]?`<button class="btn cd-bad cd-sm" data-pdel="${esc(r.n)}">حذف</button>`:''}</td>`:''}</tr>`).join('')||'<tr><td colspan="6"><div class="cd-empty">لا يوجد مستخدمون مطابقون.</div></td></tr>'}
-   ${ED?`<tr class="cd-newrow"><td><label class="cd-phl" title="صورة المستخدم الجديد"><span id="nu-av">${avatar('؟',44)}</span><input type="file" accept="image/*" id="nu-ph" hidden><i>${ic('plus')}</i></label></td><td><input id="nu-name" class="un" placeholder="اسم مستخدم جديد" aria-label="اسم المستخدم الجديد"></td><td><input id="nu-role" class="ur" list="cd-roles" placeholder="المهمة / الوصف" aria-label="مهمة المستخدم الجديد"></td><td><input id="nu-phone" class="up" type="tel" inputmode="tel" dir="ltr" placeholder="05xxxxxxxx" aria-label="جوال المستخدم الجديد"></td><td colspan="2"><button class="btn pri cd-sm" type="button" id="nu-add">إضافة</button></td></tr>`:''}
-   </tbody></table></div><div class="cd-err" id="nu-err"></div>
-   <p class="muted small" style="margin:6px 0 0">${ED?'اضغط الصورة لتغييرها. تغيير الاسم ينتقل تلقائيًا إلى كل برامج المستخدم. يُحذف المستخدم فقط إذا لم تكن له برامج.':'سجّل الدخول من «دخول المحررين» لتعديل المستخدمين.'}</p></section></div>`}
+  if(!READY)return '<div class="empty">جارٍ تحميل المنفذين…</div>';
+  const ED=canAdd(),DIR=dirOf(),q=(D.uq||'').trim(),cnt={},legacy={};let none=0;
+  for(const p of P){const n=ownerOf(p);if(n==='غير محدد'){none++;continue}if(p.owner_staff_id&&DIR[p.owner_staff_id])cnt[p.owner_staff_id]=(cnt[p.owner_staff_id]||0)+1;else if(!OGROUP[n])legacy[n]=(legacy[n]||0)+1}
+  const rows=Object.keys(cnt).map(id=>DIR[id]).filter(m=>!q||(m.name+(m.title||'')).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'ar'));
+  const lg=Object.entries(legacy).sort((a,b)=>b[1]-a[1]),st=(window.SP&&SP.staff)||[];
+  const pn=t=>t===1?'برنامج واحد':t===2?'برنامجان':t+(t<=10?' برامج':' برنامجًا');
+  const lgRows=lg.map(([n,t],i)=>{const sg=sugg(n);return `<tr><td><b>${esc(n)}</b><div class="muted small">اسم مكتوب يدويًا قبل الربط بالنواة</div></td><td><button class="btn soft cd-sm" data-own="${esc(n)}">${pn(t)}</button></td>
+    <td>${ED?`<select class="cd-olsel" data-ol="${esc(n)}" aria-label="منسوب النواة الموافق لـ ${esc(n)}"><option value="">— اختر منسوب النواة —</option>${st.map(m=>`<option value="${esc(m.id)}"${sg&&sg.id===m.id?' selected':''}>${esc(m.name)}${m.title?' — '+esc(m.title):''}</option>`).join('')}</select>`:'<span class="muted small">غير مرتبط</span>'}</td>
+    <td>${ED?`<span style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn pri cd-sm" data-olink="${esc(n)}">${ic('check')} ربط</button><button class="btn cd-sm" data-ogroup="${esc(n)}" title="اسم فريق أو جهة أو مجموعة وليس شخصًا">جهة أو مجموعة</button></span>`:''}</td></tr>`}).join('');
+  return `<div class="cd">
+  <section class="panel"><div class="cd-mgh"><input type="search" class="cd-srch" id="cd-uq" placeholder="ابحث بالاسم أو المسمى" value="${esc(D.uq||'')}" aria-label="بحث في المنفذين"><span class="muted small">${rows.length} منفذًا من منسوبي النواة${none?' • '+none+' برنامجًا بلا منفذ':''}</span></div>
+   <div class="cd-tw"><table class="cd-t cd-ut"><thead><tr><th>الصورة</th><th>الاسم</th><th>المسمى الوظيفي</th><th>التواصل</th><th>البرامج</th></tr></thead><tbody>
+   ${rows.map(m=>{const pp=PEOPLE[m.name]||{};return `<tr><td>${avatar(m.name,44)}</td><td><b>${esc(m.name)}</b></td><td>${esc(m.title||'—')}</td>
+    <td>${pp.phone?`<a class="cd-wab" href="${waLink(pp.phone,'')}" target="_blank" rel="noopener" title="مراسلة ${esc(m.name)} على واتساب" aria-label="واتساب ${esc(m.name)}">${WAICON}</a>`:'<span class="muted small">—</span>'}</td>
+    <td><button class="btn soft cd-sm" data-own="${esc(m.name)}">${pn(cnt[m.id])}</button></td></tr>`}).join('')||'<tr><td colspan="5"><div class="cd-empty">لا يوجد منفذون مرتبطون بالنواة بعد. أسند برنامجًا إلى أحد المنسوبين من «إدارة الخطة».</div></td></tr>'}
+   </tbody></table></div>
+   <p class="muted small" style="margin:6px 0 0">الاسم والمسمى والصورة تُدار من النواة الرقمية وتتحدث هنا تلقائيًا؛ يُسنَد المنفذ من قائمة المنسوبين عند إضافة البرنامج أو تعديله.</p></section>
+  ${lg.length?`<section class="panel" id="cd-legacy"><div class="cd-mgh"><h2 style="margin:0;font-size:1.05rem">أسماء تحتاج ربطًا بالنواة</h2><span class="muted small">${lg.length} اسمًا</span></div>
+   <p class="muted small" style="margin:0 0 8px">أسماء المنفذين المكتوبة يدويًا في الخطة. اربط كل اسم بمنسوبه في النواة (الاقتراح التلقائي من تشابه الاسم) فينتقل الربط إلى كل برامجه.</p>
+   <div class="cd-tw"><table class="cd-t"><thead><tr><th>الاسم الحالي</th><th>البرامج</th><th>منسوب النواة</th><th></th></tr></thead><tbody>${lgRows}</tbody></table></div><div class="cd-err" id="ol-err"></div></section>`:''}
+  </div>`}
 async function upPhoto(f){if(!ASSETS)throw new Error('رفع الصور يتطلب تسجيل الدخول');if(!/^image\//.test(f.type))throw new Error('اختر ملف صورة.');const r=await ASSETS.upload(await shrink(f).catch(()=>f));return {id:r.id,url:r.url}}
 
 /* ---------- الربط ---------- */
@@ -421,23 +414,15 @@ function bind(v){
   v.querySelectorAll('[data-plan]').forEach(b=>b.onclick=e=>{e.preventDefault();toPlans('plan',{mplan:b.dataset.plan,plan:b.dataset.plan,pq:''})});
   v.querySelectorAll('[data-grp]').forEach(b=>b.onclick=()=>{const st={plan:'plan',domain:'dom',owner:'own'}[D.mode];D[st]=b.dataset.grp;saveUI();route(true)});
   const go=(el,fn)=>{el.onclick=fn;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fn()}}};
+  v.querySelectorAll('[data-gotab]').forEach(a=>a.addEventListener('click',()=>{D.at=a.dataset.gotab;D.all=false;saveUI()}));
   v.querySelectorAll('[data-dom]').forEach(el=>go(el,()=>toPlans('domain',{dom:el.dataset.dom})));
   v.querySelectorAll('[data-own]').forEach(el=>go(el,()=>toPlans('owner',{own:el.dataset.own})));
   const mp=v.querySelector('#cd-mplan');if(mp)mp.onchange=()=>{D.mplan=mp.value;D.pq='';saveUI();route(true)};
-  v.querySelectorAll('tr[data-pn] [data-pf]').forEach(el=>el.onchange=async()=>{const n=el.closest('tr').dataset.pn,pp=PEOPLE[n]||{},val=el.value.trim().replace(/\s+/g,' ');
-    try{if(el.dataset.pf==='name'){if(!val){el.value=n;toast('الاسم لا يكون فارغًا');return}if(val===n)return;if(peopleNames().includes(val)){el.value=n;toast('هذا الاسم موجود في القائمة');return}
-        el.disabled=true;await write({type:'rename',from:n,to:val,name:val});await write({type:'person',person:val,name:val,role:pp.role||'',photo:pp.photo||null,phone:pp.phone||''});toast('غُيّر الاسم في كل برامجه')}
-      else if(el.dataset.pf==='phone'){const ph=normPhone(val);if(ph===null){el.value=showPhone(pp.phone||'');toast('رقم الجوال غير صحيح. اكتبه مثل 0551234567');return}if(ph===(pp.phone||''))return;el.disabled=true;await write({type:'person',person:n,name:n,role:pp.role||'',photo:pp.photo||null,phone:ph});toast(ph?'حُفظ رقم الجوال':'حُذف رقم الجوال')}
-      else{el.disabled=true;await write({type:'person',person:n,name:n,role:val,photo:pp.photo||null,phone:pp.phone||''});toast('حُفظت المهمة')}}
-    catch(e){el.disabled=false;toast(e.message||'تعذّر الحفظ')}});
-  v.querySelectorAll('[data-pphoto]').forEach(el=>el.onchange=async()=>{const f=el.files[0];if(!f)return;const n=el.dataset.pphoto,pp=PEOPLE[n]||{};
-    try{toast('جارٍ رفع الصورة…');const ph=await upPhoto(f);await write({type:'person',person:n,name:n,role:pp.role||'',photo:ph,phone:pp.phone||''});toast('حُفظت الصورة')}catch(e){toast(e.message||'تعذّر رفع الصورة')}});
-  v.querySelectorAll('[data-pphx]').forEach(b=>b.onclick=async()=>{const n=b.dataset.pphx,pp=PEOPLE[n]||{};b.disabled=true;try{await write({type:'person',person:n,name:n,role:pp.role||'',photo:null,phone:pp.phone||''});toast('أُزيلت الصورة')}catch(e){b.disabled=false;toast(e.message)}});
-  let nuPhoto=null;const nuph=v.querySelector('#nu-ph');if(nuph)nuph.onchange=()=>{const f=nuph.files[0];if(!f)return;nuPhoto=f;v.querySelector('#nu-av').innerHTML=`<img class="cd-av" src="${URL.createObjectURL(f)}" alt="" style="width:44px;height:44px">`};
-  const nua=v.querySelector('#nu-add');if(nua)nua.onclick=async()=>{const n=v.querySelector('#nu-name').value.trim().replace(/\s+/g,' '),role=v.querySelector('#nu-role').value.trim(),er=v.querySelector('#nu-err');
-    const nph=normPhone(v.querySelector('#nu-phone').value);if(nph===null){er.textContent='رقم الجوال غير صحيح. اكتبه مثل 0551234567';return}
-    if(!n){er.textContent='اكتب اسم المستخدم.';return}if(peopleNames().includes(n)){er.textContent='هذا الاسم موجود في القائمة.';return}
-    nua.disabled=true;try{const ph=nuPhoto?await upPhoto(nuPhoto):null;await write({type:'person',person:n,name:n,role,photo:ph,phone:nph});toast('أُضيف المستخدم');setTimeout(()=>{const x=document.getElementById('nu-name');x&&x.focus()},300)}catch(e){nua.disabled=false;er.textContent=e.message||'تعذّر الإضافة'}};
+  v.querySelectorAll('[data-olink]').forEach(b=>b.onclick=async()=>{const n=b.dataset.olink,sel=[...v.querySelectorAll('[data-ol]')].find(x=>x.dataset.ol===n),er=v.querySelector('#ol-err');
+    if(!sel||!sel.value){if(er)er.textContent='اختر منسوب النواة أولًا.';return}
+    b.disabled=true;try{await write({type:'owner-link',from:n,staff_id:sel.value,name:n});toast('رُبط الاسم بمنسوب النواة')}catch(e){b.disabled=false;if(er)er.textContent=e.message||'تعذّر الربط'}});
+  v.querySelectorAll('[data-ogroup]').forEach(b=>b.onclick=async()=>{const n=b.dataset.ogroup,er=v.querySelector('#ol-err');
+    b.disabled=true;try{await write({type:'owner-link',from:n,group:true,name:n});toast('اعتُمد الاسم جهة أو مجموعة')}catch(e){b.disabled=false;if(er)er.textContent=e.message||'تعذّر الحفظ'}});
   const sq=(id,k)=>{const el=v.querySelector(id);if(!el)return;let t;el.oninput=()=>{clearTimeout(t);t=setTimeout(()=>{D[k]=el.value;route(true);const n=document.querySelector(id);if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}},250)}};
   sq('#cd-pq','pq');sq('#cd-uq','uq');
   const ns=v.querySelector('#np-s');if(ns)ns.onchange=()=>{const e=v.querySelector('#np-e');if(!e.value||e.value<ns.value)e.value=ns.value};
@@ -450,7 +435,6 @@ function bind(v){
     const p=P.find(x=>String(x.id)===b.dataset.del);if(!p)return;b.disabled=true;try{await write({type:'remove',progId:String(p.id),name:p.name});toast('حُذف البرنامج، ويمكنك استعادته من «المحذوفات»')}catch(e){b.disabled=false;toast(e.message)}});
   v.querySelectorAll('.cd-trash').forEach(d=>d.ontoggle=()=>{D.trash=d.open});
   v.querySelectorAll('[data-restore]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{await write({type:'restore',progId:b.dataset.restore,name:b.dataset.rname});toast('استُعيد البرنامج')}catch(e){b.disabled=false;toast(e.message||'تعذّرت الاستعادة')}});
-  v.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=async()=>{if(!b.dataset.sure){b.dataset.sure=1;b.textContent='تأكيد الحذف؟';return}b.disabled=true;try{await write({type:'person-remove',person:b.dataset.pdel,name:b.dataset.pdel});toast('حُذف المنفذ')}catch(e){b.disabled=false;toast(e.message)}});
   v.querySelectorAll('[data-person]').forEach(b=>b.onclick=()=>personDialog(b.dataset.person));
   v.querySelectorAll('[data-doc]').forEach(b=>b.onclick=()=>{const p=P.find(x=>String(x.id)===b.dataset.doc);if(p){tip&&tip.remove();execForm(p)}});
   v.querySelectorAll('[data-week]').forEach(b=>b.onclick=()=>toPlans('week',{week:+b.dataset.week}));
@@ -484,32 +468,39 @@ function updBell(){
   const old=document.getElementById('cd-tools');if(old)old.remove()}
 
 /* ---------- شريط أدوات لوحة التحكم أسفل رأس الموقع ---------- */
-const TITLES={'admin-alerts':'التنبيهات',admin:'لوحة المتابعة','admin-plans':'إدارة الخطة','admin-people':'المستخدمون','admin-trash':'المحذوفات'};
-function barHTML(h){const n=P.filter(needs).length;
-  const it=(href,icon,label)=>`<a href="#${href}" class="${h===href?'on':''}"${h===href?' aria-current="page"':''}>${ic(icon)}<span>${label}</span></a>`;
-  return `<div class="wrap cx-in"><span class="cx-bt"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M30 4c2 14 8 20 24 24-16 4-22 10-24 26-2-16-8-22-24-26 16-4 22-10 24-24z" fill="#3cc4c9"/><path d="M50 4c.8 5 3 7.2 8 8-5 .8-7.2 3-8 8-.8-5-3-7.2-8-8 5-.8 7.2-3 8-8z" fill="#f5b955"/></svg>لوحة التحكم</span>
-  <nav class="cx-nav" aria-label="أدوات لوحة التحكم">${it('admin','chart','لوحة المتابعة')}<a href="#admin-alerts" class="${h==='admin-alerts'?'on':''}"${h==='admin-alerts'?' aria-current="page"':''}>${ic('bell')}<span>التنبيهات</span>${n?`<b>${n}</b>`:''}</a>${it('admin-plans','plan','إدارة الخطة')}<span class="cx-sep" aria-hidden="true"></span><span class="cx-sub">${it('admin-people','users','المستخدمون')}<a href="#admin-trash" class="${h==='admin-trash'?'on':''}"${h==='admin-trash'?' aria-current="page"':''}>${ic('x')}<span>المحذوفات</span>${REMOVED.length?`<b class="z">${REMOVED.length}</b>`:''}</a></span></nav>
-  <span class="cx-add" role="group" aria-label="إضافة سريعة"><button type="button" class="cx-pri" data-cx-add="plan">${ic('plus')}<span>برنامج في الخطة</span></button><button type="button" data-cx-add="unplanned">${ic('plus')}<span>برنامج غير مدرج</span></button><button type="button" data-cx-add="newplan">${ic('plus')}<span>خطة جديدة</span></button></span></div>`}
+const TITLES={'admin-alerts':'التنبيهات',admin:'مهام المتابعة','admin-plans':'إدارة الخطة','admin-people':'المنفذون','admin-trash':'المحذوفات'};
 const PINFO={
-  admin:['chart','نظرة شاملة على سير تنفيذ الخطط ومؤشراتها، وما يحتاج متابعتك هذا الأسبوع.',['مؤشرات الإنجاز','ما يحتاج إجراء','البرامج القادمة','تقدّم الخطط','توزيع الحالات','آخر التعديلات']],
-  'admin-alerts':['bell','البرامج التي تحتاج تدخلك: المتأخرة في التوثيق، والمتعثرة وأسباب تعثرها، والقادمة قريبًا.',['متأخر التوثيق','المتعثرة وأسبابها','القادمة قريبًا','تسجيل سبب التعثر']],
-  'admin-plans':['plan','تحرير برامج كل خطة وتوثيقها واعتمادها، وإضافة الخطط وإرفاق ملفاتها.',['الخطط وبرامجها','العرض حسب الخطة أو الأسبوع أو المجال أو المنفذ','إضافة برنامج','إضافة خطة وملفها']],
-  'admin-people':['users','المنفذون ومهامهم وصورهم؛ الأسماء هنا هي قائمة اختيار المنفذ في الخطط.',['الأسماء والصفات','الصور الشخصية','أرقام التواصل','برامج كل منفذ']],
-  'admin-trash':['x','ما حُذف من البرامج والخطط، مع إمكانية استعادته.',['المحذوفات','الاستعادة']]};
-function shell(h,inner){const [i,d,items]=PINFO[h]||['layers','',[]];return `<div class="cx-head" role="region" aria-label="${TITLES[h]||''}"><span class="cx-hi">${ic(i)}</span><div class="cx-ht"><h1>${TITLES[h]||''}</h1>${d?`<p>${d}</p>`:''}${items.length?`<ul class="cx-hc" aria-label="محتوى الصفحة">${items.map(x=>`<li>${x}</li>`).join('')}</ul>`:''}</div><span class="cx-date">${ic('cal')} ${esc(greg(T()))}</span></div>${inner}`}
+  admin:['check','ما يحتاج إجراءً منك الآن: اعتماد التوثيق، والمتأخر، والمتعثر، وبرامج هذا الأسبوع.'],
+  'admin-alerts':['bell','البرامج التي تحتاج تدخلك: المتأخرة في التوثيق، والمتعثرة وأسباب تعثرها، والقادمة قريبًا.'],
+  'admin-plans':['plan','تحرير برامج كل خطة وتوثيقها واعتمادها، وإضافة الخطط وإرفاق ملفاتها.'],
+  'admin-people':['users','منفذو البرامج من منسوبي النواة، وربط الأسماء المكتوبة يدويًا بمنسوبيها.'],
+  'admin-trash':['x','ما حُذف من البرامج والخطط، مع إمكانية استعادته.']};
+const hhmm=d=>{try{return d.toLocaleTimeString('ar-SA-u-ca-gregory-nu-latn',{hour:'2-digit',minute:'2-digit'})}catch(e){return ''}};
+function barHTML(h){
+  const n=P.filter(needs).length,I=PINFO[h]||['layers',''];
+  const it=(href,icon,label,badge,z)=>`<a href="#${href}" class="${h===href?'on':''}"${h===href?' aria-current="page"':''}>${ic(icon)}<span>${label}</span>${badge?`<b${z?' class="z"':''}>${badge}</b>`:''}</a>`;
+  const nm=(window.SP&&SP.access&&SP.access.name)||WHO||'';
+  return `<div class="cp-top"><div class="wrap cp-topin">
+    <a class="cp-sys" href="#admin"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M30 4c2 14 8 20 24 24-16 4-22 10-24 26-2-16-8-22-24-26 16-4 22-10 24-24z" fill="#0f8a94"/><path d="M50 4c.8 5 3 7.2 8 8-5 .8-7.2 3-8 8-.8-5-3-7.2-8-8 5-.8 7.2-3 8-8z" fill="#f0b34a"/></svg><span><b>الخطط الذكية</b><small>لوحة التحكم</small></span></a>
+    <a class="cp-site" href="#home">الموقع الإلكتروني</a>
+    <span class="cp-moe"><b>وزارة التعليم</b><i aria-hidden="true"></i><span class="cp-core"><img src="assets/core-logo.svg" alt="" width="24" height="24">النواة الرقمية</span></span></div></div>
+  <div class="cp-strip" aria-hidden="true"></div>
+  <div class="cp-sub" role="navigation" aria-label="أقسام لوحة التحكم"><div class="wrap cp-subin"><nav class="cp-nav">${it('admin','check','المهام')}${it('admin-alerts','bell','التنبيهات',n||'')}${it('admin-plans','plan','إدارة الخطة')}${it('admin-people','users','المنفذون')}${it('admin-trash','x','المحذوفات',REMOVED.length||'',true)}</nav>
+    <span class="cp-user"><span class="cp-who">${ic('user')}<span>${esc(nm)}</span></span><button type="button" class="cp-out" id="cp-out">خروج</button></span></div></div>
+  <div class="cp-page"><div class="wrap cp-pagein"><span class="cp-pi">${ic(I[0])}</span><div class="cp-pt"><h1>${TITLES[h]||''}</h1><p>${I[1]||''}</p></div>
+    <div class="cp-pm"><span class="cp-up">آخر تحديث ${hhmm(LASTUP)}</span><button type="button" class="btn soft cd-sm" id="cp-refresh">${ic('rep')} تحديث</button></div></div>
+    <div class="wrap cp-acts" role="group" aria-label="إضافة سريعة"><button type="button" class="cx-pri" data-cx-add="plan">${ic('plus')}<span>برنامج في الخطة</span></button><button type="button" data-cx-add="unplanned">${ic('plus')}<span>برنامج غير مدرج</span></button><button type="button" data-cx-add="newplan">${ic('plus')}<span>خطة جديدة</span></button></div></div>`}
+const shell=(h,inner)=>inner;
 function showBar(h){let bar=document.getElementById('cx-bar');const on=!!(h&&READY&&canAdd());
+  document.body.classList.toggle('cp-on',on);
   if(!on){if(bar)bar.hidden=true;return}
-  const hd=document.querySelector('header');if(!bar){bar=document.createElement('div');bar.id='cx-bar';if(hd)hd.after(bar);else document.body.prepend(bar)}
-  setHH();
+  if(!bar){bar=document.createElement('div');bar.id='cx-bar';document.body.prepend(bar)}
   bar.hidden=false;bar.innerHTML=barHTML(h);bindBar(bar);
-  const on2=bar.querySelector('a.on');if(on2&&on2.scrollIntoView&&innerWidth<760)on2.scrollIntoView({block:'nearest',inline:'center'})}
-// ارتفاع رأس الموقع يتغير (زر الدخول، تحميل الخطوط، التفاف القائمة)؛ نتابعه دائمًا حتى يثبت شريط اللوحة تحته مباشرة
-const setHH=()=>{const hd=document.querySelector('header');if(hd)document.documentElement.style.setProperty('--hh',hd.getBoundingClientRect().height+'px')};
-addEventListener('resize',setHH);if(window.ResizeObserver){const hd=document.querySelector('header');if(hd)new ResizeObserver(setHH).observe(hd)}
-if(document.fonts&&document.fonts.ready)document.fonts.ready.then(setHH);
+  const on2=bar.querySelector('.cp-nav a.on');if(on2&&on2.scrollIntoView&&innerWidth<760)on2.scrollIntoView({block:'nearest',inline:'center'})}
 function bindBar(r){
-  r.querySelectorAll('[data-cx-go]').forEach(a=>a.onclick=e=>{e.preventDefault();const id=a.dataset.cxGo,go=()=>{const t=document.getElementById(id);t&&t.scrollIntoView({behavior:'smooth',block:'start'})};if(location.hash!=='#admin'){location.hash='#admin';setTimeout(go,250)}else go()});
-  r.querySelectorAll('[data-cx-add]').forEach(b=>b.onclick=()=>{if(b.dataset.cxAdd==='newplan'){planDialog(null);return}if(b.dataset.cxAdd==='unplanned'){if(typeof unplannedForm==='function')unplannedForm();else toast('غير متاح')}else editor(null,{plan_id:+(D.mplan||D.plan)||(PL[0]||{}).id})})}
+  r.querySelectorAll('[data-cx-add]').forEach(b=>b.onclick=()=>{if(b.dataset.cxAdd==='newplan'){planDialog(null);return}if(b.dataset.cxAdd==='unplanned'){if(typeof unplannedForm==='function')unplannedForm();else toast('غير متاح')}else editor(null,{plan_id:+(D.mplan||D.plan)||(PL[0]||{}).id})});
+  const out=r.querySelector('#cp-out');if(out)out.onclick=()=>{if(window.SP&&SP.signOut)SP.signOut();else location.reload()};
+  const rf=r.querySelector('#cp-refresh');if(rf)rf.onclick=()=>{rf.disabled=true;try{if(DB&&DB.refresh)DB.refresh()}catch(e){}LASTUP=new Date();setTimeout(()=>{route(true);toast('حُدّثت البيانات')},350)}}
 
 /* ---------- صور المنفذين في صفحات الموقع الأخرى ---------- */
 function decorate(v){if(!v)return;const names=new Set(peopleNames());
@@ -539,8 +530,9 @@ route=function(keep){
   const sy=scrollY,v=document.getElementById('view');tip&&tip.remove();
   showBar(h);
   if(!READY){v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
-  if(!canAdd()){v.innerHTML=`<div class="cd-lockpage">${ic('user')}<h2>لوحة التحكم للمحررين فقط</h2><p class="muted">سجّل الدخول من «دخول المحررين» لعرض لوحة التحكم وإدارة الخطة والمستخدمين.</p><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button class="btn pri" type="button" id="cd-login">دخول المحررين</button><a class="btn soft" href="#home">الرئيسية</a></span></div>`;const lb=document.getElementById('cd-login');if(lb)lb.onclick=()=>{const x=document.getElementById('lg-in');if(x)x.click();else toast('الدخول غير متاح في هذا العرض')};return}
-  v.innerHTML=shell(h,h==='admin-plans'?plansPage():h==='admin-people'?peoplePage():h==='admin-trash'?trashPage():h==='admin-alerts'?alertsPage():dash());bind(v);
+  if(!canAdd()){const sg=!!(window.SP&&SP.signedIn);
+    v.innerHTML=`<div class="cd-lockpage">${ic('user')}<h2>${sg?'لا تملك صلاحية لوحة التحكم':'لوحة التحكم لمنسوبي النواة المصرّح لهم'}</h2><p class="muted">${sg?'حسابك في النواة الرقمية لا يحمل صلاحية الخطط الذكية. يمنحها مدير النواة من إدارة المستخدمين والصلاحيات.':'سجّل الدخول بحساب النواة الرقمية لعرض لوحة التحكم وإدارة الخطة والمنفذين.'}</p><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${sg?'':'<button class="btn pri" type="button" id="cd-login">دخول</button>'}<a class="btn soft" href="#home">الرئيسية</a></span></div>`;const lb=document.getElementById('cd-login');if(lb)lb.onclick=()=>{const x=document.getElementById('lg-in');if(x)x.click();else if(window.SP&&SP.login)SP.login()};return}
+  v.innerHTML=shell(h,h==='admin-plans'?plansPage():h==='admin-people'?peoplePage():h==='admin-trash'?trashPage():h==='admin-alerts'?alertsPage():tasksPage());bind(v);
   if(keep===true)window.scrollTo(0,sy);else window.scrollTo(0,0);
 };
 route(true);

@@ -448,3 +448,64 @@ nav.cx-nav{display:flex;gap:4px;flex:1;justify-content:flex-start;order:0;width:
 .cx-add .cx-pri{background:var(--cxacc);color:#2b1a00;border-color:var(--cxacc);font-weight:700}
 .cx-add .cx-pri .ico{color:#2b1a00}
 .cx-add .cx-pri:hover{background:#ffd27a;color:#2b1a00}
+
+/* ===== لوحة التحكم الموحدة (هوية النواة): ترويسة فاتحة، شريط أخضر وذهبي متحرك، قائمة داكنة، شريط الصفحة ===== */
+body.cp-on>header{display:none}
+#cx-bar{display:contents;position:static;background:none;box-shadow:none;color:inherit}
+#cx-bar::after{display:none}
+#cx-bar[hidden]{display:none}
+.cp-top{background:var(--surface);color:var(--ink)}
+.cp-topin{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:64px;padding-block:8px}
+.cp-sys{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none}
+.cp-sys svg{width:38px;height:38px;flex:none}
+.cp-sys b{display:block;font-size:1.1rem;font-weight:800;line-height:1.2}
+.cp-sys small{display:block;color:var(--muted);font-size:.78rem}
+.cp-site{margin-inline:auto;padding:8px 14px;border-radius:12px;color:var(--ink2);text-decoration:none;font-weight:600;border:1px solid var(--line)}
+.cp-site:hover{background:var(--soft);color:var(--brand)}
+.cp-moe{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--ink2)}
+.cp-moe i{width:1px;height:26px;background:var(--line)}
+.cp-core{display:inline-flex;align-items:center;gap:6px;color:var(--ink)}
+.cp-strip{height:4px;background:linear-gradient(90deg,#07a869,#f0b34a,#07a869,#f0b34a);background-size:300% 100%;animation:cpmv 9s linear infinite}
+@keyframes cpmv{to{background-position:-300% 0}}
+.cp-sub{position:sticky;top:0;z-index:30;background:var(--cxbar,#15445a);color:var(--cxtxt,#e8f3f7);box-shadow:0 6px 16px rgba(10,34,51,.18)}
+.cp-subin{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.cp-nav{display:flex;align-items:center;gap:4px;overflow-x:auto;scrollbar-width:none;padding-block:6px}
+.cp-nav::-webkit-scrollbar{display:none}
+.cp-nav a{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:12px;color:inherit;text-decoration:none;font-weight:600;white-space:nowrap;opacity:.88;border-bottom:3px solid transparent}
+.cp-nav a:hover{opacity:1;background:rgba(255,255,255,.08)}
+.cp-nav a.on{opacity:1;background:rgba(255,255,255,.14);border-bottom-color:#f0b34a}
+.cp-nav a .ico{width:18px;height:18px}
+.cp-nav b{min-width:20px;padding:1px 6px;border-radius:10px;background:#f0b34a;color:#3a2a05;font-size:.74rem;text-align:center}
+.cp-nav b.z{background:rgba(255,255,255,.22);color:inherit}
+.cp-user{display:flex;align-items:center;gap:10px;flex:none}
+.cp-who{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:.92rem;max-width:220px}
+.cp-who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cp-who .ico{width:18px;height:18px}
+.cp-out{border:1px solid rgba(255,255,255,.35);background:transparent;color:inherit;border-radius:10px;padding:6px 14px;font:inherit;font-weight:600;cursor:pointer}
+.cp-out:hover{background:rgba(255,255,255,.12)}
+.cp-page{background:var(--surface);border-bottom:1px solid var(--line);margin-bottom:18px}
+.cp-pagein{display:flex;align-items:center;gap:14px;padding-block:14px}
+.cp-pi{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:14px;background:var(--brandsoft,#e3f6f7);color:var(--brand)}
+.cp-pi .ico{width:22px;height:22px}
+.cp-pt{flex:1;min-width:0}
+.cp-pt h1{margin:0;font-size:1.35rem}
+.cp-pt p{margin:2px 0 0;color:var(--muted);font-size:.92rem}
+.cp-pm{display:flex;align-items:center;gap:10px;flex:none}
+.cp-up{color:var(--muted);font-size:.84rem;white-space:nowrap}
+.cp-acts{display:flex;gap:8px;flex-wrap:wrap;padding-bottom:12px}
+.cp-acts button{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer}
+.cp-acts button:hover{background:var(--soft)}
+.cp-acts .cx-pri{background:var(--brand);border-color:var(--brand);color:#fff}
+.cp-acts .ico{width:16px;height:16px}
+/* لوحة المهام: طوابير عمل */
+.cp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.cp-sec{margin:0}
+.cp-sec .cd-ph h2{display:flex;align-items:center;gap:8px}
+.cp-n{min-width:24px;padding:1px 8px;border-radius:12px;background:var(--brand);color:#fff;font-size:.8rem;text-align:center}
+.cp-n.z{background:var(--line);color:var(--muted)}
+.cp-empty{margin:6px 0;padding:10px 12px;border-radius:12px;background:var(--soft)}
+.cp-more{margin:8px 2px 0}
+@media (max-width:900px){.cp-grid{grid-template-columns:1fr}.cp-topin{flex-wrap:wrap}.cp-site{margin-inline:0}.cp-pagein{flex-wrap:wrap}.cp-pm{width:100%;justify-content:space-between}}
+@media (max-width:560px){.cp-moe b{display:none}.cp-moe i{display:none}.cp-who{max-width:110px}.cp-pi{display:none}}
+@media (prefers-reduced-motion:reduce){.cp-strip{animation:none}}
+.cd-olsel{max-width:280px}

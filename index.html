@@ -1545,11 +1545,11 @@ body.print-about .ab-go{display:none!important}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="assets/config.js?v=20261106g"></script>
-<script src="assets/store.js?v=20261106g"></script>
-<link rel="stylesheet" href="assets/coordinator.css?v=20261106g">
-<link rel="stylesheet" href="assets/plans.css?v=20261106g">
-<link rel="stylesheet" href="assets/reports.css?v=20261106g">
+<script src="assets/config.js?v=20261112a"></script>
+<script src="assets/store.js?v=20261112a"></script>
+<link rel="stylesheet" href="assets/coordinator.css?v=20261112a">
+<link rel="stylesheet" href="assets/plans.css?v=20261112a">
+<link rel="stylesheet" href="assets/reports.css?v=20261112a">
 <style>
 /* ===== توحيد مقاس رأس الصفحات (الرئيسية وتعرف علينا وبقية الصفحات) ===== */
 @media (min-width:981px){
@@ -1860,7 +1860,7 @@ const imgUrl=a=>a.url||('/_blob/'+a.id);
 async function initRuntime(){
   if(!window.claude||!claude.use)return;
   [DB,ASSETS,DL,USER]=await Promise.all(['db','assets','downloads','user'].map(n=>claude.use(n).catch(()=>null)));
-  if(DB){DB.collection('unplanned').onSnapshot(s=>{mergeUnplanned(s.docs.map(d=>({id:d.id,...d.data()})));if(!document.querySelector('.modal'))route(true)},()=>{});DB.collection('executions').onSnapshot(s=>{EX=s.docs.map(d=>({id:d.id,...d.data()}));READY=true;if(!document.querySelector('.modal'))route(true)},()=>{READY=true;route(true)})}
+  if(DB){DB.collection('unplanned').onSnapshot(s=>{mergeUnplanned(s.docs.map(d=>({id:d.id,...d.data()})));if(!document.querySelector('.modal'))route(true)},()=>{});DB.collection('executions').onSnapshot(s=>{EX=s.docs.map(d=>({id:d.id,...d.data()})).map(e=>{const m=e.executor_staff_id&&window.SP&&SP.dir&&SP.dir[e.executor_staff_id];return m?{...e,executor:m.name}:e});READY=true;if(!document.querySelector('.modal'))route(true)},()=>{READY=true;route(true)})}
   else{READY=true;route(true)}
 }
 async function shrink(file){ // تصغير الصورة قبل الرفع
@@ -1876,7 +1876,7 @@ function execForm(p){
    <div class="full"><label class="req">صور التنفيذ (صورتان على الأقل)</label><div class="drop">اختر الصور أو اسحبها هنا <label class="btn soft" style="display:inline-flex;margin:0 6px">اختيار صور<input id="e-files" type="file" accept="image/*" multiple hidden></label><div class="small">تُصغّر الصور تلقائيًا قبل الرفع. راعِ خصوصية الطلاب.</div></div><div class="thumbs" id="e-th"></div></div>
    <div class="full"><label>المرفقات (اختياري)</label><div class="drop att">ملفات PDF أو Word أو Excel أو عروض <label class="btn soft" style="display:inline-flex;margin:0 6px">إرفاق ملفات<input id="e-atts" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,image/*" multiple hidden></label><div class="small">حتى 10 ملفات، وبحد أقصى 15MB للملف.</div></div><div class="attl" id="e-al"></div></div>
    <div><label class="req" for="e-date">تاريخ التنفيذ</label><input id="e-date" type="date" required max="${today}" value="${today}"></div>
-   <div><label class="req" for="e-exec">منفذ البرنامج</label><input id="e-exec" type="text" required value="${esc(p.owner_name||'')}"></div>
+   <div><label class="req" for="e-exec">منفذ البرنامج</label>${window.CD_ownerSelect?CD_ownerSelect(p.owner_name||'','id="e-exec" required'):`<input id="e-exec" type="text" required value="${esc(p.owner_name||'')}">`}</div>
    <div><label for="e-loc">مكان التنفيذ</label><input id="e-loc" type="text" value="${esc(p.location||'')}"></div>
    <div><label for="e-time">الوقت/المدة</label><input id="e-time" type="text" placeholder="مثال: الحصة الثالثة – 45 دقيقة"></div>
    <div><label for="e-part">المشاركون/المساندون</label><input id="e-part" type="text" value="${esc(p.supporters||'')}"></div>
@@ -1906,7 +1906,7 @@ function execForm(p){
       for(const f of atts){btn.textContent=`جارٍ رفع المرفقات ${++j} من ${atts.length}…`;const r=await ASSETS.upload(f);attachments.push({id:r.id,url:r.url,name:f.name,type:f.type||'',size:f.size})}
       btn.textContent='جارٍ الحفظ…';
       const n=EX.filter(x=>x.programId===p.id).length+1;
-      await DB.collection('executions').add({programId:p.id,programCode:p.code,no:n,date:$('#e-date').value,executor:$('#e-exec').value.trim(),location:$('#e-loc').value.trim(),time:$('#e-time').value.trim(),
+      await DB.collection('executions').add({programId:p.id,programCode:p.code,no:n,date:$('#e-date').value,executor:$('#e-exec').value.trim(),executor_staff_id:(window.CD_staffId?CD_staffId($('#e-exec').value):null),location:$('#e-loc').value.trim(),time:$('#e-time').value.trim(),
         participants:$('#e-part').value.trim(),beneficiaries:$('#e-ben').value===''?null:+$('#e-ben').value,description:$('#e-desc').value.trim(),outputs:$('#e-out').value.trim(),
         challenges:$('#e-ch').value.trim(),corrective:$('#e-co').value.trim(),images,attachments,createdAt:new Date().toISOString(),createdBy:USER&&USER.id?await USER.id():null});
       close();toast('تم حفظ التنفيذ. يمكنك الآن إصدار التقرير.');
@@ -2476,8 +2476,8 @@ function route(keep){const na=document.getElementById('cp');if(na)na.hidden=!(RE
 document.getElementById('cp').onclick=()=>unplannedForm();
 addEventListener('hashchange',()=>route());route();initRuntime();
 </script>
-<script src="assets/coordinator.js?v=20261106g"></script>
-<script src="assets/plans.js?v=20261106g"></script>
+<script src="assets/coordinator.js?v=20261112a"></script>
+<script src="assets/plans.js?v=20261112a"></script>
 <script>
 /* حركة: ظهور تدريجي للعناصر وعدّاد للأرقام عند فتح كل صفحة */
 (function(){
