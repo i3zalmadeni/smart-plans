@@ -1,0 +1,27 @@
+/* بوابة المنفذ: مكتبي الإلكتروني + توثيق برامجي (تعيد استعمال ترويسة cp-* من لوحة التحكم) */
+.ex{display:grid;gap:16px;padding:16px 0 40px}
+.ex-me{display:flex;gap:16px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+.ex-me img,.ex-av{width:68px;height:68px;border-radius:50%;object-fit:cover;background:var(--brandsoft);color:var(--brand2);display:grid;place-items:center;font-weight:800;font-size:1.5rem;flex:none}
+.ex-me h2{margin:0;font-size:1.2rem}.ex-me p{margin:2px 0 0;color:var(--muted)}
+.ex-kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.ex-kp button{all:unset;cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:2px;box-shadow:var(--shadow)}
+.ex-kp button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.ex-kp b{font-size:1.7rem;color:var(--brand2)}.ex-kp span{color:var(--ink2);font-size:.9rem}
+.ex-kp .warn b{color:var(--bad)}
+.ex-sec{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)}
+.ex-sec>h3{margin:0 0 10px;font-size:1.05rem;display:flex;gap:8px;align-items:center;justify-content:space-between}
+.ex-sec>h3 small{color:var(--muted);font-weight:500}
+.ex-row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--line)}
+.ex-row:first-of-type{border-top:0}
+.ex-row .nm{display:grid;gap:2px;min-width:200px;flex:1}.ex-row .nm b{font-size:1rem}.ex-row .nm small{color:var(--muted)}
+.ex-act{display:flex;gap:8px;flex-wrap:wrap}
+.ex-chip{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.8rem;color:#fff;background:var(--cd-idle)}
+.ex-chip.ok{background:var(--ok)}.ex-chip.info{background:var(--info)}.ex-chip.bad{background:var(--bad)}.ex-chip.warn{background:var(--warn)}
+.ex-flt{display:flex;gap:8px;flex-wrap:wrap}
+.ex-flt button{border:1px solid var(--line);background:var(--surface);color:var(--ink2);border-radius:999px;padding:6px 14px;cursor:pointer;font:inherit}
+.ex-flt button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.ex-rep{margin:8px 0 2px;padding:10px 12px;background:var(--soft);border-radius:12px;display:grid;gap:4px;font-size:.92rem}
+.ex-rep .top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.ex-rep p{margin:0;color:var(--ink2)}
+.ex-empty{padding:22px;text-align:center;color:var(--muted)}
+.ex-lock{max-width:520px;margin:48px auto;text-align:center;display:grid;gap:10px;justify-items:center}

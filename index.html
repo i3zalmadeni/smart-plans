@@ -1550,6 +1550,7 @@ body.print-about .ab-go{display:none!important}
 <link rel="stylesheet" href="assets/coordinator.css?v=20261112a">
 <link rel="stylesheet" href="assets/plans.css?v=20261112a">
 <link rel="stylesheet" href="assets/reports.css?v=20261112a">
+<link rel="stylesheet" href="assets/executor.css?v=20261112b">
 <style>
 /* ===== توحيد مقاس رأس الصفحات (الرئيسية وتعرف علينا وبقية الصفحات) ===== */
 @media (min-width:981px){
@@ -1876,7 +1877,7 @@ function execForm(p){
    <div class="full"><label class="req">صور التنفيذ (صورتان على الأقل)</label><div class="drop">اختر الصور أو اسحبها هنا <label class="btn soft" style="display:inline-flex;margin:0 6px">اختيار صور<input id="e-files" type="file" accept="image/*" multiple hidden></label><div class="small">تُصغّر الصور تلقائيًا قبل الرفع. راعِ خصوصية الطلاب.</div></div><div class="thumbs" id="e-th"></div></div>
    <div class="full"><label>المرفقات (اختياري)</label><div class="drop att">ملفات PDF أو Word أو Excel أو عروض <label class="btn soft" style="display:inline-flex;margin:0 6px">إرفاق ملفات<input id="e-atts" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,image/*" multiple hidden></label><div class="small">حتى 10 ملفات، وبحد أقصى 15MB للملف.</div></div><div class="attl" id="e-al"></div></div>
    <div><label class="req" for="e-date">تاريخ التنفيذ</label><input id="e-date" type="date" required max="${today}" value="${today}"></div>
-   <div><label class="req" for="e-exec">منفذ البرنامج</label>${window.CD_ownerSelect?CD_ownerSelect(p.owner_name||'','id="e-exec" required'):`<input id="e-exec" type="text" required value="${esc(p.owner_name||'')}">`}</div>
+   <div><label class="req" for="e-exec">منفذ البرنامج</label>${(window.SP&&SP.can&&!SP.can('add')&&SP.access&&SP.access.staff_id)?`<input id="e-exec" type="text" required readonly value="${esc((SP.dir[SP.access.staff_id]||{}).name||SP.access.name||'')}">`:window.CD_ownerSelect?CD_ownerSelect(p.owner_name||'','id="e-exec" required'):`<input id="e-exec" type="text" required value="${esc(p.owner_name||'')}">`}</div>
    <div><label for="e-loc">مكان التنفيذ</label><input id="e-loc" type="text" value="${esc(p.location||'')}"></div>
    <div><label for="e-time">الوقت/المدة</label><input id="e-time" type="text" placeholder="مثال: الحصة الثالثة – 45 دقيقة"></div>
    <div><label for="e-part">المشاركون/المساندون</label><input id="e-part" type="text" value="${esc(p.supporters||'')}"></div>
@@ -1906,7 +1907,7 @@ function execForm(p){
       for(const f of atts){btn.textContent=`جارٍ رفع المرفقات ${++j} من ${atts.length}…`;const r=await ASSETS.upload(f);attachments.push({id:r.id,url:r.url,name:f.name,type:f.type||'',size:f.size})}
       btn.textContent='جارٍ الحفظ…';
       const n=EX.filter(x=>x.programId===p.id).length+1;
-      await DB.collection('executions').add({programId:p.id,programCode:p.code,no:n,date:$('#e-date').value,executor:$('#e-exec').value.trim(),executor_staff_id:(window.CD_staffId?CD_staffId($('#e-exec').value):null),location:$('#e-loc').value.trim(),time:$('#e-time').value.trim(),
+      await DB.collection('executions').add({programId:p.id,programCode:p.code,no:n,date:$('#e-date').value,executor:$('#e-exec').value.trim(),executor_staff_id:((window.SP&&SP.can&&!SP.can('add')&&SP.access&&SP.access.staff_id)?SP.access.staff_id:(window.CD_staffId?CD_staffId($('#e-exec').value):null)),location:$('#e-loc').value.trim(),time:$('#e-time').value.trim(),
         participants:$('#e-part').value.trim(),beneficiaries:$('#e-ben').value===''?null:+$('#e-ben').value,description:$('#e-desc').value.trim(),outputs:$('#e-out').value.trim(),
         challenges:$('#e-ch').value.trim(),corrective:$('#e-co').value.trim(),images,attachments,createdAt:new Date().toISOString(),createdBy:USER&&USER.id?await USER.id():null});
       close();toast('تم حفظ التنفيذ. يمكنك الآن إصدار التقرير.');
@@ -1985,7 +1986,7 @@ function bindDetail(p){
 }
 
 const UPLAN=DATA.plans.find(x=>x.name==='برامج غير مخططة')||{id:90,name:'برامج غير مخططة'};
-function canAdd(){return !!(DB&&ASSETS)}
+function canAdd(){return !!(DB&&ASSETS&&(!window.SP||!SP.can||SP.can('add')))}
 async function delUnplanned(p,btn){
   if(!btn.dataset.sure){btn.dataset.sure='1';btn.textContent='اضغط مجددًا لتأكيد الحذف';setTimeout(()=>{btn.dataset.sure='';btn.textContent='حذف البرنامج'},4000);return}
   btn.disabled=true;btn.textContent='جارٍ الحذف…';
@@ -2478,6 +2479,7 @@ addEventListener('hashchange',()=>route());route();initRuntime();
 </script>
 <script src="assets/coordinator.js?v=20261112a"></script>
 <script src="assets/plans.js?v=20261112a"></script>
+<script src="assets/executor.js?v=20261112b"></script>
 <script>
 /* حركة: ظهور تدريجي للعناصر وعدّاد للأرقام عند فتح كل صفحة */
 (function(){
