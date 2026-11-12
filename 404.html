@@ -1545,11 +1545,12 @@ body.print-about .ab-go{display:none!important}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="assets/config.js?v=20261106g"></script>
-<script src="assets/store.js?v=20261106g"></script>
-<link rel="stylesheet" href="assets/coordinator.css?v=20261106g">
-<link rel="stylesheet" href="assets/plans.css?v=20261106g">
-<link rel="stylesheet" href="assets/reports.css?v=20261106g">
+<script src="assets/config.js?v=20261113a"></script>
+<script src="assets/store.js?v=20261113a"></script>
+<link rel="stylesheet" href="assets/coordinator.css?v=20261113a">
+<link rel="stylesheet" href="assets/plans.css?v=20261113a">
+<link rel="stylesheet" href="assets/reports.css?v=20261113a">
+<link rel="stylesheet" href="assets/executor.css?v=20261113a">
 <style>
 /* ===== توحيد مقاس رأس الصفحات (الرئيسية وتعرف علينا وبقية الصفحات) ===== */
 @media (min-width:981px){
@@ -1564,12 +1565,15 @@ body.print-about .ab-go{display:none!important}
 @media (max-width:980px){.hx,.pgh,.ax-hero{min-height:0;padding:32px 22px;border-radius:26px}.hx-vis,.ax-hero .ax-hv{height:260px}.pgh-vis{height:230px}}
 @media (max-width:640px){.hx,.pgh,.ax-hero{padding:26px 18px;border-radius:24px;gap:16px}.pgh-art,.ax-hero .ax-hv{display:none}.hx-vis{height:auto}}
 </style>
+<link rel="stylesheet" href="assets/shell.css?v=20261113a">
 </head>
 <body>
 
-<header><div class="wrap top">
-  <a class="bm" href="#home"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22b3b8"/><stop offset="1" stop-color="#0d3b66"/></linearGradient></defs><path d="M30 4c2 14 8 20 24 24-16 4-22 10-24 26-2-16-8-22-24-26 16-4 22-10 24-24z" fill="url(#g)"/><path d="M50 4c.8 5 3 7.2 8 8-5 .8-7.2 3-8 8-.8-5-3-7.2-8-8 5-.8 7.2-3 8-8z" fill="#22b3b8"/></svg><span><b>الخطط الذكية</b><small>مدرسة لبيد بن ربيعة المتوسطة</small></span></a>
-  <nav id="nav"><a href="#home" data-n="home">الرئيسية</a><a href="#about" data-n="about">تعرف علينا</a><a href="#plans" data-n="plans">خططنا</a><a href="#week" data-n="week">الرزنامة</a><a href="#reports" data-n="reports">البرامج المنفذة</a><a href="#timeline" data-n="timeline">الخط الزمني</a><a href="#stats" data-n="stats">لغة الأرقام</a><a href="#admin" data-n="admin" hidden>لوحة التحكم</a></nav>
+<header id="hdr"><div class="wrap top">
+  <a class="bm" href="#home"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22b3b8"/><stop offset="1" stop-color="#0d3b66"/></linearGradient></defs><path d="M30 4c2 14 8 20 24 24-16 4-22 10-24 26-2-16-8-22-24-26 16-4 22-10 24-24z" fill="url(#g)"/><path d="M50 4c.8 5 3 7.2 8 8-5 .8-7.2 3-8 8-.8-5-3-7.2-8-8 5-.8 7.2-3 8-8z" fill="#22b3b8"/></svg><span><b>الخطط الذكية</b><small>متوسطة لبيد بن ربيعة</small></span></a>
+  <button type="button" class="menu-b" id="menuB" aria-label="القائمة" aria-expanded="false" aria-controls="nav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <nav id="nav" aria-label="التنقل الرئيسي"><a href="#home" data-n="home">الرئيسية</a><a href="#plans" data-n="plans">خططنا</a><a href="#week" data-n="week">الرزنامة</a><a href="#reports" data-n="reports">البرامج المنفذة</a><a href="#stats" data-n="stats">لغة الأرقام</a><a href="#about" data-n="about">تعرف علينا</a><a href="#admin" data-n="admin" hidden>لوحة التحكم</a></nav>
+  <a class="coreid" href="https://i3zalmadeni.github.io/digital-core" title="النواة الرقمية"><img src="assets/core-logo.svg" alt="" width="36" height="36"><span><b>النواة الرقمية</b><small>الهوية الموحدة</small></span></a>
   <span class="moe"><b>وزارة التعليم</b><small>Ministry of Education</small></span>
   <button class="btn pri" id="cp" type="button" hidden>＋ إضافة برنامج غير مدرج</button>
 </div></header>
@@ -1726,7 +1730,7 @@ function detail(id){const p=P.find(x=>x.id==id);if(!p)return '<div class="empty"
  </div>`}
 const MONTHS=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 function ptabs(active){const cw=curWeek();const all=CAL();const nw=cw?all[all.findIndex(w=>w.number===cw.number)+1]:null;const ym=todayISO().slice(0,7);
- return `<div class="ptabs">${[['week','الأسبوع الحالي'+(cw?' ('+cw.number+')':'')],['week-next','الأسبوع القادم'+(nw?' ('+nw.number+')':'')],['month','برامج الشهر ('+MONTHS[+ym.slice(5)-1]+')']].map(([k,l])=>`<a href="#${k}" class="${active===k?'on':''}">${l}</a>`).join('')}</div>`}
+ return `<div class="ptabs">${[['week','الأسبوع الحالي'+(cw?' ('+cw.number+')':'')],['week-next','الأسبوع القادم'+(nw?' ('+nw.number+')':'')],['month','برامج الشهر ('+MONTHS[+ym.slice(5)-1]+')'],['timeline','الخط الزمني']].map(([k,l])=>`<a href="#${k}" class="${active===k?'on':''}">${l}</a>`).join('')}</div>`}
 function progDates(p){const ws=p.weeks.map(wkInfo).filter(Boolean);if(ws.length)return ws.map(w=>[w.start_date,w.end_date]);if(p.planned_date)return [[p.planned_date,p.planned_end||p.planned_date]];return []}
 function monthPage(ym){
  ym=ym||todayISO().slice(0,7);const [y,m]=ym.split('-').map(Number);const first=`${ym}-01`,last=new Date(Date.UTC(y,m,0)).toISOString().slice(0,10);
@@ -1860,7 +1864,7 @@ const imgUrl=a=>a.url||('/_blob/'+a.id);
 async function initRuntime(){
   if(!window.claude||!claude.use)return;
   [DB,ASSETS,DL,USER]=await Promise.all(['db','assets','downloads','user'].map(n=>claude.use(n).catch(()=>null)));
-  if(DB){DB.collection('unplanned').onSnapshot(s=>{mergeUnplanned(s.docs.map(d=>({id:d.id,...d.data()})));if(!document.querySelector('.modal'))route(true)},()=>{});DB.collection('executions').onSnapshot(s=>{EX=s.docs.map(d=>({id:d.id,...d.data()}));READY=true;if(!document.querySelector('.modal'))route(true)},()=>{READY=true;route(true)})}
+  if(DB){DB.collection('unplanned').onSnapshot(s=>{mergeUnplanned(s.docs.map(d=>({id:d.id,...d.data()})));if(!document.querySelector('.modal'))route(true)},()=>{});DB.collection('executions').onSnapshot(s=>{EX=s.docs.map(d=>({id:d.id,...d.data()})).map(e=>{const m=e.executor_staff_id&&window.SP&&SP.dir&&SP.dir[e.executor_staff_id];return m?{...e,executor:m.name}:e});READY=true;if(!document.querySelector('.modal'))route(true)},()=>{READY=true;route(true)})}
   else{READY=true;route(true)}
 }
 async function shrink(file){ // تصغير الصورة قبل الرفع
@@ -1876,7 +1880,7 @@ function execForm(p){
    <div class="full"><label class="req">صور التنفيذ (صورتان على الأقل)</label><div class="drop">اختر الصور أو اسحبها هنا <label class="btn soft" style="display:inline-flex;margin:0 6px">اختيار صور<input id="e-files" type="file" accept="image/*" multiple hidden></label><div class="small">تُصغّر الصور تلقائيًا قبل الرفع. راعِ خصوصية الطلاب.</div></div><div class="thumbs" id="e-th"></div></div>
    <div class="full"><label>المرفقات (اختياري)</label><div class="drop att">ملفات PDF أو Word أو Excel أو عروض <label class="btn soft" style="display:inline-flex;margin:0 6px">إرفاق ملفات<input id="e-atts" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,image/*" multiple hidden></label><div class="small">حتى 10 ملفات، وبحد أقصى 15MB للملف.</div></div><div class="attl" id="e-al"></div></div>
    <div><label class="req" for="e-date">تاريخ التنفيذ</label><input id="e-date" type="date" required max="${today}" value="${today}"></div>
-   <div><label class="req" for="e-exec">منفذ البرنامج</label><input id="e-exec" type="text" required value="${esc(p.owner_name||'')}"></div>
+   <div><label class="req" for="e-exec">منفذ البرنامج</label>${(window.SP&&SP.can&&!SP.can('add')&&SP.access&&SP.access.staff_id)?`<input id="e-exec" type="text" required readonly value="${esc((SP.dir[SP.access.staff_id]||{}).name||SP.access.name||'')}">`:window.CD_ownerSelect?CD_ownerSelect(p.owner_name||'','id="e-exec" required'):`<input id="e-exec" type="text" required value="${esc(p.owner_name||'')}">`}</div>
    <div><label for="e-loc">مكان التنفيذ</label><input id="e-loc" type="text" value="${esc(p.location||'')}"></div>
    <div><label for="e-time">الوقت/المدة</label><input id="e-time" type="text" placeholder="مثال: الحصة الثالثة – 45 دقيقة"></div>
    <div><label for="e-part">المشاركون/المساندون</label><input id="e-part" type="text" value="${esc(p.supporters||'')}"></div>
@@ -1906,7 +1910,7 @@ function execForm(p){
       for(const f of atts){btn.textContent=`جارٍ رفع المرفقات ${++j} من ${atts.length}…`;const r=await ASSETS.upload(f);attachments.push({id:r.id,url:r.url,name:f.name,type:f.type||'',size:f.size})}
       btn.textContent='جارٍ الحفظ…';
       const n=EX.filter(x=>x.programId===p.id).length+1;
-      await DB.collection('executions').add({programId:p.id,programCode:p.code,no:n,date:$('#e-date').value,executor:$('#e-exec').value.trim(),location:$('#e-loc').value.trim(),time:$('#e-time').value.trim(),
+      await DB.collection('executions').add({programId:p.id,programCode:p.code,no:n,date:$('#e-date').value,executor:$('#e-exec').value.trim(),executor_staff_id:((window.SP&&SP.can&&!SP.can('add')&&SP.access&&SP.access.staff_id)?SP.access.staff_id:(window.CD_staffId?CD_staffId($('#e-exec').value):null)),location:$('#e-loc').value.trim(),time:$('#e-time').value.trim(),
         participants:$('#e-part').value.trim(),beneficiaries:$('#e-ben').value===''?null:+$('#e-ben').value,description:$('#e-desc').value.trim(),outputs:$('#e-out').value.trim(),
         challenges:$('#e-ch').value.trim(),corrective:$('#e-co').value.trim(),images,attachments,createdAt:new Date().toISOString(),createdBy:USER&&USER.id?await USER.id():null});
       close();toast('تم حفظ التنفيذ. يمكنك الآن إصدار التقرير.');
@@ -1985,7 +1989,7 @@ function bindDetail(p){
 }
 
 const UPLAN=DATA.plans.find(x=>x.name==='برامج غير مخططة')||{id:90,name:'برامج غير مخططة'};
-function canAdd(){return !!(DB&&ASSETS)}
+function canAdd(){return !!(DB&&ASSETS&&(!window.SP||!SP.can||SP.can('add')))}
 async function delUnplanned(p,btn){
   if(!btn.dataset.sure){btn.dataset.sure='1';btn.textContent='اضغط مجددًا لتأكيد الحذف';setTimeout(()=>{btn.dataset.sure='';btn.textContent='حذف البرنامج'},4000);return}
   btn.disabled=true;btn.textContent='جارٍ الحذف…';
@@ -2387,7 +2391,7 @@ function timeline(){
  const cards=`<div class="tl">${keys.map(k=>{const items=nodes[k];const [h,s]=head(k);
   return `<div class="tl-node${cw&&+k===cw.number?' now':''}${cw&&!k.startsWith('zz')&&+k<cw.number?' past':''}"><div class="tl-dot"><b>${esc(h)}</b>${s?`<small>${esc(s)}</small>`:''}<span class="muted small">${items.length} برنامج</span></div><div class="tl-items">${items.map(p=>`<a class="tl-card ${side++%2?'l':'r'}" href="#p-${p.id}" style="${C(PC(p.plan_id))}"><span class="tl-art">${art(p)}</span><span class="tl-txt"><span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${pill(stat(p))}<span class="tag">${p.weeks.length>1?'الأسابيع '+p.weeks[0]+'–'+p.weeks[p.weeks.length-1]:p.weeks.length?'أسبوع واحد':esc(p.period||'')}</span></span><span class="pl-tag" title="الخطة: ${esc(p.plan_name||'')}">${ic('plan')}<span>${esc(p.plan_name||'برنامج غير مدرج')}</span></span><b>${esc(p.name)}</b><span class="muted small clamp">${esc(p.goal||'')}</span><span class="meta"><span>${ic('user')}${esc(p.owner_name||'—')}</span><span>${ic('users')}${esc(p.beneficiary||'—')}</span><span>${ic('pin')}${esc(p.location||'—')}</span></span></span></a>`).join('')}</div></div>`}).join('')||'<div class="empty">لا توجد برامج مطابقة.</div>'}</div>`;
  const owners=[...new Set(P.flatMap(p=>splitV(p.owner_name)).filter(x=>x&&x!=='—'))].sort((a,b)=>a.localeCompare(b,'ar'));
- return pgHero({chip:`${ic('clock')} ${cw?`الأسبوع الدراسي ${cw.number}`:'العام الدراسي 1448هـ'}`,t1:'الخط',t2:'الزمني',desc:'مسار البرامج عبر العام الدراسي: متى يبدأ كل برنامج، وكم يستمر، وأين نقف اليوم من الخطة.',art:PGART.tl(),float:pgChipCard(greg(todayISO()).split('،').pop().trim().split(' ').slice(0,2).join(' '),'اليوم',cw?`الأسبوع ${cw.number}`:'')})+`<div class="pg-tools"><h2 style="margin:0;font-size:1.15rem">${TL_MODE==='gantt'?'مخطط الجدول الزمني':'المسار الزمني'}</h2><div class="tl-tools"><div class="sx-vt" role="group" aria-label="نمط العرض"><button type="button" data-tlm="cards" class="${TL_MODE==='cards'?'on':''}" aria-pressed="${TL_MODE==='cards'}">${ic('list')} المسار الزمني</button><button type="button" data-tlm="gantt" class="${TL_MODE==='gantt'?'on':''}" aria-pressed="${TL_MODE==='gantt'}">${ic('chart')} مخطط الجدول الزمني</button></div>
+ return pgHero({chip:`${ic('clock')} ${cw?`الأسبوع الدراسي ${cw.number}`:'العام الدراسي 1448هـ'}`,t1:'الخط',t2:'الزمني',desc:'مسار البرامج عبر العام الدراسي: متى يبدأ كل برنامج، وكم يستمر، وأين نقف اليوم من الخطة.',art:PGART.tl(),float:pgChipCard(greg(todayISO()).split('،').pop().trim().split(' ').slice(0,2).join(' '),'اليوم',cw?`الأسبوع ${cw.number}`:'')})+ptabs('timeline')+`<div class="pg-tools"><h2 style="margin:0;font-size:1.15rem">${TL_MODE==='gantt'?'مخطط الجدول الزمني':'المسار الزمني'}</h2><div class="tl-tools"><div class="sx-vt" role="group" aria-label="نمط العرض"><button type="button" data-tlm="cards" class="${TL_MODE==='cards'?'on':''}" aria-pressed="${TL_MODE==='cards'}">${ic('list')} المسار الزمني</button><button type="button" data-tlm="gantt" class="${TL_MODE==='gantt'?'on':''}" aria-pressed="${TL_MODE==='gantt'}">${ic('chart')} مخطط الجدول الزمني</button></div>
   <label class="fld">${ic('user')}<select id="towner"><option value="">كل المنفذين</option>${owners.map(o=>`<option${TL_OWNER===o?' selected':''}>${esc(o)}</option>`).join('')}</select></label></div></div>
   ${kpiRow(base,'timeline')}
   ${TL_MODE==='gantt'?gantt(L):cards}`}
@@ -2470,14 +2474,17 @@ function hxBind(){const h=document.querySelector('.hx,.pgh');if(!h)return;const 
   window._hxSc=()=>{if(!document.body.contains(t)){removeEventListener('scroll',window._hxSc);return}if(scrollY<800)t.style.setProperty('--py',(scrollY*.1).toFixed(1)+'px')};addEventListener('scroll',window._hxSc,{passive:true})}
 
 function route(keep){const na=document.getElementById('cp');if(na)na.hidden=!(READY&&canAdd());const sy=scrollY;const h=(location.hash||'#home').slice(1);const v=document.getElementById('view');
- document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.n===h||(h==='home'&&a.dataset.n==='home')||(a.dataset.n==='week'&&/^(week|month)/.test(h))));
+ document.querySelectorAll('#nav a').forEach(a=>{const on=a.dataset.n===h||(h==='home'&&a.dataset.n==='home')||(a.dataset.n==='week'&&/^(week|month|timeline)/.test(h));a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
  if(h.startsWith('p-')){v.innerHTML=detail(h.slice(2));const pp=P.find(x=>x.id==h.slice(2));if(pp)bindDetail(pp)}else if(h==='stats'){v.innerHTML=stats();bindStats()}else if(h==='about'){v.innerHTML=aboutPage();bindAbout()}else if(h==='reports'){v.innerHTML=reportsPage();bindReports()}else if(h.startsWith('news-')){v.innerHTML=newsPage(h.slice(5));bindNews()}else if(h.startsWith('report-')){v.innerHTML=reportPage(h.slice(7));bindReport(h.slice(7))}else if(h==='week-next'){const cw=curWeek(),a=CAL(),nw=cw?a[a.findIndex(w=>w.number===cw.number)+1]:a.find(w=>w.start_date>todayISO());v.innerHTML=weekPage(nw?nw.number:null)}else if(h==='week'||/^week-\d+$/.test(h)){v.innerHTML=weekPage(h==='week'?null:+h.slice(5))}else if(h==='month'||/^month-\d{4}-\d{2}$/.test(h)){v.innerHTML=monthPage(h==='month'?null:h.slice(6))}else if(h==='timeline'){v.innerHTML=timeline();document.getElementById('towner').onchange=e=>{TL_OWNER=e.target.value;route(true)}}else{v.innerHTML=home(h==='list');bindHome()}
  hxBind();if(keep===true)window.scrollTo(0,sy);else if(h!=='home'||!location.hash)window.scrollTo(0,0)}
 document.getElementById('cp').onclick=()=>unplannedForm();
 addEventListener('hashchange',()=>route());route();initRuntime();
+/* قائمة الجوال: زر يفتح صفحات الموقع ويُغلق عند الانتقال */
+(function(){const hd=document.getElementById('hdr'),mb=document.getElementById('menuB');if(!hd||!mb)return;const set=o=>{hd.classList.toggle('open',o);mb.setAttribute('aria-expanded',String(o))};mb.onclick=()=>set(!hd.classList.contains('open'));addEventListener('hashchange',()=>set(false));document.getElementById('nav').addEventListener('click',e=>{if(e.target.closest('a'))set(false)});document.addEventListener('keydown',e=>{if(e.key==='Escape')set(false)})})();
 </script>
-<script src="assets/coordinator.js?v=20261106g"></script>
-<script src="assets/plans.js?v=20261106g"></script>
+<script src="assets/coordinator.js?v=20261113a"></script>
+<script src="assets/plans.js?v=20261113a"></script>
+<script src="assets/executor.js?v=20261113a"></script>
 <script>
 /* حركة: ظهور تدريجي للعناصر وعدّاد للأرقام عند فتح كل صفحة */
 (function(){

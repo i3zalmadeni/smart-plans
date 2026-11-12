@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 const PAGES={me:['مكتبي الإلكتروني','برامجك المسندة وما يحتاج توثيقًا وما هو قادم.','home'],'me-docs':['توثيق برامجي','وثّق تنفيذ برامجك واطّلع على تقارير التنفيذ.','rep']};
-const S={f:'all'};let LASTUP=new Date();
+const S={f:'all'};
 const me=()=>window.SP&&SP.access&&SP.access.staff_id||null;
 const T=()=>todayISO();
 const mine=()=>{const id=me();return id?P.filter(p=>p.owner_staff_id===id):[]};
@@ -17,26 +17,8 @@ const chip=p=>{const k=KL[kind(p)];return `<span class="ex-chip ${k[1]}">${k[0]}
 const hm=d=>{try{return d.toLocaleTimeString('ar-SA-u-ca-gregory-nu-latn',{hour:'2-digit',minute:'2-digit'})}catch(e){return ''}};
 const exs=p=>exFor(p.id).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
 
-function bar(h){
-  const [t,d,i]=PAGES[h];const nm=(SP.access&&SP.access.name)||'';
-  const it=(href,icon,label)=>`<a href="#${href}" class="${h===href?'on':''}"${h===href?' aria-current="page"':''}>${ic(icon)}<span>${label}</span></a>`;
-  return `<div class="cp-top"><div class="wrap cp-topin">
-    <a class="cp-sys" href="#me"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M30 4c2 14 8 20 24 24-16 4-22 10-24 26-2-16-8-22-24-26 16-4 22-10 24-24z" fill="#0f8a94"/><path d="M50 4c.8 5 3 7.2 8 8-5 .8-7.2 3-8 8-.8-5-3-7.2-8-8 5-.8 7.2-3 8-8z" fill="#f0b34a"/></svg><span><b>الخطط الذكية</b><small>بوابة المنفذ</small></span></a>
-    <a class="cp-site" href="#home">الموقع الإلكتروني</a>
-    <span class="cp-moe"><b>وزارة التعليم</b><i aria-hidden="true"></i><span class="cp-core"><img src="assets/core-logo.svg" alt="" width="24" height="24">النواة الرقمية</span></span></div></div>
-  <div class="cp-strip" aria-hidden="true"></div>
-  <div class="cp-sub" role="navigation" aria-label="صفحات المنفذ"><div class="wrap cp-subin"><nav class="cp-nav">${it('me','home','مكتبي الإلكتروني')}${it('me-docs','rep','توثيق برامجي')}${SP.can('add')?`<a href="#admin">${ic('layers')}<span>لوحة التحكم</span></a>`:''}</nav>
-    <span class="cp-user"><span class="cp-who">${ic('user')}<span>${esc(nm)}</span></span><button type="button" class="cp-out" id="ex-out">خروج</button></span></div></div>
-  <div class="cp-page"><div class="wrap cp-pagein"><span class="cp-pi">${ic(i)}</span><div class="cp-pt"><h1>${t}</h1><p>${d}</p></div>
-    <div class="cp-pm"><span class="cp-up">آخر تحديث ${hm(LASTUP)}</span><button type="button" class="btn soft cd-sm" id="ex-refresh">${ic('rep')} تحديث</button></div></div></div>`}
-function showBar(h){let b=document.getElementById('ex-bar');
-  if(window.CD_showBar)CD_showBar(null);
-  document.body.classList.toggle('cp-on',!!h);
-  if(!h){if(b)b.hidden=true;return}
-  if(!b){b=document.createElement('div');b.id='ex-bar';document.body.prepend(b)}
-  b.hidden=false;b.innerHTML=bar(h);
-  b.querySelector('#ex-out').onclick=()=>SP.signOut();
-  b.querySelector('#ex-refresh').onclick=()=>{try{DB&&DB.refresh&&DB.refresh()}catch(e){}LASTUP=new Date();setTimeout(()=>{route(true);toast('حُدّثت البيانات')},350)}}
+/* الترويسة (الهوية، القائمة الداكنة، التنبيهات، شريط الصفحة) موحدة في coordinator.js */
+const showBar=h=>{if(window.CD_showBar)CD_showBar(h)};
 
 const row=(p,acts)=>`<div class="ex-row"><div class="nm"><b>${esc(p.name)}</b><small>${esc(p.plan_name||'')} • ${esc(when(p))}${p.location?' • '+esc(p.location):''}</small></div><div class="ex-act">${chip(p)}${acts||''}</div></div>`;
 const docBtn=p=>`<button type="button" class="btn pri cd-sm" data-doc="${p.id}">${ic('plus')} توثيق تنفيذ</button>`;
@@ -77,7 +59,7 @@ function lock(sg){return `<div class="wrap"><div class="ex-lock">${ic('user')}<h
 const _route=route;
 route=function(keep){
   const h=(location.hash||'#home').slice(1);
-  if(!PAGES[h]){const b=document.getElementById('ex-bar');if(b)b.hidden=true;return _route(keep)}
+  if(!PAGES[h])return _route(keep);
   const v=document.getElementById('view'),sy=scrollY;
   document.querySelectorAll('#nav a').forEach(a=>a.classList.remove('on'));
   if(!READY||!(window.SP&&SP.access!==undefined)){showBar(null);v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}

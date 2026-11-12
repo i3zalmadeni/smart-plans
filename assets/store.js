@@ -197,11 +197,8 @@
       top.appendChild(box);
       SP.ready.then(function () {
         if (SP.signedIn) {
-          var nm = (SP.access && SP.access.name) || 'مستخدم';
-          box.innerHTML = '<span class="muted small" id="lg-name">' + esc(nm) + '</span>' +
-            (SP.access && SP.access.executor ? '<a class="btn soft" href="#me" id="lg-desk">مكتبي</a>' : '') +
-            (SP.can('add') ? '<a class="btn pri" href="#admin" id="lg-panel">لوحة التحكم</a>' : '') +
-            '<button class="btn" type="button" id="lg-out">خروج</button>';
+          // «لوحة التحكم» تظهر في قائمة الموقع نفسها؛ هنا زر الخروج فقط
+          box.innerHTML = '<button class="btn" type="button" id="lg-out">خروج</button>';
           box.querySelector('#lg-out').onclick = function () { SP.signOut(); };
         } else {
           box.innerHTML = '<button class="btn soft" type="button" id="lg-in">دخول</button>';

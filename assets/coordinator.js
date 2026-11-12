@@ -461,46 +461,85 @@ function bind(v){
     el.disabled=true;try{await saveEdit(p,ch,null);toast('حُفظ التعديل')}catch(e){el.disabled=false;toast(e.message||'تعذّر الحفظ')}});
 }
 
-/* ---------- زر التنبيهات في الرأس ---------- */
+/* ---------- رابط «لوحة التحكم» في قائمة الموقع ---------- */
+const isExec=()=>!!(window.SP&&SP.access&&SP.access.executor&&SP.access.staff_id);
 function updBell(){
-  const al=document.querySelector('#nav a[data-n="admin"]');if(al){al.hidden=!(READY&&canAdd());al.textContent='لوحة التحكم'}
+  const al=document.querySelector('#nav a[data-n="admin"]');
+  if(al){const adm=READY&&canAdd(),ex=isExec();al.hidden=!(adm||ex);al.textContent='لوحة التحكم';al.setAttribute('href',adm||!ex?'#admin':'#me')}
   const cp=document.getElementById('cp');if(cp)cp.hidden=true;
   const old=document.getElementById('cd-tools');if(old)old.remove()}
 
-/* ---------- شريط أدوات لوحة التحكم أسفل رأس الموقع ---------- */
-const TITLES={'admin-alerts':'التنبيهات',admin:'مهام المتابعة','admin-plans':'إدارة الخطة','admin-people':'المنفذون','admin-trash':'المحذوفات'};
+/* ---------- ترويسة لوحة التحكم الموحدة (هوية النواة): للمنسق والمنفذ معًا ---------- */
+Object.assign(IC,{desk:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',refresh:'<path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 4v7h-7"/>',trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'});
+const ADM=['admin','admin-alerts','admin-plans','admin-people','admin-trash'],EXP=['me','me-docs'];
+const TITLES={me:'مكتبي الإلكتروني','me-docs':'توثيق برامجي','admin-alerts':'التنبيهات',admin:'مهام المتابعة','admin-plans':'إدارة الخطة','admin-people':'المنفذون','admin-trash':'المحذوفات'};
 const PINFO={
-  admin:['check','ما يحتاج إجراءً منك الآن: اعتماد التوثيق، والمتأخر، والمتعثر، وبرامج هذا الأسبوع.'],
-  'admin-alerts':['bell','البرامج التي تحتاج تدخلك: المتأخرة في التوثيق، والمتعثرة وأسباب تعثرها، والقادمة قريبًا.'],
-  'admin-plans':['plan','تحرير برامج كل خطة وتوثيقها واعتمادها، وإضافة الخطط وإرفاق ملفاتها.'],
-  'admin-people':['users','منفذو البرامج من منسوبي النواة، وربط الأسماء المكتوبة يدويًا بمنسوبيها.'],
-  'admin-trash':['x','ما حُذف من البرامج والخطط، مع إمكانية استعادته.']};
+  me:'برامجك المسندة إليك: ما يحتاج توثيقًا الآن، وما يجري، وما هو قادم.',
+  'me-docs':'وثّق تنفيذ برامجك واطّلع على تقارير التنفيذ السابقة.',
+  admin:'ما يحتاج إجراءً منك الآن: اعتماد التوثيق، والمتأخر، والمتعثر، وبرامج هذا الأسبوع.',
+  'admin-alerts':'البرامج التي تحتاج تدخلك: المتأخرة في التوثيق، والمتعثرة وأسباب تعثرها، والقادمة قريبًا.',
+  'admin-plans':'تحرير برامج كل خطة وتوثيقها واعتمادها، وإضافة الخطط وإرفاق ملفاتها.',
+  'admin-people':'منفذو البرامج من منسوبي النواة، وربط الأسماء المكتوبة يدويًا بمنسوبيها.',
+  'admin-trash':'ما حُذف من البرامج والخطط، مع إمكانية استعادته.'};
 const hhmm=d=>{try{return d.toLocaleTimeString('ar-SA-u-ca-gregory-nu-latn',{hour:'2-digit',minute:'2-digit'})}catch(e){return ''}};
+const roleName=()=>{const a=(window.SP&&SP.access)||{};return a.admin?'مدير النواة الرقمية':a.coordinator?'منسق الخطط الذكية':canAdd()?'محرر الخطط الذكية':'منفذ البرامج'};
+
+/* التنبيهات: تُحسب من البيانات الحالية (لا جدول خاص بها)، وتُعلَّم مقروءةً في المتصفح */
+const NSK='sp-notif-seen';
+const getSeen=()=>new Set(ls.get(NSK,[]));
+const setSeen=s=>ls.set(NSK,[...s].slice(-500));
+let NOPEN=false;
+function notifs(){
+  const out=[],t=T(),mid=isExec()?SP.access.staff_id:null,skip=new Set();
+  if(mid){const soon=addDays(t,7);
+    for(const p of P){if(p.owner_staff_id!==mid||p.status==='ملغي'||done(p))continue;const s=startOf(p),e=endOf(p)||s;if(!s)continue;
+      if(e<=t){skip.add(p.id);out.push({id:'x:due:'+p.id+':'+e,tone:'bad',o:0,d:e,t:p.name,s:'بانتظار توثيقك • انتهت فترته '+dmy(e),href:'#me-docs'})}
+      else if(s<=t)out.push({id:'x:now:'+p.id+':'+s,tone:'info',o:2,d:s,t:p.name,s:'برنامجك جارٍ الآن حتى '+dmy(e),href:'#me'})
+      else if(s<=soon)out.push({id:'x:soon:'+p.id+':'+s,tone:'info',o:3,d:s,t:p.name,s:'برنامجك القادم • يبدأ '+dmy(s),href:'#me'})}}
+  if(READY&&canAdd()){
+    for(const p of P){
+      if(p.status==='ملغي')continue;
+      if(!p.approved_at&&exFor(p.id).length)out.push({id:'c:appr:'+p.id+':'+exFor(p.id).length,tone:'ok',o:1,d:endOf(p),t:p.name,s:'موثّق بانتظار الاعتماد • '+ownerOf(p),href:'#p-'+p.id});
+      else if(p.status==='متعثر')out.push({id:'c:stall:'+p.id,tone:'warn',o:1,d:endOf(p),t:p.name,s:'متعثر • '+(p.stall_note||'لم يُكتب سبب'),href:'#p-'+p.id});
+      else if(needs(p)&&!skip.has(p.id))out.push({id:'c:late:'+p.id+':'+endOf(p),tone:'bad',o:0,d:endOf(p),t:p.name,s:'متأخر التوثيق منذ '+daysBetween(endOf(p),t)+' يومًا • '+ownerOf(p),href:'#p-'+p.id})}}
+  return out.sort((a,b)=>a.o-b.o||String(a.d).localeCompare(String(b.d)))}
+function popHTML(N){const seen=getSeen(),adm=READY&&canAdd();
+  const rows=N.slice(0,12).map(n=>`<a class="ni${seen.has(n.id)?'':' new'}" href="${n.href}" data-nid="${esc(n.id)}"><i class="dot ${n.tone}"></i><span class="nt"><b>${esc(n.t)}</b><small>${esc(n.s)}</small></span></a>`).join('');
+  return `<div class="nh"><b>التنبيهات</b>${N.some(n=>!seen.has(n.id))?'<button type="button" class="nmark" id="cp-nread">تعليم الكل كمقروء</button>':''}</div><div class="nl">${rows||'<div class="nempty">لا تنبيهات الآن.</div>'}</div>${adm?`<a class="nall" href="#admin-alerts">عرض كل التنبيهات${N.length>12?' ('+N.length+')':''}</a>`:N.length>12?'<a class="nall" href="#me-docs">عرض كل برامجي</a>':''}`}
 function barHTML(h){
-  const n=P.filter(needs).length,I=PINFO[h]||['layers',''];
-  const it=(href,icon,label,badge,z)=>`<a href="#${href}" class="${h===href?'on':''}"${h===href?' aria-current="page"':''}>${ic(icon)}<span>${label}</span>${badge?`<b${z?' class="z"':''}>${badge}</b>`:''}</a>`;
+  const N=notifs(),seen=getSeen(),un=N.filter(n=>!seen.has(n.id)).length,adm=READY&&canAdd(),ex=isExec(),cur=h==='admin-alerts'?'admin':h;
+  const it=(href,icon,label,badge)=>`<a href="#${href}" class="${cur===href?'on':''}"${cur===href?' aria-current="page"':''}>${ic(icon)}<span>${label}</span>${badge?`<b>${badge}</b>`:''}</a>`;
   const nm=(window.SP&&SP.access&&SP.access.name)||WHO||'';
   return `<div class="cp-top"><div class="wrap cp-topin">
-    <a class="cp-sys" href="#admin"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M30 4c2 14 8 20 24 24-16 4-22 10-24 26-2-16-8-22-24-26 16-4 22-10 24-24z" fill="#0f8a94"/><path d="M50 4c.8 5 3 7.2 8 8-5 .8-7.2 3-8 8-.8-5-3-7.2-8-8 5-.8 7.2-3 8-8z" fill="#f0b34a"/></svg><span><b>الخطط الذكية</b><small>لوحة التحكم</small></span></a>
-    <a class="cp-site" href="#home">الموقع الإلكتروني</a>
-    <span class="cp-moe"><b>وزارة التعليم</b><i aria-hidden="true"></i><span class="cp-core"><img src="assets/core-logo.svg" alt="" width="24" height="24">النواة الرقمية</span></span></div></div>
+    <a class="cp-sys" href="#${adm&&!EXP.includes(h)?'admin':ex?'me':'admin'}"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M30 4c2 14 8 20 24 24-16 4-22 10-24 26-2-16-8-22-24-26 16-4 22-10 24-24z" fill="#0f8a94"/><path d="M50 4c.8 5 3 7.2 8 8-5 .8-7.2 3-8 8-.8-5-3-7.2-8-8 5-.8 7.2-3 8-8z" fill="#f0b34a"/></svg><span><b>الخطط الذكية</b><small>متوسطة لبيد بن ربيعة</small></span></a>
+    <span class="cp-idl"><a class="cp-site" href="#home">الموقع الإلكتروني</a><i class="cp-vsep" aria-hidden="true"></i><a class="coreid" href="https://i3zalmadeni.github.io/digital-core" title="النواة الرقمية"><img src="assets/core-logo.svg" alt="" width="36" height="36"><span><b>النواة الرقمية</b><small>الهوية الموحدة</small></span></a><span class="moe"><b>وزارة التعليم</b><small>Ministry of Education</small></span></span></div></div>
   <div class="cp-strip" aria-hidden="true"></div>
-  <div class="cp-sub" role="navigation" aria-label="أقسام لوحة التحكم"><div class="wrap cp-subin"><nav class="cp-nav">${it('admin','check','المهام')}${it('admin-alerts','bell','التنبيهات',n||'')}${it('admin-plans','plan','إدارة الخطة')}${it('admin-people','users','المنفذون')}${it('admin-trash','x','المحذوفات',REMOVED.length||'',true)}</nav>
-    <span class="cp-user"><span class="cp-who">${ic('user')}<span>${esc(nm)}</span></span><button type="button" class="cp-out" id="cp-out">خروج</button></span></div></div>
-  <div class="cp-page"><div class="wrap cp-pagein"><span class="cp-pi">${ic(I[0])}</span><div class="cp-pt"><h1>${TITLES[h]||''}</h1><p>${I[1]||''}</p></div>
-    <div class="cp-pm"><span class="cp-up">آخر تحديث ${hhmm(LASTUP)}</span><button type="button" class="btn soft cd-sm" id="cp-refresh">${ic('rep')} تحديث</button></div></div>
-    <div class="wrap cp-acts" role="group" aria-label="إضافة سريعة"><button type="button" class="cx-pri" data-cx-add="plan">${ic('plus')}<span>برنامج في الخطة</span></button><button type="button" data-cx-add="unplanned">${ic('plus')}<span>برنامج غير مدرج</span></button><button type="button" data-cx-add="newplan">${ic('plus')}<span>خطة جديدة</span></button></div></div>`}
+  <div class="cp-sub"><div class="wrap cp-subin"><nav class="cp-nav" aria-label="صفحات لوحة التحكم">${ex?it('me','desk','مكتبي الإلكتروني')+it('me-docs','rep','توثيق برامجي'):''}${adm?it('admin','check','المهام')+it('admin-plans','plan','إدارة الخطة')+it('admin-people','users','المنفذون')+it('admin-trash','trash','المحذوفات',REMOVED.length||''):''}</nav>
+    <span class="cp-user"><span class="cp-nwrap" id="cp-nwrap"><button type="button" class="cp-bell" id="cp-bell" aria-haspopup="true" aria-expanded="${NOPEN}" aria-label="${un?'التنبيهات، '+un+' جديد':'التنبيهات'}">${ic('bell')}${un?`<b class="nb">${un>9?'9+':un}</b>`:''}</button><div class="cp-npop" id="cp-npop"${NOPEN?'':' hidden'}>${NOPEN?popHTML(N):''}</div></span><span class="cp-who" title="${esc(nm)}">${esc(nm)}</span><button type="button" class="cp-out" id="cp-out">خروج</button></span></div></div>
+  <div class="cp-page"><div class="wrap cp-pagein"><div class="cp-pt"><small>${roleName()}</small><h1>${TITLES[h]||''}</h1></div><p class="cp-pd">${PINFO[h]||''}</p>
+    <div class="cp-pm"><span class="cp-up">آخر تحديث ${hhmm(LASTUP)}</span><button type="button" class="btn cd-sm" id="cp-refresh">${ic('refresh')} تحديث</button></div></div>
+    ${ADM.includes(h)?`<div class="wrap cp-acts" role="group" aria-label="إضافة سريعة"><button type="button" class="cx-pri" data-cx-add="plan">${ic('plus')}<span>برنامج في الخطة</span></button><button type="button" data-cx-add="unplanned">${ic('plus')}<span>برنامج غير مدرج</span></button><button type="button" data-cx-add="newplan">${ic('plus')}<span>خطة جديدة</span></button></div>`:''}</div>`}
 const shell=(h,inner)=>inner;
-function showBar(h){let bar=document.getElementById('cx-bar');const on=!!(h&&READY&&canAdd());
+let BARH=null;
+function showBar(h){if(h!==BARH){NOPEN=false;BARH=h}let bar=document.getElementById('cx-bar');const on=!!(h&&READY&&(ADM.includes(h)?canAdd():EXP.includes(h)&&isExec()));
   document.body.classList.toggle('cp-on',on);
-  if(!on){if(bar)bar.hidden=true;return}
+  if(!on){NOPEN=false;if(bar)bar.hidden=true;return}
   if(!bar){bar=document.createElement('div');bar.id='cx-bar';document.body.prepend(bar)}
-  bar.hidden=false;bar.innerHTML=barHTML(h);bindBar(bar);
+  bar.hidden=false;bar.innerHTML=barHTML(h);bindBar(bar,h);
   const on2=bar.querySelector('.cp-nav a.on');if(on2&&on2.scrollIntoView&&innerWidth<760)on2.scrollIntoView({block:'nearest',inline:'center'})}
-function bindBar(r){
+function closePop(){NOPEN=false;const p=document.getElementById('cp-npop'),b=document.getElementById('cp-bell');if(p)p.hidden=true;if(b)b.setAttribute('aria-expanded','false')}
+function bindPop(r,h){const p=r.querySelector('#cp-npop');if(!p)return;
+  const rd=p.querySelector('#cp-nread');if(rd)rd.onclick=e=>{e.stopPropagation();const s=getSeen();notifs().forEach(n=>s.add(n.id));setSeen(s);showBar(h)};
+  p.querySelectorAll('[data-nid]').forEach(a=>a.onclick=()=>{const s=getSeen();s.add(a.dataset.nid);setSeen(s);NOPEN=false});
+  const al=p.querySelector('.nall');if(al)al.onclick=()=>{NOPEN=false}}
+function bindBar(r,h){
   r.querySelectorAll('[data-cx-add]').forEach(b=>b.onclick=()=>{if(b.dataset.cxAdd==='newplan'){planDialog(null);return}if(b.dataset.cxAdd==='unplanned'){if(typeof unplannedForm==='function')unplannedForm();else toast('غير متاح')}else editor(null,{plan_id:+(D.mplan||D.plan)||(PL[0]||{}).id})});
   const out=r.querySelector('#cp-out');if(out)out.onclick=()=>{if(window.SP&&SP.signOut)SP.signOut();else location.reload()};
-  const rf=r.querySelector('#cp-refresh');if(rf)rf.onclick=()=>{rf.disabled=true;try{if(DB&&DB.refresh)DB.refresh()}catch(e){}LASTUP=new Date();setTimeout(()=>{route(true);toast('حُدّثت البيانات')},350)}}
+  const rf=r.querySelector('#cp-refresh');if(rf)rf.onclick=()=>{rf.disabled=true;try{if(DB&&DB.refresh)DB.refresh()}catch(e){}LASTUP=new Date();setTimeout(()=>{route(true);toast('حُدّثت البيانات')},350)};
+  const bl=r.querySelector('#cp-bell');if(bl)bl.onclick=e=>{e.stopPropagation();NOPEN=!NOPEN;const p=r.querySelector('#cp-npop');p.hidden=!NOPEN;bl.setAttribute('aria-expanded',String(NOPEN));if(NOPEN){p.innerHTML=popHTML(notifs());bindPop(r,h)}};
+  bindPop(r,h)}
+document.addEventListener('click',e=>{if(NOPEN&&!(e.target.closest&&e.target.closest('#cp-nwrap')))closePop()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&NOPEN){closePop();const b=document.getElementById('cp-bell');if(b)b.focus()}});
 
 /* ---------- صور المنفذين في صفحات الموقع الأخرى ---------- */
 function decorate(v){if(!v)return;const names=new Set(peopleNames());
@@ -523,7 +562,6 @@ route=function(keep){
   if(EX.some(e=>e&&e.kind==='coordinator'))EX=EX.filter(e=>!e||e.kind!=='coordinator');
   updBell();
   const h=(location.hash||'#home').slice(1);
-  const ADM=['admin','admin-alerts','admin-plans','admin-people','admin-trash'];
   if(!ADM.includes(h)){showBar(null);const r=_route(keep);updBell();try{decorate(document.getElementById('view'))}catch(e){console.error(e)}return r}
   updBell();
   document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.n==='admin'));
