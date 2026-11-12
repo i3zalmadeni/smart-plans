@@ -43,13 +43,14 @@
   #hdr.open{max-height:100vh;max-height:100dvh;overflow-y:auto}
   #hdr.open #nav{display:flex;flex:0 0 100%;order:5;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:2px;padding:4px 0 6px}
   #hdr.open #nav a{padding:13px 14px;font-size:1.05rem}
+  #auth-box .btn{min-height:44px}
+  #hdr.open #nav{border-top:1px solid var(--line);margin-top:2px;padding-top:8px}
   #hdr .top .moe{display:flex}
   #hdr .coreid small,#hdr .moe small{display:block}
 }
 @media (max-width:700px){
   #hdr .coreid,#hdr .top .moe{display:none}
   #hdr.open .coreid,#hdr.open .top .moe{display:flex;order:6}
-  #hdr.open #auth-box{order:7;margin-inline-start:auto}
   #hdr .bm b{font-size:1.02rem}
 }
 
@@ -117,21 +118,38 @@
 
 @media (max-width:1000px){.cp-idl .coreid small,.cp-idl .moe small{display:none}}
 @media (max-width:760px){
-  .cp-topin{flex-wrap:wrap;gap:8px 12px}
+  .cp-topin{gap:8px 12px}
   .cp-idl{gap:10px}
   .cp-idl .coreid span,.cp-idl .moe,.cp-vsep{display:none}
+  .cp-site{display:inline-flex;align-items:center;min-height:44px}
+  /* الشريط الداكن صفان: الجرس والاسم والخروج أعلى، والتبويبات أسفل؛ عند التمرير يبقى صف التبويبات وحده ثابتًا */
+  .cp-sub{top:calc(env(safe-area-inset-top,0px) - 56px)}
   .cp-subin{flex-wrap:wrap;gap:0}
-  .cp-nav{flex:1 1 100%;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(72px,1fr)}
-  .cp-nav a{flex-direction:column;justify-content:center;gap:2px;min-height:54px;padding:8px 4px 5px;font-size:.74rem;line-height:1.25;text-align:center;white-space:normal}
-  .cp-nav a .ico{width:20px;height:20px}
-  .cp-nav b{position:absolute;top:3px;inset-inline-end:8px}
-  .cp-user{flex:1 1 100%;margin-block:6px;padding-inline-start:0;border-inline-start:0}
+  .cp-user{order:-1;flex:1 1 100%;height:44px;margin-block:6px;padding-inline-start:0;border-inline-start:0}
   .cp-who{flex:1;max-width:none}
-  .cp-out{min-height:38px}
+  .cp-bell{width:44px;height:44px}
+  .cp-out{min-height:44px;padding-inline:18px}
+  .cp-nav{flex:1 1 100%;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(80px,1fr);border-top:1px solid rgba(255,255,255,.08)}
+  .cp-nav.more{-webkit-mask-image:linear-gradient(to right,transparent 0,#000 28px);mask-image:linear-gradient(to right,transparent 0,#000 28px)}
+  .cp-nav.pre{-webkit-mask-image:linear-gradient(to left,transparent 0,#000 28px);mask-image:linear-gradient(to left,transparent 0,#000 28px)}
+  .cp-nav.pre.more{-webkit-mask-image:linear-gradient(to right,transparent 0,#000 28px,#000 calc(100% - 28px),transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 28px,#000 calc(100% - 28px),transparent 100%)}
+  .cp-nav a{flex-direction:column;justify-content:center;gap:3px;min-height:56px;padding:7px 4px 5px;font-size:.74rem;line-height:1.25;text-align:center;white-space:normal}
+  .cp-nav a .ico{width:20px;height:20px}
+  .cp-nav b{position:absolute;top:3px;inset-inline-end:10px}
   .cp-nwrap{position:static}
-  .cp-npop{position:fixed;top:auto;inset-inline:12px;width:auto;margin-top:8px}
+  .cp-npop{top:100%;inset-inline:12px;width:auto;margin-top:8px}
+  .cp-npop .nmark{min-height:36px;padding-inline:8px}
+  .cp-npop .ni{padding-block:13px}
+  .cp-npop .nall{padding:14px}
+  .cp-npop .nl{max-height:min(56vh,420px);max-height:min(56dvh,420px)}
+  .cp-pagein{gap:6px 14px;padding-block:10px}
   .cp-pt{border-inline-end:0;padding-inline-end:0;flex:1}
-  .cp-pd{order:3;flex-basis:100%;min-width:0}
+  .cp-pt h1{font-size:1.3rem}
+  .cp-pd{order:3;flex-basis:100%;min-width:0;font-size:.92rem}
   .cp-up{display:none}
+  .cp-pm .btn{min-height:44px;padding-inline:14px}
+  .cp-acts{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:10px}
+  .cp-acts::-webkit-scrollbar{display:none}
+  .cp-acts button{flex:none;min-height:44px;white-space:nowrap}
 }
 @media (prefers-reduced-motion:reduce){#hdr::after,.cp-strip,.cp-npop{animation:none}}

@@ -526,7 +526,10 @@ function showBar(h){if(h!==BARH){NOPEN=false;BARH=h}let bar=document.getElementB
   if(!on){NOPEN=false;if(bar)bar.hidden=true;return}
   if(!bar){bar=document.createElement('div');bar.id='cx-bar';document.body.prepend(bar)}
   bar.hidden=false;bar.innerHTML=barHTML(h);bindBar(bar,h);
-  const on2=bar.querySelector('.cp-nav a.on');if(on2&&on2.scrollIntoView&&innerWidth<760)on2.scrollIntoView({block:'nearest',inline:'center'})}
+  // الجوال: التبويب الحالي يُمرَّر إلى وسط الشريط دون تحريك الصفحة، وتظليل الحافة يدل على وجود تبويبات أخرى
+  const nv=bar.querySelector('.cp-nav'),on2=nv&&nv.querySelector('a.on');
+  if(nv){if(on2&&innerWidth<=760)nv.scrollLeft+=on2.getBoundingClientRect().left+on2.offsetWidth/2-(nv.getBoundingClientRect().left+nv.clientWidth/2);
+    const mk=()=>{const x=Math.abs(nv.scrollLeft);nv.classList.toggle('pre',x>8);nv.classList.toggle('more',nv.scrollWidth-nv.clientWidth-x>8)};mk();nv.onscroll=mk}}
 function closePop(){NOPEN=false;const p=document.getElementById('cp-npop'),b=document.getElementById('cp-bell');if(p)p.hidden=true;if(b)b.setAttribute('aria-expanded','false')}
 function bindPop(r,h){const p=r.querySelector('#cp-npop');if(!p)return;
   const rd=p.querySelector('#cp-nread');if(rd)rd.onclick=e=>{e.stopPropagation();const s=getSeen();notifs().forEach(n=>s.add(n.id));setSeen(s);showBar(h)};

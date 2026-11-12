@@ -1545,12 +1545,12 @@ body.print-about .ab-go{display:none!important}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="assets/config.js?v=20261113a"></script>
-<script src="assets/store.js?v=20261113a"></script>
-<link rel="stylesheet" href="assets/coordinator.css?v=20261113a">
-<link rel="stylesheet" href="assets/plans.css?v=20261113a">
-<link rel="stylesheet" href="assets/reports.css?v=20261113a">
-<link rel="stylesheet" href="assets/executor.css?v=20261113a">
+<script src="assets/config.js?v=20261113b"></script>
+<script src="assets/store.js?v=20261113b"></script>
+<link rel="stylesheet" href="assets/coordinator.css?v=20261113b">
+<link rel="stylesheet" href="assets/plans.css?v=20261113b">
+<link rel="stylesheet" href="assets/reports.css?v=20261113b">
+<link rel="stylesheet" href="assets/executor.css?v=20261113b">
 <style>
 /* ===== توحيد مقاس رأس الصفحات (الرئيسية وتعرف علينا وبقية الصفحات) ===== */
 @media (min-width:981px){
@@ -1565,7 +1565,7 @@ body.print-about .ab-go{display:none!important}
 @media (max-width:980px){.hx,.pgh,.ax-hero{min-height:0;padding:32px 22px;border-radius:26px}.hx-vis,.ax-hero .ax-hv{height:260px}.pgh-vis{height:230px}}
 @media (max-width:640px){.hx,.pgh,.ax-hero{padding:26px 18px;border-radius:24px;gap:16px}.pgh-art,.ax-hero .ax-hv{display:none}.hx-vis{height:auto}}
 </style>
-<link rel="stylesheet" href="assets/shell.css?v=20261113a">
+<link rel="stylesheet" href="assets/shell.css?v=20261113b">
 </head>
 <body>
 
@@ -2480,11 +2480,11 @@ function route(keep){const na=document.getElementById('cp');if(na)na.hidden=!(RE
 document.getElementById('cp').onclick=()=>unplannedForm();
 addEventListener('hashchange',()=>route());route();initRuntime();
 /* قائمة الجوال: زر يفتح صفحات الموقع ويُغلق عند الانتقال */
-(function(){const hd=document.getElementById('hdr'),mb=document.getElementById('menuB');if(!hd||!mb)return;const set=o=>{hd.classList.toggle('open',o);mb.setAttribute('aria-expanded',String(o))};mb.onclick=()=>set(!hd.classList.contains('open'));addEventListener('hashchange',()=>set(false));document.getElementById('nav').addEventListener('click',e=>{if(e.target.closest('a'))set(false)});document.addEventListener('keydown',e=>{if(e.key==='Escape')set(false)})})();
+(function(){const hd=document.getElementById('hdr'),mb=document.getElementById('menuB');if(!hd||!mb)return;const set=o=>{hd.classList.toggle('open',o);mb.setAttribute('aria-expanded',String(o))};mb.onclick=()=>set(!hd.classList.contains('open'));addEventListener('hashchange',()=>set(false));document.getElementById('nav').addEventListener('click',e=>{if(e.target.closest('a'))set(false)});document.addEventListener('keydown',e=>{if(e.key==='Escape')set(false)});document.addEventListener('click',e=>{if(hd.classList.contains('open')&&!hd.contains(e.target))set(false)})})();
 </script>
-<script src="assets/coordinator.js?v=20261113a"></script>
-<script src="assets/plans.js?v=20261113a"></script>
-<script src="assets/executor.js?v=20261113a"></script>
+<script src="assets/coordinator.js?v=20261113b"></script>
+<script src="assets/plans.js?v=20261113b"></script>
+<script src="assets/executor.js?v=20261113b"></script>
 <script>
 /* حركة: ظهور تدريجي للعناصر وعدّاد للأرقام عند فتح كل صفحة */
 (function(){
