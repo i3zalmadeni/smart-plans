@@ -471,9 +471,10 @@ function updBell(){
 
 /* ---------- ترويسة لوحة التحكم الموحدة (هوية النواة): للمنسق والمنفذ معًا ---------- */
 Object.assign(IC,{desk:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',refresh:'<path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 4v7h-7"/>',trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'});
-const ADM=['admin','admin-alerts','admin-plans','admin-people','admin-trash'],EXP=['me','me-docs'];
-const TITLES={me:'مكتبي الإلكتروني','me-docs':'توثيق برامجي','admin-alerts':'التنبيهات',admin:'مهام المتابعة','admin-plans':'إدارة الخطة','admin-people':'المنفذون','admin-trash':'المحذوفات'};
+const ADM=['admin','admin-alerts','admin-plans','admin-people','admin-trash'],EXP=['me','me-docs'],NTF='notifications';
+const TITLES={notifications:'الإشعارات',me:'مكتبي الإلكتروني','me-docs':'توثيق برامجي','admin-alerts':'التنبيهات',admin:'مهام المتابعة','admin-plans':'إدارة الخطة','admin-people':'المنفذون','admin-trash':'المحذوفات'};
 const PINFO={
+  notifications:'ما ينتظر إجراءك ونتائج طلباتك ومستجدات الخطط الذكية.',
   me:'برامجك المسندة إليك: ما يحتاج توثيقًا الآن، وما يجري، وما هو قادم.',
   'me-docs':'وثّق تنفيذ برامجك واطّلع على تقارير التنفيذ السابقة.',
   admin:'ما يحتاج إجراءً منك الآن: اعتماد التوثيق، والمتأخر، والمتعثر، وبرامج هذا الأسبوع.',
@@ -503,9 +504,6 @@ function notifs(){
       else if(p.status==='متعثر')out.push({id:'c:stall:'+p.id,tone:'warn',o:1,d:endOf(p),t:p.name,s:'متعثر • '+(p.stall_note||'لم يُكتب سبب'),href:'#p-'+p.id});
       else if(needs(p)&&!skip.has(p.id))out.push({id:'c:late:'+p.id+':'+endOf(p),tone:'bad',o:0,d:endOf(p),t:p.name,s:'متأخر التوثيق منذ '+daysBetween(endOf(p),t)+' يومًا • '+ownerOf(p),href:'#p-'+p.id})}}
   return out.sort((a,b)=>a.o-b.o||String(a.d).localeCompare(String(b.d)))}
-function popHTML(N){const seen=getSeen(),adm=READY&&canAdd();
-  const rows=N.slice(0,12).map(n=>`<a class="ni${seen.has(n.id)?'':' new'}" href="${n.href}" data-nid="${esc(n.id)}"><i class="dot ${n.tone}"></i><span class="nt"><b>${esc(n.t)}</b><small>${esc(n.s)}</small></span></a>`).join('');
-  return `<div class="nh"><b>التنبيهات</b>${N.some(n=>!seen.has(n.id))?'<button type="button" class="nmark" id="cp-nread">تعليم الكل كمقروء</button>':''}</div><div class="nl">${rows||'<div class="nempty">لا تنبيهات الآن.</div>'}</div>${adm?`<a class="nall" href="#admin-alerts">عرض كل التنبيهات${N.length>12?' ('+N.length+')':''}</a>`:N.length>12?'<a class="nall" href="#me-docs">عرض كل برامجي</a>':''}`}
 function barHTML(h){
   const N=notifs(),seen=getSeen(),un=N.filter(n=>!seen.has(n.id)).length,adm=READY&&canAdd(),ex=isExec(),cur=h==='admin-alerts'?'admin':h;
   const it=(href,icon,label,badge)=>`<a href="#${href}" class="${cur===href?'on':''}"${cur===href?' aria-current="page"':''}>${ic(icon)}<span>${label}</span>${badge?`<b>${badge}</b>`:''}</a>`;
@@ -515,13 +513,13 @@ function barHTML(h){
     <span class="cp-idl"><a class="cp-site" href="#home">الموقع الإلكتروني</a><i class="cp-vsep" aria-hidden="true"></i><a class="coreid" href="https://i3zalmadeni.github.io/digital-core" title="النواة الرقمية"><img src="assets/core-logo.svg" alt="" width="36" height="36"><span><b>النواة الرقمية</b><small>الهوية الموحدة</small></span></a><span class="moe"><b>وزارة التعليم</b><small>Ministry of Education</small></span></span></div></div>
   <div class="cp-strip" aria-hidden="true"></div>
   <div class="cp-sub"><div class="wrap cp-subin"><nav class="cp-nav" aria-label="صفحات لوحة التحكم">${ex?it('me','desk','مكتبي الإلكتروني')+it('me-docs','rep','توثيق برامجي'):''}${adm?it('admin','check','المهام')+it('admin-plans','plan','إدارة الخطة')+it('admin-people','users','المنفذون')+it('admin-trash','trash','المحذوفات',REMOVED.length||''):''}</nav>
-    <span class="cp-user"><span class="cp-nwrap" id="cp-nwrap"><button type="button" class="cp-bell" id="cp-bell" aria-haspopup="true" aria-expanded="${NOPEN}" aria-label="${un?'التنبيهات، '+un+' جديد':'التنبيهات'}">${ic('bell')}${un?`<b class="nb">${un>9?'9+':un}</b>`:''}</button><div class="cp-npop" id="cp-npop"${NOPEN?'':' hidden'}>${NOPEN?popHTML(N):''}</div></span><span class="cp-who" title="${esc(nm)}">${esc(nm)}</span><button type="button" class="cp-out" id="cp-out">خروج</button></span></div></div>
+    <span class="cp-user">${ubBarHTML(nm, ex ? '#me' : '#admin')}</span></div></div>
   <div class="cp-page"><div class="wrap cp-pagein"><div class="cp-pt"><small>${roleName()}</small><h1>${TITLES[h]||''}</h1></div><p class="cp-pd">${PINFO[h]||''}</p>
     <div class="cp-pm"><span class="cp-up">آخر تحديث ${hhmm(LASTUP)}</span><button type="button" class="btn cd-sm" id="cp-refresh">${ic('refresh')} تحديث</button></div></div>
     ${ADM.includes(h)?`<div class="wrap cp-acts" role="group" aria-label="إضافة سريعة"><button type="button" class="cx-pri" data-cx-add="plan">${ic('plus')}<span>برنامج في الخطة</span></button><button type="button" data-cx-add="unplanned">${ic('plus')}<span>برنامج غير مدرج</span></button><button type="button" data-cx-add="newplan">${ic('plus')}<span>خطة جديدة</span></button></div>`:''}</div>`}
 const shell=(h,inner)=>inner;
 let BARH=null;
-function showBar(h){if(h!==BARH){NOPEN=false;BARH=h}let bar=document.getElementById('cx-bar');const on=!!(h&&READY&&(ADM.includes(h)?canAdd():EXP.includes(h)&&isExec()));
+function showBar(h){if(h!==BARH){NOPEN=false;BARH=h}let bar=document.getElementById('cx-bar');const on=!!(h&&READY&&(ADM.includes(h)?canAdd():EXP.includes(h)?isExec():h===NTF&&(canAdd()||isExec())));
   document.body.classList.toggle('cp-on',on);
   if(!on){NOPEN=false;if(bar)bar.hidden=true;return}
   if(!bar){bar=document.createElement('div');bar.id='cx-bar';document.body.prepend(bar)}
@@ -530,19 +528,13 @@ function showBar(h){if(h!==BARH){NOPEN=false;BARH=h}let bar=document.getElementB
   const nv=bar.querySelector('.cp-nav'),on2=nv&&nv.querySelector('a.on');
   if(nv){if(on2&&innerWidth<=760)nv.scrollLeft+=on2.getBoundingClientRect().left+on2.offsetWidth/2-(nv.getBoundingClientRect().left+nv.clientWidth/2);
     const mk=()=>{const x=Math.abs(nv.scrollLeft);nv.classList.toggle('pre',x>8);nv.classList.toggle('more',nv.scrollWidth-nv.clientWidth-x>8)};mk();nv.onscroll=mk}}
-function closePop(){NOPEN=false;const p=document.getElementById('cp-npop'),b=document.getElementById('cp-bell');if(p)p.hidden=true;if(b)b.setAttribute('aria-expanded','false')}
-function bindPop(r,h){const p=r.querySelector('#cp-npop');if(!p)return;
-  const rd=p.querySelector('#cp-nread');if(rd)rd.onclick=e=>{e.stopPropagation();const s=getSeen();notifs().forEach(n=>s.add(n.id));setSeen(s);showBar(h)};
-  p.querySelectorAll('[data-nid]').forEach(a=>a.onclick=()=>{const s=getSeen();s.add(a.dataset.nid);setSeen(s);NOPEN=false});
-  const al=p.querySelector('.nall');if(al)al.onclick=()=>{NOPEN=false}}
 function bindBar(r,h){
   r.querySelectorAll('[data-cx-add]').forEach(b=>b.onclick=()=>{if(b.dataset.cxAdd==='newplan'){planDialog(null);return}if(b.dataset.cxAdd==='unplanned'){if(typeof unplannedForm==='function')unplannedForm();else toast('غير متاح')}else editor(null,{plan_id:+(D.mplan||D.plan)||(PL[0]||{}).id})});
-  const out=r.querySelector('#cp-out');if(out)out.onclick=()=>{if(window.SP&&SP.signOut)SP.signOut();else location.reload()};
+  const out=r.querySelector('#out');if(out)out.onclick=()=>{if(window.SP&&SP.signOut)SP.signOut();else location.reload()};
   const rf=r.querySelector('#cp-refresh');if(rf)rf.onclick=()=>{rf.disabled=true;try{if(DB&&DB.refresh)DB.refresh()}catch(e){}LASTUP=new Date();setTimeout(()=>{route(true);toast('حُدّثت البيانات')},350)};
-  const bl=r.querySelector('#cp-bell');if(bl)bl.onclick=e=>{e.stopPropagation();NOPEN=!NOPEN;const p=r.querySelector('#cp-npop');p.hidden=!NOPEN;bl.setAttribute('aria-expanded',String(NOPEN));if(NOPEN){p.innerHTML=popHTML(notifs());bindPop(r,h)}};
-  bindPop(r,h)}
-document.addEventListener('click',e=>{if(NOPEN&&!(e.target.closest&&e.target.closest('#cp-nwrap')))closePop()});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&NOPEN){closePop();const b=document.getElementById('cp-bell');if(b)b.focus()}});
+  // الجرس وصفحة الإشعارات من المكوّن الموحّد (unified-bar.js)، ومصدرها notifs() أعلاه. المقروء سابقاً يبقى مقروءاً
+  const old=getSeen();
+  ubMount({key:'sp',uid:(window.SP&&SP.access&&SP.access.staff_id)||'',client:window.SP&&SP.sb,allUrl:'#notifications',load:async()=>notifs().map(n=>({id:n.id,title:n.t,body:n.s,href:n.href,tone:n.tone,t:n.d||null,icon:n.tone==='bad'?'alert':n.tone==='ok'?'check':n.tone==='warn'?'clock':'cal',read:old.has(n.id)?true:undefined}))})}
 
 /* ---------- صور المنفذين في صفحات الموقع الأخرى ---------- */
 function decorate(v){if(!v)return;const names=new Set(peopleNames());
@@ -565,6 +557,10 @@ route=function(keep){
   if(EX.some(e=>e&&e.kind==='coordinator'))EX=EX.filter(e=>!e||e.kind!=='coordinator');
   updBell();
   const h=(location.hash||'#home').slice(1);
+  if(h===NTF){const v=document.getElementById('view');document.querySelectorAll('#nav a').forEach(a=>a.classList.remove('on'));
+    if(!READY){showBar(null);v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
+    if(!(canAdd()||isExec())){showBar(null);v.innerHTML=`<div class="cd-lockpage">${ic('user')}<h2>الإشعارات لمنسوبي النواة المصرّح لهم</h2><p class="muted">سجّل الدخول بحساب النواة الرقمية.</p></div>`;return}
+    showBar(h);v.innerHTML='<div class="wrap" id="ubHost"></div>';ubPage(document.getElementById('ubHost'),'الخطط الذكية');window.scrollTo(0,0);return}
   if(!ADM.includes(h)){showBar(null);const r=_route(keep);updBell();try{decorate(document.getElementById('view'))}catch(e){console.error(e)}return r}
   updBell();
   document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.n==='admin'));
