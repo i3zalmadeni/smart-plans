@@ -524,6 +524,9 @@ function showBar(h){if(h!==BARH){NOPEN=false;BARH=h}let bar=document.getElementB
   if(!on){NOPEN=false;if(bar)bar.hidden=true;return}
   if(!bar){bar=document.createElement('div');bar.id='cx-bar';document.body.prepend(bar)}
   bar.hidden=false;bar.innerHTML=barHTML(h);bindBar(bar,h);
+  if(window.PK&&window.SP&&SP.sb){const ex=isExec(),nm=(SP.access&&SP.access.name)||WHO||'';PK.use(SP.sb);PK.fitNav(bar.querySelector('.cp-nav'));PK.mountAnnouncements({sb:SP.sb,system:'smart_plans',page:(h==='admin'||h==='me')?'home':'all',after:'#cx-bar'});
+    if(h==='admin'&&!ex)PK.welcome('#view',{mode:'before',sb:SP.sb,name:nm,role:roleName()});else document.querySelectorAll('.pk-wcw').forEach(e=>e.remove());
+    if(h==='admin-plans'||h==='admin-people'){/* إدارة الخطة: قسم الإعلانات أسفل المحتوى */PK.mountAdminSection({sb:SP.sb,system:'smart_plans',central:true,after:'#view'})}else document.querySelectorAll('.pk-admwrap').forEach(e=>e.remove())}
   // الجوال: التبويب الحالي يُمرَّر إلى وسط الشريط دون تحريك الصفحة، وتظليل الحافة يدل على وجود تبويبات أخرى
   const nv=bar.querySelector('.cp-nav'),on2=nv&&nv.querySelector('a.on');
   if(nv){if(on2&&innerWidth<=760)nv.scrollLeft+=on2.getBoundingClientRect().left+on2.offsetWidth/2-(nv.getBoundingClientRect().left+nv.clientWidth/2);
