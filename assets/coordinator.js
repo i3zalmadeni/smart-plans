@@ -561,13 +561,13 @@ function updBell(){
 /* ---------- ترويسة لوحة التحكم الموحدة (هوية النواة): للمنسق والمنفذ معًا ---------- */
 Object.assign(IC,{pulse:'<path d="M3 12h4l2.5-6.5 4 13 2.5-6.5H21"/>',desk:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',refresh:'<path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 4v7h-7"/>',trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'});
 const ADM=['admin','admin-alerts','admin-plans','admin-people','admin-trash'],EXP=['me','me-docs'],NTF='notifications';
-const TITLES={notifications:'الإشعارات','coord-plan':'نبض الخطة',me:'برامجي (مكتبي الإلكتروني)','me-docs':'توثيق برامجي','admin-alerts':'التنبيهات',admin:'المكتب الإلكتروني التنفيذي','admin-plans':'إدارة الخطة','admin-people':'المنفذون','admin-trash':'المحذوفات'};
+const TITLES={notifications:'الإشعارات','coord-plan':'نبض الخطة',me:'برامجي','me-docs':'توثيق برامجي','admin-alerts':'التنبيهات',admin:'مكتبي الإلكتروني','admin-plans':'إدارة الخطة','admin-people':'المنفذون','admin-trash':'المحذوفات'};
 const PINFO={
   notifications:'ما ينتظر إجراءك ونتائج طلباتك ومستجدات الخطط الذكية.',
   'coord-plan':'خطتك وبرامجها: ما يحتاج متابعتك الآن وما تبقى.',
   me:'برامجك المسندة إليك: ما يحتاج توثيقًا الآن، وما يجري، وما هو قادم.',
   'me-docs':'وثّق تنفيذ برامجك واطّلع على تقارير التنفيذ السابقة.',
-  admin:'وجهتك الكاملة: برامج هذا الأسبوع وتقويمه، وما يحتاج توثيقًا أو اعتمادًا، وكل البرامج مع مراسلة المنسق لتعديلها.',
+  admin:'مكتبك كمدير للبوابة: برامج هذا الأسبوع وتقويمه، وما يحتاج توثيقًا أو اعتمادًا، وكل البرامج مع مراسلة المنسق لتعديلها.',
   'admin-alerts':'البرامج التي تحتاج تدخلك: المتأخرة في التوثيق، والمتعثرة وأسباب تعثرها، والقادمة قريبًا.',
   'admin-plans':'تحرير برامج كل خطة وتوثيقها واعتمادها، وإضافة الخطط وإرفاق ملفاتها، ومنها تصل إلى المنفذين والمحذوفات.',
   'admin-people':'منفذو البرامج من منسوبي النواة، وربط الأسماء المكتوبة يدويًا بمنسوبيها.',
@@ -647,11 +647,11 @@ function barHTML(h){
   const it=(href,icon,label,badge)=>`<a href="#${href}" class="${cur===href?'on':''}"${cur===href?' aria-current="page"':''}>${ic(icon)}<span>${label}</span>${badge?`<b>${badge}</b>`:''}</a>`;
   const nm=(window.SP&&SP.access&&SP.access.name)||WHO||'';
   return `<div class="cp-top"><div class="wrap cp-topin">
-    <a class="cp-sys" href="#${adm&&!EXP.includes(h)?'admin':ex?'me':'admin'}"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M30 4c2 14 8 20 24 24-16 4-22 10-24 26-2-16-8-22-24-26 16-4 22-10 24-24z" fill="#0f8a94"/><path d="M50 4c.8 5 3 7.2 8 8-5 .8-7.2 3-8 8-.8-5-3-7.2-8-8 5-.8 7.2-3 8-8z" fill="#f0b34a"/></svg><span><b>الخطط الذكية</b><small>متوسطة لبيد بن ربيعة</small></span></a>
+    <a class="cp-sys" href="#${adm?'admin':ex?'me':'admin'}"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M30 4c2 14 8 20 24 24-16 4-22 10-24 26-2-16-8-22-24-26 16-4 22-10 24-24z" fill="#0f8a94"/><path d="M50 4c.8 5 3 7.2 8 8-5 .8-7.2 3-8 8-.8-5-3-7.2-8-8 5-.8 7.2-3 8-8z" fill="#f0b34a"/></svg><span><b>الخطط الذكية</b><small>متوسطة لبيد بن ربيعة</small></span></a>
     <span class="cp-idl"><a class="cp-site" href="#home">الموقع الإلكتروني</a><i class="cp-vsep" aria-hidden="true"></i><a class="coreid" href="https://i3zalmadeni.github.io/digital-core" title="النواة الرقمية"><img src="assets/core-logo.svg" alt="" width="36" height="36"><span><b>النواة الرقمية</b><small>الهوية الموحدة</small></span></a><span class="moe"><b>وزارة التعليم</b><small>Ministry of Education</small></span></span></div></div>
   <div class="cp-strip" aria-hidden="true"></div>
-  <div class="cp-sub"><div class="wrap cp-subin"><nav class="cp-nav" aria-label="صفحات لوحة التحكم">${adm?it('admin','desk','المكتب التنفيذي')+it('admin-plans','plan','إدارة الخطة'):''}${ex?it('me','user','برامجي')+it('me-docs','rep','توثيق برامجي'):''}${pc&&!adm?it(PB,'pulse','نبض الخطة'):''}</nav>
-    <span class="cp-user">${ubBarHTML(nm, ex ? '#me' : '#admin')}</span></div></div>
+  <div class="cp-sub"><div class="wrap cp-subin"><nav class="cp-nav" aria-label="صفحات لوحة التحكم">${adm?it('admin','desk','مكتبي الإلكتروني')+it('admin-plans','plan','إدارة الخطة'):''}${ex?it('me','user','برامجي')+it('me-docs','rep','توثيق برامجي'):''}${pc&&!adm?it(PB,'pulse','نبض الخطة'):''}</nav>
+    <span class="cp-user">${ubBarHTML(nm, adm ? '#admin' : '#me')}</span></div></div>
   <div class="cp-page"><div class="wrap cp-pagein"><div class="cp-pt"><small>${roleName()}</small><h1>${TITLES[h]||''}</h1></div><p class="cp-pd">${PINFO[h]||''}</p>
     <div class="cp-pm"><span class="cp-up">آخر تحديث ${hhmm(LASTUP)}</span><button type="button" class="btn cd-sm" id="cp-refresh">${ic('refresh')} تحديث</button></div></div>
     ${ADM.includes(h)?`<div class="wrap cp-acts" role="group" aria-label="إضافة سريعة"><button type="button" class="cx-pri" data-cx-add="plan">${ic('plus')}<span>برنامج في الخطة</span></button><button type="button" data-cx-add="unplanned">${ic('plus')}<span>برنامج غير مدرج</span></button><button type="button" data-cx-add="newplan">${ic('plus')}<span>خطة جديدة</span></button></div>`:''}</div>`}
