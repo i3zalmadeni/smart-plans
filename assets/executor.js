@@ -64,7 +64,7 @@ route=function(keep){
   if(!PAGES[h])return _route(keep);
   const v=document.getElementById('view'),sy=scrollY;
   document.querySelectorAll('#nav a').forEach(a=>a.classList.remove('on'));
-  if(!READY||!(window.SP&&SP.access!==undefined)){showBar(null);v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
+  if(!READY||!(window.SP&&SP.access!==undefined)){showBar(h);v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
   if(!SP.signedIn||!me()||!(SP.access&&SP.access.executor)){showBar(null);v.innerHTML=lock(SP.signedIn);const lg=v.querySelector('#ex-login');if(lg)lg.onclick=SP.login;return}
   showBar(h);
   v.innerHTML=h==='me'?pageMe():pageDocs();

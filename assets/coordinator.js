@@ -474,10 +474,10 @@ function updBell(){
 /* ---------- ترويسة لوحة التحكم الموحدة (هوية النواة): للمنسق والمنفذ معًا ---------- */
 Object.assign(IC,{desk:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',refresh:'<path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 4v7h-7"/>',trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'});
 const ADM=['admin','admin-alerts','admin-plans','admin-people','admin-trash'],EXP=['me','me-docs'],NTF='notifications';
-const TITLES={notifications:'الإشعارات','plan-board':'لوحة منسق الخطة',me:'مكتبي الإلكتروني','me-docs':'توثيق برامجي','admin-alerts':'التنبيهات',admin:'مهام المتابعة','admin-plans':'إدارة الخطة','admin-people':'المنفذون','admin-trash':'المحذوفات'};
+const TITLES={notifications:'الإشعارات','coord-plan':'لوحة منسق الخطة',me:'مكتبي الإلكتروني','me-docs':'توثيق برامجي','admin-alerts':'التنبيهات',admin:'مهام المتابعة','admin-plans':'إدارة الخطة','admin-people':'المنفذون','admin-trash':'المحذوفات'};
 const PINFO={
   notifications:'ما ينتظر إجراءك ونتائج طلباتك ومستجدات الخطط الذكية.',
-  'plan-board':'خطتك وبرامجها وتفاصيلها: ما تم تحديثه وما تبقى، وما يحتاج متابعتك الآن. كل خطة مستقلة بتبويبها.',
+  'coord-plan':'خطتك وبرامجها وتفاصيلها: ما تم تحديثه وما تبقى، وما يحتاج متابعتك الآن. كل خطة مستقلة بتبويبها.',
   me:'برامجك المسندة إليك: ما يحتاج توثيقًا الآن، وما يجري، وما هو قادم.',
   'me-docs':'وثّق تنفيذ برامجك واطّلع على تقارير التنفيذ السابقة.',
   admin:'ما يحتاج إجراءً منك الآن: اعتماد التوثيق، والمتأخر، والمتعثر، وبرامج هذا الأسبوع.',
@@ -485,13 +485,14 @@ const PINFO={
   'admin-plans':'تحرير برامج كل خطة وتوثيقها واعتمادها، وإضافة الخطط وإرفاق ملفاتها.',
   'admin-people':'منفذو البرامج من منسوبي النواة، وربط الأسماء المكتوبة يدويًا بمنسوبيها.',
   'admin-trash':'ما حُذف من البرامج والخطط، مع إمكانية استعادته.'};
+const panelHash=h=>!!h&&(ADM.includes(h)||EXP.includes(h)||h===NTF||h==='coord-plan'||h==='dashboard');
 const hhmm=d=>{try{return d.toLocaleTimeString('ar-SA-u-ca-gregory-nu-latn',{hour:'2-digit',minute:'2-digit'})}catch(e){return ''}};
 const roleName=()=>{const a=(window.SP&&SP.access)||{};return a.admin?'مدير النواة الرقمية':a.coordinator?'منسق الخطط الذكية':canAdd()?'محرر الخطط الذكية':(READY&&myPlans().length)?'منسق الخطة':'منفذ البرامج'};
 
 /* ---------- لوحة منسق الخطة: لمن أُسندت إليه خطة («المسؤول عن الخطة» من إدارة الخطة) ----------
  * لا تعديل على قاعدة البيانات: الاطلاع عام، وأزرار التعديل والاعتماد تظهر لمن يملك صلاحيتها فقط (canAdd/canApprove).
  * كل خطة في تبويب مستقل، ولا توجد صفحة تدمج الخطط معًا. */
-const PB='plan-board';
+const PB='coord-plan';
 const myPlans=()=>{const id=isExec()?SP.access.staff_id:null;return id?PL.filter(x=>x.owner_staff_id===id):[]};
 const isPlanCoord=()=>READY&&myPlans().length>0;
 const PBF=[['all','كل البرامج'],['rem','المتبقي'],['مكتمل','مكتملة'],['قيد التنفيذ','جارية'],['لم يبدأ','مخطط'],['متأخر','متأخرة التوثيق'],['متعثر','متعثرة']];
@@ -571,9 +572,9 @@ function notifs(){
     const mine=new Set(myPlans().map(x=>String(x.id)));
     for(const p of P){
       if(!mine.has(String(p.plan_id))||p.owner_staff_id===mid||p.status==='ملغي')continue;
-      if(!p.approved_at&&exFor(p.id).length)out.push({id:'pc:appr:'+p.id+':'+exFor(p.id).length,tone:'ok',o:1,d:endOf(p),t:p.name,s:'في خطتك: موثّق بانتظار الاعتماد • '+ownerOf(p),href:'#plan-board'});
-      else if(p.status==='متعثر')out.push({id:'pc:stall:'+p.id,tone:'warn',o:1,d:endOf(p),t:p.name,s:'في خطتك: متعثر • '+(p.stall_note||'لم يُكتب سبب'),href:'#plan-board'});
-      else if(needs(p))out.push({id:'pc:late:'+p.id+':'+endOf(p),tone:'bad',o:0,d:endOf(p),t:p.name,s:'في خطتك: متأخر التوثيق منذ '+daysBetween(endOf(p),t)+' يومًا • '+ownerOf(p),href:'#plan-board'})}}
+      if(!p.approved_at&&exFor(p.id).length)out.push({id:'pc:appr:'+p.id+':'+exFor(p.id).length,tone:'ok',o:1,d:endOf(p),t:p.name,s:'في خطتك: موثّق بانتظار الاعتماد • '+ownerOf(p),href:'#coord-plan'});
+      else if(p.status==='متعثر')out.push({id:'pc:stall:'+p.id,tone:'warn',o:1,d:endOf(p),t:p.name,s:'في خطتك: متعثر • '+(p.stall_note||'لم يُكتب سبب'),href:'#coord-plan'});
+      else if(needs(p))out.push({id:'pc:late:'+p.id+':'+endOf(p),tone:'bad',o:0,d:endOf(p),t:p.name,s:'في خطتك: متأخر التوثيق منذ '+daysBetween(endOf(p),t)+' يومًا • '+ownerOf(p),href:'#coord-plan'})}}
   if(READY&&canAdd()){
     for(const p of P){
       if(p.status==='ملغي')continue;
@@ -597,7 +598,8 @@ function barHTML(h){
 const shell=(h,inner)=>inner;
 let BARH=null;
 function showBar(h){if(h!==BARH){NOPEN=false;BARH=h}let bar=document.getElementById('cx-bar');const on=!!(h&&READY&&(ADM.includes(h)?canAdd():EXP.includes(h)?isExec():h===PB?isPlanCoord():h===NTF&&(canAdd()||isExec())));
-  document.body.classList.toggle('cp-on',on);
+  // أثناء تحميل بيانات صفحة من لوحة التحكم تبقى ترويسة الموقع مخفية، فلا يظهر الموقع ثم يتحول إلى اللوحة
+  document.body.classList.toggle('cp-on',on||(!READY&&panelHash(h)));
   if(!on){NOPEN=false;if(bar)bar.hidden=true;return}
   if(!bar){bar=document.createElement('div');bar.id='cx-bar';document.body.prepend(bar)}
   bar.hidden=false;bar.innerHTML=barHTML(h);bindBar(bar,h);
@@ -638,14 +640,14 @@ route=function(keep){
   updBell();
   const h=(location.hash||'#home').slice(1);
   // #dashboard: مدخل لوحة التحكم من الأنظمة الأخرى، يفتح «مكتبي الإلكتروني» بحسب الدور (المنسق/المدير #admin، والمنفّذ #me)
-  if(h==='dashboard'){const v=document.getElementById('view');if(!READY){showBar(null);v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
+  if(h==='dashboard'){const v=document.getElementById('view');if(!READY){showBar(h);v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
     location.replace(canAdd()?'#admin':'#me');return}
   if(h===NTF){const v=document.getElementById('view');document.querySelectorAll('#nav a').forEach(a=>a.classList.remove('on'));
-    if(!READY){showBar(null);v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
+    if(!READY){showBar(h);v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
     if(!(canAdd()||isExec())){showBar(null);v.innerHTML=`<div class="cd-lockpage">${ic('user')}<h2>الإشعارات لمنسوبي النواة المصرّح لهم</h2><p class="muted">سجّل الدخول بحساب النواة الرقمية.</p></div>`;return}
     showBar(h);v.innerHTML='<div class="wrap" id="ubHost"></div>';ubPage(document.getElementById('ubHost'),'الخطط الذكية');window.scrollTo(0,0);return}
   if(h===PB){const v=document.getElementById('view'),sy=scrollY;document.querySelectorAll('#nav a').forEach(a=>a.classList.remove('on'));tip&&tip.remove();
-    if(!READY||!(window.SP&&SP.access!==undefined)){showBar(null);v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
+    if(!READY||!(window.SP&&SP.access!==undefined)){showBar(h);v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
     if(!isPlanCoord()){const sg=!!(window.SP&&SP.signedIn);showBar(null);
       v.innerHTML=`<div class="cd-lockpage">${ic('user')}<h2>${sg?'لوحة منسق الخطة لمنسقي الخطط':'سجّل الدخول لعرض لوحة خطتك'}</h2><p class="muted">${sg?'تظهر هذه اللوحة لمن أُسندت إليه خطة بصفته منسقًا لها. يحدد مدير النواة أو منسق الخطط الذكية منسق كل خطة من «إدارة الخطة ← تعديل الخطة ← منسق الخطة».':'الدخول موحد بمعرّف الدخول نفسه في النواة الرقمية.'}</p><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${sg?'':'<button class="btn pri" type="button" id="cd-login">دخول</button>'}<a class="btn soft" href="#home">الرئيسية</a></span></div>`;
       const lb=document.getElementById('cd-login');if(lb)lb.onclick=()=>{const x=document.getElementById('lg-in');if(x)x.click();else if(window.SP&&SP.login)SP.login()};return}
