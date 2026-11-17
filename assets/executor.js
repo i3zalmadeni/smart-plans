@@ -9,7 +9,10 @@ const S={f:'all'};
 const me=()=>window.SP&&SP.access&&SP.access.staff_id||null;
 const T=()=>todayISO();
 const roleName=()=>{const a=(window.SP&&SP.access)||{};return a.admin?'مدير النواة الرقمية':a.coordinator?'منسق الخطط الذكية':a.add?'محرر الخطط الذكية':'منفذ البرامج'};
-const mine=()=>{const id=me();return id?P.filter(p=>p.owner_staff_id===id):[]};
+const nn=s=>String(s||'').replace(/[\u064B-\u0652\u0640]/g,'').replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/[^\u0621-\u064Aa-zA-Z0-9]+/g,' ').trim();
+/* برامجي = ما أُسند إلى المنسوب فقط: بمعرّفه، أو باسمه إن لم يُربط البرنامج بمعرّف بعد. لا يُعرض أي برنامج لغيره. */
+const mine=()=>{const id=me();if(!id)return [];const m=(SP.dir&&SP.dir[id])||{},k=nn(m.name||(SP.access&&SP.access.name));
+  return P.filter(p=>p.owner_staff_id?p.owner_staff_id===id:(!!k&&nn(p.owner_name)===k))};
 const rng=p=>{const s=p.planned_date||'',e=p.planned_end||s;return [s,e]};
 const when=p=>{const [s,e]=rng(p);return s?(dmy(s)+(e&&e!==s?' – '+dmy(e):'')):(p.planned_text||'غير مجدول')};
 const kind=p=>{if(p.status==='ملغي')return 'x';if(done(p))return 'done';const [s,e]=rng(p);if(e&&e<=T())return 'due';if(s&&s>T())return 'soon';if(s)return 'now';return 'nodate'};
