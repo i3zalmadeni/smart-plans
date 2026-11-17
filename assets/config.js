@@ -8,6 +8,8 @@ window.SMART_PLANS_CONFIG = {
   supabaseUrl: 'https://kbhovmnvqzgihhyibqkq.supabase.co',
   supabaseAnonKey: 'sb_publishable_hfzNlh9tCpuC2zCf4T_2FA_42ujADOX',
   bucket: 'sp-evidence',
+  // رمز مرفق قاعة التنمية المهنية في النواة: مكان التنفيذ الافتراضي لمجموعات التعلم المهنية
+  pdHallCode: 'F-0023',
   // الدخول بمعرّف: يُترجم داخليًا إلى بريد غير حقيقي بهذا النطاق (يطابق إعداد النواة)
   loginDomain: 'id.invalid',
   // قاعدة الخطط الذكية القديمة: تُستعمل في صفحة النقل migrate.html فقط (قراءة عامة)

@@ -22,7 +22,7 @@ const SC={'مكتمل':'var(--ok)','قيد التنفيذ':'var(--info)','لم �
 const SL={'مكتمل':'مكتمل','قيد التنفيذ':'قيد التنفيذ','لم يبدأ':'مخطط','متأخر':'متأخر التوثيق','متعثر':'متعثر','ملغي':'ملغي'};
 const ORDER=['مكتمل','قيد التنفيذ','لم يبدأ','متأخر','متعثر','ملغي'];
 const REASONS=['تعارض مع جدول المدرسة','غياب المنفذ','نقص الموارد أو المتطلبات','تأجيل بقرار الإدارة','لم يُرفع التوثيق في وقته'];
-const FL={beneficiary:'الفئة المستهدفة',name:'الاسم',plan_id:'الخطة',domain:'الموضوع',planned_date:'تاريخ البداية',planned_end:'تاريخ النهاية',time:'الوقت',location:'المكان',owner_name:'المنفذ',beneficiary:'المستفيد',goal:'الهدف',indicator:'المؤشر',required_evidence:'الشواهد',status:'الحالة',stall_note:'سبب التعثر',approved_at:'الاعتماد'};
+const FL={beneficiary:'الفئة المستهدفة',name:'الاسم',plan_id:'الخطة',domain:'الموضوع',planned_date:'تاريخ البداية',planned_end:'تاريخ النهاية',time:'الوقت',location:'المكان',facility_id:'المكان',owner_name:'المنفذ',beneficiary:'المستفيد',goal:'الهدف',indicator:'المؤشر',required_evidence:'الشواهد',status:'الحالة',stall_note:'سبب التعثر',approved_at:'الاعتماد'};
 const T=()=>todayISO();
 const addDays=(s,n)=>{const x=new Date(s+'T12:00:00');x.setDate(x.getDate()+n);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0')};
 const daysBetween=(a,b)=>Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5);
@@ -106,8 +106,23 @@ window.CD_staffId=staffIdByName;
 async function write(doc){
   if(!DB)throw new Error('قاعدة البيانات غير متاحة');
   if(!WHO&&USER){try{WHO=await USER.id()}catch(e){}}
-  await DB.collection(CO_COL).add({...linkDoc(doc),kind:'coordinator',at:new Date().toISOString(),by:WHO||''});
+  return await DB.collection(CO_COL).add({...linkDoc(doc),kind:'coordinator',at:new Date().toISOString(),by:WHO||''});
 }
+/* ---------- مكان التنفيذ من مرافق النواة + الحجز الرسمي لمجموعات التعلم المهنية ---------- */
+let FAC=[],FACP=null;const COMK={};
+const PDCODE=(window.SMART_PLANS_CONFIG||{}).pdHallCode||'F-0023'; // قاعة التنمية المهنية
+function loadFac(){if(!FACP&&window.SP&&SP.sb)FACP=Promise.resolve(SP.sb.rpc('sp_facilities')).then(r=>{FAC=(r&&r.data)||[]}).catch(()=>{FACP=null});return FACP||Promise.resolve()}
+const pdHall=()=>FAC.find(f=>f.code===PDCODE);
+const facLabel=f=>f.name+(f.building?' — '+f.building:'')+(f.room_no?' ('+f.room_no+')':'');
+async function isPLC(plan){const c=plan&&plan.pc_community_id;if(!c)return false;if(!(c in COMK)){try{const r=await SP.sb.rpc('sp_community_kind',{p_community:c});COMK[c]=(r&&r.data)||''}catch(e){COMK[c]=''}}return COMK[c]==='plc'}
+const BOOKMSG={slot_taken:'تعذّر الحجز: المرفق محجوز في هذا الموعد، اختر وقتًا آخر.',no_period:'الوقت خارج حصص الحجز، فلم يُنشأ حجز رسمي.',facility_unavailable:'المرفق غير مفعّل للحجز في «احجز مرفق».',incomplete:'حدد التاريخ والوقت ليُسجَّل الحجز الرسمي.',no_booker:'تعذّر تحديد صاحب الحجز.'};
+// يُزامن حجز البرنامج: مجموعات التعلم المهنية فقط، ويُلغى الحجز إن تغيّر المكان أو الشروط
+async function syncBooking(ref,f,plan){try{const sb=SP.sb,fac=FAC.find(x=>x.id===f.facility_id),plc=await isPLC(plan);
+  if(!plc){return null}
+  if(!fac||!fac.bookable||!f.planned_date||!f.time){await sb.rpc('sp_unbook_program',{p_ref:String(ref)});return fac&&fac.bookable?{ok:false,reason:'incomplete'}:null}
+  const r=await sb.rpc('sp_book_program',{p_ref:String(ref),p_facility:fac.id,p_date:f.planned_date,p_from:f.time,p_to:null,p_owner:staffIdByName(f.owner_name),p_purpose:f.name,p_community:plan.pc_community_id});
+  if(r.error)throw r.error;return {...(r.data||{}),fac:fac.name}}catch(e){return {ok:false,reason:'error',msg:e.message}}}
+const bookToast=r=>r?(r.ok?toast('سُجّل حجز معتمد رسميًا في «'+r.fac+'»'):toast(BOOKMSG[r.reason]||r.msg||'تعذّر تسجيل الحجز')):0;
 async function saveEdit(p,fields,label){
   const f={};for(const[k,v]of Object.entries(fields))if(String(p[k]??'')!==String(v??''))f[k]=v;
   if(!canApprove()&&'approved_at' in f)delete f.approved_at; // الاعتماد بصلاحية smart_plans:approve فقط
@@ -258,9 +273,11 @@ function stallDialog(id){const p=P.find(x=>String(x.id)===String(id));if(!p)retu
   m.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{const t=m.querySelector('#cd-sn');t.value=t.value.trim()?t.value.trim()+'، '+b.dataset.r:b.dataset.r;t.focus()});
   m.querySelector('#cd-sok').onclick=async e=>{const v=m.querySelector('#cd-sn').value.trim();if(!v){m.querySelector('#cd-se').textContent='اكتب سبب التعثر قبل الحفظ.';return}
     e.target.disabled=true;try{await saveEdit(p,{status:'متعثر',stall_note:v},'سُجّل متعثرًا: '+v.slice(0,60));close();toast('سُجّل البرنامج متعثرًا')}catch(err){e.target.disabled=false;m.querySelector('#cd-se').textContent=err.message||'تعذّر الحفظ'}}}
-function editor(id,preset){const isNew=id==null;const p0=isNew?null:P.find(x=>String(x.id)===String(id));if(!isNew&&!p0)return;
+function editor(id,preset){if(!FAC.length&&window.SP&&SP.sb){loadFac().then(()=>editor0(id,preset));return}editor0(id,preset)}
+function editor0(id,preset){const isNew=id==null;const p0=isNew?null:P.find(x=>String(x.id)===String(id));if(!isNew&&!p0)return;
   const p=isNew?{name:'',plan_id:+D.plan||(PL[0]||{}).id,domain:'',planned_date:'',planned_end:'',time:'',location:'',owner_name:'',beneficiary:'',goal:'',indicator:'',required_evidence:'',status:'لم يبدأ',stall_note:'',...preset}:{...p0,planned_date:startOf(p0),planned_end:endOf(p0)};
   const topics=[...new Set(P.map(x=>x.domain).filter(Boolean).concat(LOOK().domain||[]))];const ex=isNew?[]:exFor(p0.id);
+  const locSel=p.facility_id&&FAC.some(x=>x.id===p.facility_id)?p.facility_id:(FAC.find(x=>x.name===(p.location||'').trim())||{}).id||((p.location||'').trim()?'__other':'');
   const plans=PL.slice();
   const {m,close}=openModal(`<div class="cd-mh"><h3>${isNew?'إضافة برنامج إلى الخطة':'تعديل البرنامج'}</h3><button class="btn cd-sm" data-x aria-label="إغلاق">✕</button></div>
   ${isNew?'':`<div class="cd-info" style="margin-bottom:12px"><span>${esc(p.code)} • ${pill(ds(p0))}</span><span>${ex.length?`موثق ${ex.length} مرة • آخر تنفيذ ${dmy(ex[ex.length-1].date||'')}`:'لم يُوثَّق تنفيذ بعد'}${p0.approved_at?' • معتمد '+dmy(p0.approved_at):''}</span><span style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn soft cd-sm" id="cf-doc">${ic('rep')} توثيق ورفع الشواهد</button><a class="btn cd-sm" href="#p-${esc(String(p.id))}" data-x>فتح صفحة البرنامج</a></span></div>`}
@@ -271,7 +288,7 @@ function editor(id,preset){const isNew=id==null;const p0=isNew?null:P.find(x=>St
    <div class="f req"><label for="cf-s">من تاريخ</label><input id="cf-s" type="date" value="${esc(p.planned_date||'')}"></div>
    <div class="f"><label for="cf-e">إلى تاريخ</label><input id="cf-e" type="date" value="${esc(p.planned_end||'')}"></div>
    <div class="f"><label for="cf-t">الوقت</label><input id="cf-t" type="time" value="${esc(p.time||'')}"></div>
-   <div class="f"><label for="cf-loc">المكان</label><input id="cf-loc" value="${esc(p.location||'')}"></div>
+   <div class="f"><label for="cf-fac">مكان التنفيذ</label>${FAC.length?`<select id="cf-fac"><option value="">— اختر المرفق —</option>${FAC.map(x=>`<option value="${esc(x.id)}"${x.id===locSel?' selected':''}>${esc(facLabel(x))}</option>`).join('')}<option value="__other"${locSel==='__other'?' selected':''}>مكان آخر (كتابة)</option></select><input id="cf-loc" placeholder="اكتب المكان" value="${esc(locSel==='__other'?(p.location||''):'')}"${locSel==='__other'?'':' hidden'} style="margin-top:6px">`:`<input id="cf-loc" value="${esc(p.location||'')}">`}<small id="cf-bk" class="muted" hidden>مجموعة تعلم مهنية: يُسجَّل حجز معتمد رسميًا في المرفق بحسب التاريخ والوقت.</small></div>
    <div class="f"><label for="cf-own">المنفذ</label>${ownerSelect((p.owner_name||'').trim(),'id="cf-own"')}</div>
    <div class="f"><label for="cf-ben">الفئة المستفيدة</label><input id="cf-ben" list="cf-bens" value="${esc(p.beneficiary||'')}"><datalist id="cf-bens">${(LOOK().beneficiary||[]).map(t=>`<option value="${esc(t)}">`).join('')}</datalist></div>
    <div class="f full"><label for="cf-goal">الهدف</label><textarea id="cf-goal">${esc(p.goal||'')}</textarea></div>
@@ -284,18 +301,25 @@ function editor(id,preset){const isNew=id==null;const p0=isNew?null:P.find(x=>St
   <div class="cd-ma"><span>${!isNew?'<button class="btn cd-bad" id="cf-del">حذف البرنامج</button>':''}</span><span><button class="btn" data-x>إلغاء</button><button class="btn pri" id="cf-save">${isNew?'إضافة البرنامج':'حفظ التعديلات'}</button></span></div>`);
   const $=s=>m.querySelector(s);
   const dbtn=$('#cf-doc');if(dbtn)dbtn.onclick=()=>{m.remove();execForm(p0)};
+  const facSel=$('#cf-fac');
+  const planNow=()=>PL.find(x=>String(x.id)===$('#cf-plan').value);
+  const syncPlc=async()=>{const plc=await isPLC(planNow());const bk=$('#cf-bk');if(bk)bk.hidden=!plc;
+    if(plc&&facSel&&!facSel.value&&isNew){const h=pdHall();if(h){facSel.value=h.id}}};
+  if(facSel){facSel.onchange=()=>{const l=$('#cf-loc');l.hidden=facSel.value!=='__other';if(!l.hidden)l.focus()}}
+  $('#cf-plan').onchange=syncPlc;syncPlc();
   $('#cf-st').onchange=()=>{$('#cf-nw').hidden=$('#cf-st').value!=='متعثر'};
   $('#cf-s').onchange=()=>{if(!$('#cf-e').value||$('#cf-e').value<$('#cf-s').value)$('#cf-e').value=$('#cf-s').value};
   m.querySelectorAll('#cf-nw [data-r]').forEach(b=>b.onclick=()=>{const t=$('#cf-note');t.value=t.value.trim()?t.value.trim()+'، '+b.dataset.r:b.dataset.r});
-  const del=$('#cf-del');if(del)del.onclick=async()=>{if(!del.dataset.sure){del.dataset.sure=1;del.textContent='اضغط مجددًا لتأكيد الحذف';return}del.disabled=true;try{await write({type:'remove',progId:String(p0.id),name:p0.name});close();toast('حُذف البرنامج، ويمكنك استعادته من «المحذوفات»')}catch(e){$('#cf-err').textContent=e.message}};
+  const del=$('#cf-del');if(del)del.onclick=async()=>{if(!del.dataset.sure){del.dataset.sure=1;del.textContent='اضغط مجددًا لتأكيد الحذف';return}del.disabled=true;try{await write({type:'remove',progId:String(p0.id),name:p0.name});try{await SP.sb.rpc('sp_unbook_program',{p_ref:String(p0.id)})}catch(_){}close();toast('حُذف البرنامج، ويمكنك استعادته من «المحذوفات»')}catch(e){$('#cf-err').textContent=e.message}};
   $('#cf-save').onclick=async e=>{
-    const f={name:$('#cf-name').value.trim(),plan_id:+$('#cf-plan').value,domain:$('#cf-dom').value.trim(),planned_date:$('#cf-s').value,planned_end:$('#cf-e').value||$('#cf-s').value,time:$('#cf-t').value,location:$('#cf-loc').value.trim(),owner_name:$('#cf-own').value.trim(),beneficiary:$('#cf-ben').value.trim(),goal:$('#cf-goal').value.trim(),indicator:$('#cf-ind').value.trim(),required_evidence:$('#cf-ev').value.trim(),status:$('#cf-st').value,stall_note:$('#cf-st').value==='متعثر'?$('#cf-note').value.trim():''};
+    const f={name:$('#cf-name').value.trim(),plan_id:+$('#cf-plan').value,domain:$('#cf-dom').value.trim(),planned_date:$('#cf-s').value,planned_end:$('#cf-e').value||$('#cf-s').value,time:$('#cf-t').value,...(()=>{const fs=$('#cf-fac');if(!fs)return {location:$('#cf-loc').value.trim()};const fc=FAC.find(x=>x.id===fs.value);return fc?{location:fc.name,facility_id:fc.id}:{location:fs.value==='__other'?$('#cf-loc').value.trim():'',facility_id:''}})(),owner_name:$('#cf-own').value.trim(),beneficiary:$('#cf-ben').value.trim(),goal:$('#cf-goal').value.trim(),indicator:$('#cf-ind').value.trim(),required_evidence:$('#cf-ev').value.trim(),status:$('#cf-st').value,stall_note:$('#cf-st').value==='متعثر'?$('#cf-note').value.trim():''};
     f.approved_at=$('#cf-ap').checked?(p.approved_at||T()):'';
     const err=!f.name?'اكتب اسم البرنامج.':!f.planned_date?'حدد تاريخ البداية.':f.planned_end<f.planned_date?'تاريخ النهاية قبل تاريخ البداية.':f.status==='متعثر'&&!f.stall_note?'اكتب سبب التعثر.':'';
     if(err){$('#cf-err').textContent=err;return}
     e.target.disabled=true;e.target.textContent='جارٍ الحفظ…';
-    try{if(isNew){await write({type:'add',name:f.name,data:f});close();toast('أُضيف البرنامج إلى الخطة')}
-      else{const cmp={...f};const ch=await saveEdit(p0,{...cmp,planned_date:f.planned_date,planned_end:f.planned_end},null);close();toast(ch?'حُفظت التعديلات':'لا توجد تغييرات')}}
+    try{const plan=PL.find(x=>String(x.id)===String(f.plan_id));
+      if(isNew){const r=await write({type:'add',name:f.name,data:f});close();toast('أُضيف البرنامج إلى الخطة');if(r&&r.id)bookToast(await syncBooking('c-'+r.id,f,plan))}
+      else{const cmp={...f};const ch=await saveEdit(p0,{...cmp,planned_date:f.planned_date,planned_end:f.planned_end},null);close();toast(ch?'حُفظت التعديلات':'لا توجد تغييرات');bookToast(await syncBooking(p0.id,f,plan))}}
     catch(er){e.target.disabled=false;e.target.textContent=isNew?'إضافة البرنامج':'حفظ التعديلات';$('#cf-err').textContent=er.message||'تعذّر الحفظ'}}}
 
 function personDialog(name){toPlans('owner',{own:name})}
@@ -434,7 +458,7 @@ function bind(v){
     if(m){er.textContent=m;return}na.disabled=true;
     try{await write({type:'add',name:f.name,data:f});toast('أُضيف البرنامج إلى الخطة');setTimeout(()=>{const n=document.getElementById('np-name');n&&n.focus()},300)}catch(e){na.disabled=false;er.textContent=e.message||'تعذّر الإضافة'}};
   v.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(!b.dataset.sure){b.dataset.sure=1;b.textContent='تأكيد الحذف؟';setTimeout(()=>{if(b.isConnected){delete b.dataset.sure;b.textContent='حذف'}},4000);return}
-    const p=P.find(x=>String(x.id)===b.dataset.del);if(!p)return;b.disabled=true;try{await write({type:'remove',progId:String(p.id),name:p.name});toast('حُذف البرنامج، ويمكنك استعادته من «المحذوفات»')}catch(e){b.disabled=false;toast(e.message)}});
+    const p=P.find(x=>String(x.id)===b.dataset.del);if(!p)return;b.disabled=true;try{await write({type:'remove',progId:String(p.id),name:p.name});try{await SP.sb.rpc('sp_unbook_program',{p_ref:String(p.id)})}catch(_){}toast('حُذف البرنامج، ويمكنك استعادته من «المحذوفات»')}catch(e){b.disabled=false;toast(e.message)}});
   v.querySelectorAll('.cd-trash').forEach(d=>d.ontoggle=()=>{D.trash=d.open});
   v.querySelectorAll('[data-restore]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{await write({type:'restore',progId:b.dataset.restore,name:b.dataset.rname});toast('استُعيد البرنامج')}catch(e){b.disabled=false;toast(e.message||'تعذّرت الاستعادة')}});
   v.querySelectorAll('[data-person]').forEach(b=>b.onclick=()=>personDialog(b.dataset.person));
