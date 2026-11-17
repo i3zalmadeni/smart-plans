@@ -513,3 +513,6 @@ body.cp-on>header{display:none}
 @media (prefers-reduced-motion:reduce){.pb-pulse .a{animation:none;stroke-dasharray:none}.pb-t,.pb-pc i::after{animation:none}.pb-t{transition:none}}
 .cd-rs button.on{background:var(--brand);border-color:var(--brand);color:#fff}
 .cd-rs button:disabled{opacity:.45;cursor:not-allowed;text-decoration:line-through}
+.cd-rs button[hidden]{display:none}
+.cd-nf{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cd-nf select{max-width:280px}

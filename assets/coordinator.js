@@ -109,9 +109,9 @@ async function write(doc){
   return await DB.collection(CO_COL).add({...linkDoc(doc),kind:'coordinator',at:new Date().toISOString(),by:WHO||''});
 }
 /* ---------- مكان التنفيذ من مرافق النواة + الحجز الرسمي لمجموعات التعلم المهنية ---------- */
-let FAC=[],FACP=null,PER=[];const COMK={};
+let FAC=[],FACP=null,PER=[];const NSEL=new Set();const COMK={};
 const PDCODE=(window.SMART_PLANS_CONFIG||{}).pdHallCode||'F-0023'; // قاعة التنمية المهنية
-function loadFac(){if(!FACP&&window.SP&&SP.sb)FACP=Promise.all([SP.sb.rpc('sp_facilities'),SP.sb.rpc('sp_periods')]).then(([a,b])=>{FAC=(a&&a.data)||[];PER=((b&&b.data)||[]).filter(x=>x.bookable)}).catch(()=>{FACP=null});return FACP||Promise.resolve()}
+function loadFac(){if(!FACP&&window.SP&&SP.sb)FACP=Promise.all([SP.sb.rpc('sp_facilities'),SP.sb.rpc('sp_periods')]).then(([a,b])=>{FAC=(a&&a.data)||[];PER=((b&&b.data)||[]).filter(x=>x.bookable);if(location.hash==='#admin-plans'&&typeof route==='function')route(true)}).catch(()=>{FACP=null});return FACP||Promise.resolve()}
 const pdHall=()=>FAC.find(f=>f.code===PDCODE);
 const facLabel=f=>f.name+(f.building?' — '+f.building:'')+(f.room_no?' ('+f.room_no+')':'');
 async function isPLC(plan){const c=plan&&plan.pc_community_id;if(!c)return false;if(!(c in COMK)){try{const r=await SP.sb.rpc('sp_community_kind',{p_community:c});COMK[c]=(r&&r.data)||''}catch(e){COMK[c]=''}}return COMK[c]==='plc'}
@@ -290,7 +290,7 @@ function editor0(id,preset){const isNew=id==null;const p0=isNew?null:P.find(x=>S
    <div class="f req"><label for="cf-s">من تاريخ</label><input id="cf-s" type="date" value="${esc(p.planned_date||'')}"></div>
    <div class="f"><label for="cf-e">إلى تاريخ</label><input id="cf-e" type="date" value="${esc(p.planned_end||'')}"></div>
    <div class="f full"><label>الحصص</label><div class="cd-rs" id="cf-per" style="margin:0">${PER.length?PER.map(x=>`<button type="button" data-pc="${esc(x.code)}" class="${(p.periods||[]).includes(x.code)?'on':''}" title="${esc(x.starts+' – '+x.ends)}">${esc(x.name)}</button>`).join(''):'<span class="muted small">تعذّر تحميل الحصص</span>'}</div><small id="cf-pbusy" class="muted"></small></div>
-   <div class="f"><label for="cf-fac">مكان التنفيذ</label>${FAC.length?`<select id="cf-fac"><option value="">— اختر المرفق —</option>${FAC.map(x=>`<option value="${esc(x.id)}"${x.id===locSel?' selected':''}>${esc(facLabel(x))}</option>`).join('')}<option value="__other"${locSel==='__other'?' selected':''}>مكان آخر (كتابة)</option></select><input id="cf-loc" placeholder="اكتب المكان" value="${esc(locSel==='__other'?(p.location||''):'')}"${locSel==='__other'?'':' hidden'} style="margin-top:6px">`:`<input id="cf-loc" value="${esc(p.location||'')}">`}<small id="cf-bk" class="muted" hidden>مجموعة تعلم مهنية: يُرسل طلب حجز إلى منسق المرفق بحسب التاريخ والحصص.</small></div>
+   <div class="f"><label for="cf-fac">مكان التنفيذ</label>${FAC.length?`<select id="cf-fac"><option value="">— اختر المرفق —</option>${FAC.filter(x=>x.bookable||x.id===locSel).map(x=>`<option value="${esc(x.id)}"${x.id===locSel?' selected':''}>${esc(facLabel(x))}</option>`).join('')}<option value="__other"${locSel==='__other'?' selected':''}>مكان آخر (كتابة)</option></select><input id="cf-loc" placeholder="اكتب المكان" value="${esc(locSel==='__other'?(p.location||''):'')}"${locSel==='__other'?'':' hidden'} style="margin-top:6px">`:`<input id="cf-loc" value="${esc(p.location||'')}">`}<small id="cf-bk" class="muted" hidden>مجموعة تعلم مهنية: يُرسل طلب حجز إلى منسق المرفق بحسب التاريخ والحصص.</small></div>
    <div class="f"><label for="cf-own">المنفذ</label>${ownerSelect((p.owner_name||'').trim(),'id="cf-own"')}</div>
    <div class="f"><label for="cf-ben">الفئة المستفيدة</label><input id="cf-ben" list="cf-bens" value="${esc(p.beneficiary||'')}"><datalist id="cf-bens">${(LOOK().beneficiary||[]).map(t=>`<option value="${esc(t)}">`).join('')}</datalist></div>
    <div class="f full"><label for="cf-goal">الهدف</label><textarea id="cf-goal">${esc(p.goal||'')}</textarea></div>
@@ -311,11 +311,11 @@ function editor0(id,preset){const isNew=id==null;const p0=isNew?null:P.find(x=>S
   const sel=new Set(p.periods||[]);
   const paint=()=>m.querySelectorAll('#cf-per [data-pc]').forEach(b=>b.classList.toggle('on',sel.has(b.dataset.pc)));
   const busy=async()=>{const fid=facSel&&FAC.find(x=>x.id===facSel.value),d=$('#cf-s').value,o=$('#cf-pbusy');if(!o)return;
-    m.querySelectorAll('#cf-per [data-pc]').forEach(b=>{b.disabled=false;b.title=''});
+    m.querySelectorAll('#cf-per [data-pc]').forEach(b=>{b.hidden=false;b.title=''});
     if(!fid||!fid.bookable||!d){o.textContent='';return}
     try{const r=await SP.sb.rpc('sp_busy_periods',{p_facility:fid.id,p_date:d,p_ref:isNew?null:String(p0.id)});const bz=(r&&r.data)||[];
-      m.querySelectorAll('#cf-per [data-pc]').forEach(b=>{if(bz.includes(b.dataset.pc)){b.disabled=true;b.title='محجوزة';sel.delete(b.dataset.pc)}});paint();
-      o.textContent=bz.length?'الحصص المعطّلة محجوزة في '+fid.name+' في هذا اليوم.':''}catch(e){}};
+      m.querySelectorAll('#cf-per [data-pc]').forEach(b=>{if(bz.includes(b.dataset.pc)){b.hidden=true;sel.delete(b.dataset.pc)}});paint();
+      o.textContent=bz.length?'تظهر الحصص المتاحة فقط؛ الباقي محجوز في '+fid.name+' في هذا اليوم.':''}catch(e){}};
   m.querySelectorAll('#cf-per [data-pc]').forEach(b=>b.onclick=()=>{sel.has(b.dataset.pc)?sel.delete(b.dataset.pc):sel.add(b.dataset.pc);paint()});
   if(facSel)facSel.addEventListener('change',busy);$('#cf-s').addEventListener('change',busy);paint();busy();
   m.__periods=()=>PER.filter(x=>sel.has(x.code)).map(x=>x.code);
@@ -393,7 +393,7 @@ function plansPage(){
    <datalist id="cd-bens">${benList().map(b=>`<option value="${esc(b)}">`).join('')}</datalist>
    <div class="cd-tw"><table class="cd-t cd-plt"><thead><tr><th>#</th><th>اسم البرنامج</th><th>المنفذ</th><th>تاريخ البداية</th><th>تاريخ النهاية</th><th>الفئة المستهدفة</th>${ED?'<th></th>':''}</tr></thead><tbody>
    ${list.map(row).join('')||`<tr><td colspan="7"><div class="cd-empty">${q?'لا توجد برامج مطابقة للبحث.':'لا توجد برامج في هذه الخطة بعد.'}</div></td></tr>`}
-   ${ED&&!ALL?`<tr class="cd-newrow"><td class="cd-num">${ic('plus')}</td><td><input id="np-name" class="nm" placeholder="اسم برنامج جديد" aria-label="اسم البرنامج الجديد"></td><td>${ownerSelect('','id="np-own" aria-label="منفذ البرنامج الجديد"')}</td><td><input type="date" id="np-s" aria-label="تاريخ البداية"></td><td><input type="date" id="np-e" aria-label="تاريخ النهاية"></td><td><input id="np-ben" class="bn" list="cd-bens" placeholder="الفئة المستهدفة" aria-label="الفئة المستهدفة"></td><td><button class="btn pri cd-sm" type="button" id="np-add">إضافة</button></td></tr>`:''}
+   ${ED&&!ALL?`<tr class="cd-newrow"><td class="cd-num">${ic('plus')}</td><td><input id="np-name" class="nm" placeholder="اسم برنامج جديد" aria-label="اسم البرنامج الجديد"></td><td>${ownerSelect('','id="np-own" aria-label="منفذ البرنامج الجديد"')}</td><td><input type="date" id="np-s" aria-label="تاريخ البداية"></td><td><input type="date" id="np-e" aria-label="تاريخ النهاية"></td><td><input id="np-ben" class="bn" list="cd-bens" placeholder="الفئة المستهدفة" aria-label="الفئة المستهدفة"></td><td><button class="btn pri cd-sm" type="button" id="np-add">إضافة</button></td></tr><tr class="cd-newrow cd-nr2"><td></td><td colspan="6"><div class="cd-nf"><select id="np-fac" aria-label="مرفق التنفيذ"><option value="">— مرفق التنفيذ (من المتاحة للحجز) —</option>${FAC.filter(x=>x.bookable).map(x=>`<option value="${esc(x.id)}">${esc(facLabel(x))}</option>`).join('')}</select><span id="np-per" class="cd-rs" style="margin:0"></span><small id="np-pn" class="muted">اختر المرفق والتاريخ لتظهر الحصص المتاحة.</small></div></td></tr>`:''}
    </tbody></table></div><div class="cd-err" id="np-err"></div>
    <p class="muted small" style="margin:6px 0 0">${ED?'يُحفظ تعديل أي خانة فور تغييرها، ويظهر في كل صفحات الموقع ولوحة التحكم. البرنامج المحذوف ينتقل إلى صفحة «المحذوفات» في شريط لوحة التحكم ويمكن استعادته منها.':'سجّل الدخول من «دخول المحررين» لتعديل الخطة وإضافة البرامج.'}</p></section>
   ${ED&&REMOVED.length?`<a class="panel cd-trlink" href="#admin-trash">${ic('x')} <span>المحذوفات</span><b>${REMOVED.length}</b><small>اضغط لعرضها واستعادتها</small></a>`:''}</div>`}
@@ -465,11 +465,22 @@ function bind(v){
   v.querySelectorAll('[data-pbplan]').forEach(b=>b.onclick=()=>{D.pb=b.dataset.pbplan;D.pbf='';D.pbq='';saveUI();route(true)});
   v.querySelectorAll('[data-pbf]').forEach(b=>b.onclick=()=>{D.pbf=D.pbf===b.dataset.pbf?'all':b.dataset.pbf;route(true)});
   const ns=v.querySelector('#np-s');if(ns)ns.onchange=()=>{const e=v.querySelector('#np-e');if(!e.value||e.value<ns.value)e.value=ns.value};
+  const nfac=v.querySelector('#np-fac');if(nfac){const nper=v.querySelector('#np-per'),npn=v.querySelector('#np-pn'),nd=v.querySelector('#np-s');
+    const draw=async()=>{NSEL.clear();nper.innerHTML='';const fc=FAC.find(x=>x.id===nfac.value);
+      if(!fc||!nd.value){npn.textContent='اختر المرفق والتاريخ لتظهر الحصص المتاحة.';return}
+      let bz=[];try{const r=await SP.sb.rpc('sp_busy_periods',{p_facility:fc.id,p_date:nd.value,p_ref:null});bz=(r&&r.data)||[]}catch(e){}
+      const free=PER.filter(x=>!bz.includes(x.code));
+      nper.innerHTML=free.map(x=>`<button type="button" data-pc="${esc(x.code)}" title="${esc(x.starts+' – '+x.ends)}">${esc(x.name)}</button>`).join('');
+      npn.textContent=free.length?'الحصص المتاحة للحجز في '+fc.name+':':'لا توجد حصص متاحة في هذا اليوم.';
+      nper.querySelectorAll('[data-pc]').forEach(b=>b.onclick=()=>{NSEL.has(b.dataset.pc)?NSEL.delete(b.dataset.pc):NSEL.add(b.dataset.pc);b.classList.toggle('on',NSEL.has(b.dataset.pc))})};
+    nfac.onchange=draw;nd.addEventListener('change',draw);
+    if(!nfac.value){const pl=PL.find(x=>String(x.id)===String((document.getElementById('cd-mplan')||{}).value||D.mplan));isPLC(pl).then(y=>{const h=pdHall();if(y&&h&&!nfac.value){nfac.value=h.id;draw()}})}}
   const na=v.querySelector('#np-add');if(na)na.onclick=async()=>{const g=id=>v.querySelector(id).value.trim(),er=v.querySelector('#np-err');
-    const f={name:g('#np-name'),owner_name:g('#np-own'),beneficiary:g('#np-ben'),planned_date:g('#np-s'),planned_end:g('#np-e')||g('#np-s'),plan_id:+(document.getElementById('cd-mplan')||{}).value||+D.mplan,status:'لم يبدأ'};
+    const fc=FAC.find(x=>x.id===(v.querySelector('#np-fac')||{}).value),codes=[...NSEL];
+    const f={name:g('#np-name'),owner_name:g('#np-own'),beneficiary:g('#np-ben'),planned_date:g('#np-s'),planned_end:g('#np-e')||g('#np-s'),plan_id:+(document.getElementById('cd-mplan')||{}).value||+D.mplan,status:'لم يبدأ',...(fc?{facility_id:fc.id,location:fc.name}:{}),...(codes.length?{periods:codes,time:((PER.find(x=>x.code===codes[0])||{}).starts)||''}:{})};
     const m=!f.name?'اكتب اسم البرنامج.':!f.planned_date?'حدد تاريخ البداية.':f.planned_end<f.planned_date?'تاريخ النهاية قبل البداية.':'';
     if(m){er.textContent=m;return}na.disabled=true;
-    try{await write({type:'add',name:f.name,data:f});toast('أُضيف البرنامج إلى الخطة');setTimeout(()=>{const n=document.getElementById('np-name');n&&n.focus()},300)}catch(e){na.disabled=false;er.textContent=e.message||'تعذّر الإضافة'}};
+    try{const wr=await write({type:'add',name:f.name,data:f});toast('أُضيف البرنامج إلى الخطة');if(wr&&wr.id&&fc&&codes.length)bookToast(await syncBooking('c-'+wr.id,f,PL.find(x=>String(x.id)===String(f.plan_id))));NSEL.clear();setTimeout(()=>{const n=document.getElementById('np-name');n&&n.focus()},300)}catch(e){na.disabled=false;er.textContent=e.message||'تعذّر الإضافة'}};
   v.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(!b.dataset.sure){b.dataset.sure=1;b.textContent='تأكيد الحذف؟';setTimeout(()=>{if(b.isConnected){delete b.dataset.sure;b.textContent='حذف'}},4000);return}
     const p=P.find(x=>String(x.id)===b.dataset.del);if(!p)return;b.disabled=true;try{await write({type:'remove',progId:String(p.id),name:p.name});try{await SP.sb.rpc('sp_unbook_program',{p_ref:String(p.id)})}catch(_){}toast('حُذف البرنامج، ويمكنك استعادته من «المحذوفات»')}catch(e){b.disabled=false;toast(e.message)}});
   v.querySelectorAll('.cd-trash').forEach(d=>d.ontoggle=()=>{D.trash=d.open});
