@@ -560,9 +560,9 @@ route=function(keep){
   if(EX.some(e=>e&&e.kind==='coordinator'))EX=EX.filter(e=>!e||e.kind!=='coordinator');
   updBell();
   const h=(location.hash||'#home').slice(1);
-  // #dashboard: مدخل لوحة التحكم من الأنظمة الأخرى، يفتح «مكتبي الإلكتروني» بحسب الدور (المنفّذ #me، والمنسق #admin)
+  // #dashboard: مدخل لوحة التحكم من الأنظمة الأخرى، يفتح «مكتبي الإلكتروني» بحسب الدور (المنسق/المدير #admin، والمنفّذ #me)
   if(h==='dashboard'){const v=document.getElementById('view');if(!READY){showBar(null);v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
-    location.replace(isExec()?'#me':canAdd()?'#admin':'#me');return}
+    location.replace(canAdd()?'#admin':'#me');return}
   if(h===NTF){const v=document.getElementById('view');document.querySelectorAll('#nav a').forEach(a=>a.classList.remove('on'));
     if(!READY){showBar(null);v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
     if(!(canAdd()||isExec())){showBar(null);v.innerHTML=`<div class="cd-lockpage">${ic('user')}<h2>الإشعارات لمنسوبي النواة المصرّح لهم</h2><p class="muted">سجّل الدخول بحساب النواة الرقمية.</p></div>`;return}
