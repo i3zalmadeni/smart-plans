@@ -569,8 +569,8 @@ function updBell(){
 
 /* ---------- ترويسة لوحة التحكم الموحدة (هوية النواة): للمنسق والمنفذ معًا ---------- */
 Object.assign(IC,{pulse:'<path d="M3 12h4l2.5-6.5 4 13 2.5-6.5H21"/>',desk:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',refresh:'<path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 4v7h-7"/>',trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'});
-const ADM=['admin','admin-alerts','admin-plans','admin-people','admin-trash'],EXP=['me','me-docs'],NTF='notifications';
-const TITLES={notifications:'الإشعارات','coord-plan':'نبض الخطة',me:'برامجي','me-docs':'توثيق برامجي','admin-alerts':'التنبيهات',admin:'مكتبي الإلكتروني','admin-plans':'إدارة الخطة','admin-people':'المنفذون','admin-trash':'المحذوفات'};
+const ADM=['admin','admin-alerts','admin-plans','admin-people','admin-trash','admin-portal'],EXP=['me','me-docs'],NTF='notifications';
+const TITLES={notifications:'الإشعارات','coord-plan':'نبض الخطة',me:'برامجي','me-docs':'توثيق برامجي','admin-alerts':'التنبيهات',admin:'مكتبي الإلكتروني','admin-plans':'إدارة الخطة','admin-people':'المنفذون','admin-trash':'المحذوفات','admin-portal':'إعدادات البوابة'};
 const PINFO={
   notifications:'ما ينتظر إجراءك ونتائج طلباتك ومستجدات الخطط الذكية.',
   'coord-plan':'خطتك وبرامجها: ما يحتاج متابعتك الآن وما تبقى.',
@@ -580,7 +580,7 @@ const PINFO={
   'admin-alerts':'البرامج التي تحتاج تدخلك: المتأخرة في التوثيق، والمتعثرة وأسباب تعثرها، والقادمة قريبًا.',
   'admin-plans':'تحرير برامج كل خطة وتوثيقها واعتمادها، وإضافة الخطط وإرفاق ملفاتها، ومنها تصل إلى المنفذين والمحذوفات.',
   'admin-people':'منفذو البرامج من منسوبي النواة، وربط الأسماء المكتوبة يدويًا بمنسوبيها.',
-  'admin-trash':'ما حُذف من البرامج والخطط، مع إمكانية استعادته.'};
+  'admin-trash':'ما حُذف من البرامج والخطط، مع إمكانية استعادته.','admin-portal':'إدارة إعلانات البوابة: المركزية لكل الأنظمة، والخاصة بالخطط الذكية.'};
 const panelHash=h=>!!h&&(ADM.includes(h)||EXP.includes(h)||h===NTF||h==='coord-plan'||h==='dashboard');
 const hhmm=d=>{try{return d.toLocaleTimeString('ar-SA-u-ca-gregory-nu-latn',{hour:'2-digit',minute:'2-digit'})}catch(e){return ''}};
 const roleName=()=>{const a=(window.SP&&SP.access)||{};return a.admin?'مدير النواة الرقمية':a.coordinator?'منسق الخطط الذكية':canAdd()?'محرر الخطط الذكية':(READY&&myPlans().length)?'منسق الخطة':'منفذ البرامج'};
@@ -659,11 +659,11 @@ function barHTML(h){
     <a class="cp-sys" href="#${adm?'admin':ex?'me':'admin'}"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M30 4c2 14 8 20 24 24-16 4-22 10-24 26-2-16-8-22-24-26 16-4 22-10 24-24z" fill="#0f8a94"/><path d="M50 4c.8 5 3 7.2 8 8-5 .8-7.2 3-8 8-.8-5-3-7.2-8-8 5-.8 7.2-3 8-8z" fill="#f0b34a"/></svg><span><b>الخطط الذكية</b><small>متوسطة لبيد بن ربيعة</small></span></a>
     <span class="cp-idl"><a class="cp-site" href="#home">الموقع الإلكتروني</a><i class="cp-vsep" aria-hidden="true"></i><a class="coreid" href="https://i3zalmadeni.github.io/digital-core" title="النواة الرقمية"><img src="assets/core-logo.svg" alt="" width="36" height="36"><span><b>النواة الرقمية</b><small>الهوية الموحدة</small></span></a><span class="moe"><b>وزارة التعليم</b><small>Ministry of Education</small></span></span></div></div>
   <div class="cp-strip" aria-hidden="true"></div>
-  <div class="cp-sub"><div class="wrap cp-subin"><nav class="cp-nav" aria-label="صفحات لوحة التحكم">${adm?it('admin','desk','مكتبي الإلكتروني')+it('admin-plans','plan','إدارة الخطة'):''}${ex?it('me','user','برامجي')+it('me-docs','rep','توثيق برامجي'):''}${pc?it(PB,'pulse','نبض الخطة'):''}</nav>
+  <div class="cp-sub"><div class="wrap cp-subin"><nav class="cp-nav" aria-label="صفحات لوحة التحكم">${adm?it('admin','desk','مكتبي الإلكتروني')+it('admin-plans','plan','إدارة الخطة')+it('admin-portal','bell','إعدادات البوابة'):''}${ex?it('me','user','برامجي')+it('me-docs','rep','توثيق برامجي'):''}${pc?it(PB,'pulse','نبض الخطة'):''}</nav>
     <span class="cp-user">${ubBarHTML(nm, adm ? '#admin' : '#me')}</span></div></div>
   <div class="cp-page"><div class="wrap cp-pagein"><div class="cp-pt"><small>${roleName()}</small><h1>${TITLES[h]||''}</h1></div><p class="cp-pd">${PINFO[h]||''}</p>
     <div class="cp-pm"><span class="cp-up">آخر تحديث ${hhmm(LASTUP)}</span><button type="button" class="btn cd-sm" id="cp-refresh">${ic('refresh')} تحديث</button></div></div>
-    ${ADM.includes(h)?`<div class="wrap cp-acts" role="group" aria-label="إضافة سريعة"><button type="button" class="cx-pri" data-cx-add="plan">${ic('plus')}<span>برنامج في الخطة</span></button><button type="button" data-cx-add="unplanned">${ic('plus')}<span>برنامج غير مدرج</span></button><button type="button" data-cx-add="newplan">${ic('plus')}<span>خطة جديدة</span></button></div>`:''}</div>`}
+    ${ADM.includes(h)&&h!=='admin-portal'?`<div class="wrap cp-acts" role="group" aria-label="إضافة سريعة"><button type="button" class="cx-pri" data-cx-add="plan">${ic('plus')}<span>برنامج في الخطة</span></button><button type="button" data-cx-add="unplanned">${ic('plus')}<span>برنامج غير مدرج</span></button><button type="button" data-cx-add="newplan">${ic('plus')}<span>خطة جديدة</span></button></div>`:''}</div>`}
 const shell=(h,inner)=>inner;
 let BARH=null;
 function showBar(h){if(h!==BARH){NOPEN=false;BARH=h}let bar=document.getElementById('cx-bar');const on=!!(h&&READY&&(ADM.includes(h)?canAdd():EXP.includes(h)?isExec():h===PB?isPlanCoord():h===NTF&&(canAdd()||isExec())));
@@ -674,7 +674,7 @@ function showBar(h){if(h!==BARH){NOPEN=false;BARH=h}let bar=document.getElementB
   bar.hidden=false;bar.innerHTML=barHTML(h);bindBar(bar,h);
   if(window.PK&&window.SP&&SP.sb){const ex=isExec(),nm=(SP.access&&SP.access.name)||WHO||'';PK.use(SP.sb);PK.fitNav(bar.querySelector('.cp-nav'));PK.mountAnnouncements({sb:SP.sb,system:'smart_plans',page:(h==='admin'||h==='me')?'home':'all',after:'#cx-bar'});
     if(h==='admin')PK.welcome('#view',{mode:'before',sb:SP.sb,name:nm,role:roleName()});else document.querySelectorAll('.pk-wcw').forEach(e=>e.remove());
-    if(h==='admin-plans'||h==='admin-people'){/* إدارة الخطة: قسم الإعلانات أسفل المحتوى */PK.mountAdminSection({sb:SP.sb,system:'smart_plans',central:true,after:'#view'})}else document.querySelectorAll('.pk-admwrap').forEach(e=>e.remove())}
+    if(h==='admin-portal'){/* إدارة الخطة: قسم الإعلانات أسفل المحتوى */PK.mountAdminSection({sb:SP.sb,system:'smart_plans',central:true,after:'#view'})}else document.querySelectorAll('.pk-admwrap').forEach(e=>e.remove())}
   // الجوال: التبويب الحالي يُمرَّر إلى وسط الشريط دون تحريك الصفحة، وتظليل الحافة يدل على وجود تبويبات أخرى
   const nv=bar.querySelector('.cp-nav'),on2=nv&&nv.querySelector('a.on');
   if(nv){if(on2&&innerWidth<=760)nv.scrollLeft+=on2.getBoundingClientRect().left+on2.offsetWidth/2-(nv.getBoundingClientRect().left+nv.clientWidth/2);
@@ -729,7 +729,7 @@ route=function(keep){
   if(!READY){v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
   if(!canAdd()){const sg=!!(window.SP&&SP.signedIn);
     v.innerHTML=`<div class="cd-lockpage">${ic('user')}<h2>${sg?'لا تملك صلاحية لوحة التحكم':'لوحة التحكم لمنسوبي النواة المصرّح لهم'}</h2><p class="muted">${sg?'حسابك في النواة الرقمية لا يحمل صلاحية الخطط الذكية. يمنحها مدير النواة من صفحة «الصلاحيات» في النواة الرقمية.':'سجّل الدخول بحساب النواة الرقمية لعرض لوحة التحكم وإدارة الخطة والمنفذين.'}</p><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${sg?'':'<button class="btn pri" type="button" id="cd-login">دخول</button>'}<a class="btn soft" href="#home">الرئيسية</a></span></div>`;const lb=document.getElementById('cd-login');if(lb)lb.onclick=()=>{const x=document.getElementById('lg-in');if(x)x.click();else if(window.SP&&SP.login)SP.login()};return}
-  v.innerHTML=shell(h,h==='admin-plans'?plansPage():h==='admin-people'?peoplePage():h==='admin-trash'?trashPage():h==='admin-alerts'?alertsPage():tasksPage());bind(v);
+  v.innerHTML=shell(h,h==='admin-plans'?plansPage():h==='admin-people'?peoplePage():h==='admin-trash'?trashPage():h==='admin-portal'?'<div class="cd"><section class="panel"><p class="muted" style="margin:0">أضف الإعلانات وعدّلها وأوقفها من الأقسام أدناه، وتظهر للمستخدمين في أعلى صفحات النظام.</p></section></div>':h==='admin-alerts'?alertsPage():tasksPage());bind(v);
   if(keep===true)window.scrollTo(0,sy);else window.scrollTo(0,0);
 };
 route(true);
