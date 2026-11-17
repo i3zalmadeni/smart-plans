@@ -269,7 +269,7 @@ function buildDash(view){
   const dkTabs=[['week','cal','هذا الأسبوع',thisN,'قيد التنفيذ'],['late','rep','تحتاج توثيقًا',need.length,'متأخر'],['appr','check','بانتظار الاعتماد',appr.length,'مكتمل'],['stall','x','متعثرة',stl.length,'متعثر'],['all','layers','كل البرامج',live.length,'']];
   if(unassigned.length+legacyN.size)dkTabs.push(['own','users','بلا منفذ',unassigned.length+legacyN.size,'متعثر']);
   if(!dkTabs.some(t=>t[0]===D.dk))D.dk='week';
-  const tabsHTML=`<div class="dk-tabs" role="tablist" aria-label="أقسام المكتب التنفيذي">${dkTabs.map(([k,i,t,n,sc])=>`<button type="button" role="tab" aria-selected="${D.dk===k}" class="dk-tab${D.dk===k?' on':''}${n&&['late','stall','own'].includes(k)?' alert':''}" style="--sc:${sc?SC[sc]:'var(--brand)'}" data-dk="${k}"><i>${ic(i)}</i><span>${t}</span><b class="${n?'':'z'}">${n}</b></button>`).join('')}</div>`;
+  const tabsHTML=`<div class="dk-tabs" role="tablist" aria-label="أقسام مكتبي الإلكتروني">${dkTabs.map(([k,i,t,n,sc])=>`<button type="button" role="tab" aria-selected="${D.dk===k}" class="dk-tab${D.dk===k?' on':''}${n&&['late','stall','own'].includes(k)?' alert':''}" style="--sc:${sc?SC[sc]:'var(--brand)'}" data-dk="${k}"><i>${ic(i)}</i><span>${t}</span><b class="${n?'':'z'}">${n}</b></button>`).join('')}</div>`;
   let body='';
   if(D.dk==='week'){
     if(!dw)body='<p class="muted cp-empty">لا أسابيع في التقويم الدراسي.</p>';
