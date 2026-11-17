@@ -164,15 +164,17 @@
       m.innerHTML = '<div role="dialog" aria-modal="true" aria-labelledby="lg-t" style="width:100%;max-width:400px">' +
         '<img src="assets/core-logo.svg" alt="النواة الرقمية" width="72" height="72" style="display:block;margin:0 auto 8px">' +
         '<h3 id="lg-t" style="text-align:center;margin:0 0 4px">النواة الرقمية</h3>' +
-        '<p class="muted small" style="text-align:center;margin:0 0 14px">دخول موحد لأنظمة المدرسة. الاستعراض في الخطط الذكية متاح للجميع دون دخول.</p>' +
+        '<p style="text-align:center;font-weight:800;font-size:1.05rem;color:var(--brand2,#0c6f82);margin:2px 0 4px">الخطط الذكية</p>' +
+        '<p class="muted small" style="text-align:center;margin:0 0 14px">تسجيل الدخول · متوسطة لبيد بن ربيعة</p>' +
         '<form class="frm" id="lg-f" style="grid-template-columns:1fr">' +
         '<div><label for="lg-e">معرّف الدخول</label><input id="lg-e" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required dir="ltr" placeholder="أرقام أو حروف إنجليزية"></div>' +
         '<div><label for="lg-p">كلمة المرور</label><input id="lg-p" type="password" autocomplete="current-password" required dir="ltr"></div>' +
-        '</form><div id="lg-m" role="alert"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn pri" type="submit" form="lg-f" id="lg-b">دخول</button><button class="btn" type="button" data-x>إلغاء</button></div></div>';
+        '</form>' + '<label style="display:flex;align-items:flex-start;gap:10px;margin:12px 0 6px;cursor:pointer;font-weight:500" for="lg-rm"><input id="lg-rm" form="lg-f" type="checkbox" style="width:auto;margin-top:4px"><span>حفظ معلوماتي<small class="sub" style="display:block;font-weight:400">يحفظ معرّف الدخول على هذا الجهاز فقط، ولا تُحفظ كلمة المرور.</small></span></label>' + '<div id="lg-m" role="alert"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn pri" type="submit" form="lg-f" id="lg-b">دخول</button><button class="btn" type="button" data-x>إلغاء</button></div></div>';
       document.body.append(m);
       var close = function () { m.remove(); };
       m.querySelector('[data-x]').onclick = close;
       m.onclick = function (e) { if (e.target === m) close(); };
+      try { var sv = localStorage.getItem('dc_login_id'); if (sv) { m.querySelector('#lg-e').value = sv; m.querySelector('#lg-rm').checked = true; } } catch (x) {}
       m.querySelector('#lg-e').focus();
       m.querySelector('#lg-f').onsubmit = function (e) {
         e.preventDefault();
@@ -181,6 +183,7 @@
         sb.auth.signInWithPassword({ email: toAuthEmail(m.querySelector('#lg-e').value), password: m.querySelector('#lg-p').value })
           .then(function (r) {
             if (r.error) throw r.error;
+            try { if (m.querySelector('#lg-rm').checked) localStorage.setItem('dc_login_id', m.querySelector('#lg-e').value.trim().toLowerCase()); else localStorage.removeItem('dc_login_id'); } catch (x) {}
             location.reload();
           }).catch(function (err) {
             b.disabled = false; b.textContent = 'دخول';
