@@ -85,7 +85,7 @@
         if (r.error) { (listeners[col] || []).forEach(function (l) { l.err && l.err(r.error); }); return; }
         var snap = makeSnap(r.data || []);
         (listeners[col] || []).forEach(function (l) { try { l.cb(snap); } catch (e) { console.error(e); } });
-      });
+      }, function (e) { (listeners[col] || []).forEach(function (l) { l.err && l.err(e); }); });
     };
     try {
       sb.channel('sp-records-live')
@@ -142,7 +142,7 @@
       use: function (name) {
         if (name === 'downloads') return Promise.resolve(services.downloads);
         // الدليل والجلسة يُحمَّلان قبل أول لقطة بيانات حتى تُعرض أسماء المنفذين من النواة من البداية
-        return SP.ready.then(function () {
+        return Promise.race([SP.ready, new Promise(function (r) { setTimeout(r, 7000); })]).then(function () {
           if (name === 'db') return services.db;
           // الإضافة والحذف والتعديل لا تُتاح إلا لمن يملك صلاحية «الخطط الذكية» في النواة
           if (name === 'assets' || name === 'user') {

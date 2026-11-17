@@ -8,6 +8,7 @@ const PAGES={me:['مكتبي الإلكتروني','برامجك المسندة 
 const S={f:'all'};
 const me=()=>window.SP&&SP.access&&SP.access.staff_id||null;
 const T=()=>todayISO();
+const roleName=()=>{const a=(window.SP&&SP.access)||{};return a.admin?'مدير النواة الرقمية':a.coordinator?'منسق الخطط الذكية':a.add?'محرر الخطط الذكية':'منفذ البرامج'};
 const mine=()=>{const id=me();return id?P.filter(p=>p.owner_staff_id===id):[]};
 const rng=p=>{const s=p.planned_date||'',e=p.planned_end||s;return [s,e]};
 const when=p=>{const [s,e]=rng(p);return s?(dmy(s)+(e&&e!==s?' – '+dmy(e):'')):(p.planned_text||'غير مجدول')};

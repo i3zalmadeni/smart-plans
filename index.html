@@ -1546,7 +1546,7 @@ body.print-about .ab-go{display:none!important}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="assets/config.js?v=20261113b"></script>
-<script src="assets/store.js?v=20261113b"></script>
+<script src="assets/store.js?v=20261117a"></script>
 <link rel="stylesheet" href="assets/coordinator.css?v=20261113b">
 <link rel="stylesheet" href="assets/plans.css?v=20261113b">
 <link rel="stylesheet" href="assets/reports.css?v=20261113b">
@@ -1862,7 +1862,8 @@ const hijri=d=>{try{return new Date(d+'T12:00:00').toLocaleDateString('ar-SA-u-c
 const greg=d=>{try{return new Date(d+'T12:00:00').toLocaleDateString('ar-SA-u-ca-gregory-nu-latn',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}catch{return d}};
 const imgUrl=a=>a.url||('/_blob/'+a.id);
 async function initRuntime(){
-  if(!window.claude||!claude.use)return;
+  setTimeout(()=>{if(!READY){READY=true;route(true)}},8000); // لا يبقى «جارٍ التحميل» إن تأخّر الاتصال
+  if(!window.claude||!claude.use){READY=true;route(true);return}
   [DB,ASSETS,DL,USER]=await Promise.all(['db','assets','downloads','user'].map(n=>claude.use(n).catch(()=>null)));
   if(DB){DB.collection('unplanned').onSnapshot(s=>{mergeUnplanned(s.docs.map(d=>({id:d.id,...d.data()})));if(!document.querySelector('.modal'))route(true)},()=>{});DB.collection('executions').onSnapshot(s=>{EX=s.docs.map(d=>({id:d.id,...d.data()})).map(e=>{const m=e.executor_staff_id&&window.SP&&SP.dir&&SP.dir[e.executor_staff_id];return m?{...e,executor:m.name}:e});READY=true;if(!document.querySelector('.modal'))route(true)},()=>{READY=true;route(true)})}
   else{READY=true;route(true)}
@@ -2486,7 +2487,7 @@ addEventListener('hashchange',()=>route());route();initRuntime();
 <script src="assets/unified-kit.js?v=20261117a"></script>
 <script src="assets/coordinator.js?v=20261115d"></script>
 <script src="assets/plans.js?v=20261115a"></script>
-<script src="assets/executor.js?v=20261115a"></script>
+<script src="assets/executor.js?v=20261117a"></script>
 <script>
 /* حركة: ظهور تدريجي للعناصر وعدّاد للأرقام عند فتح كل صفحة */
 (function(){
