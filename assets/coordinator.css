@@ -469,3 +469,20 @@ body.cp-on>header{display:none}
 .cp-more{margin:8px 2px 0}
 @media (max-width:900px){.cp-grid{grid-template-columns:1fr}}
 .cd-olsel{max-width:280px}
+
+/* ===== لوحة منسق الخطة (#plan-board): كل خطة بتبويب مستقل ===== */
+.pb{display:grid;gap:16px}
+.pb-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:18px;align-items:center;border-inline-start:5px solid var(--f);background:linear-gradient(0deg,var(--surface),var(--surface)),var(--b)}
+.pb-ring{width:128px}
+.pb-ring .cd-ring{margin:0}
+.pb-info{display:grid;gap:8px;min-width:0;justify-items:start}
+.pb-info h2{margin:0;font-size:1.25rem}
+.pb-info p{margin:0;line-height:1.8;color:var(--ink2)}
+.pb-info .cd-stk{width:100%;max-width:420px}
+.pb-rem{display:grid;gap:2px;justify-items:center;text-align:center;padding:10px 18px;border-radius:14px;background:var(--b);border:1px solid color-mix(in srgb,var(--f) 35%,var(--line))}
+.pb-rem b{font-size:2rem;line-height:1.1;color:var(--f)}
+.pb-rem span{font-weight:700}
+.pb-rem small{color:var(--muted)}
+#pb-all .cd-ph{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+#pb-all .cd-srch{max-width:320px}
+@media (max-width:760px){.pb-head{grid-template-columns:1fr;justify-items:center;text-align:center}.pb-info{justify-items:center}.pb-rem{width:100%}}

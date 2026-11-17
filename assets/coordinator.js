@@ -10,8 +10,8 @@
 const ls={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const UIK='sp-coord-ui';
 const D=Object.assign({mode:'plan',plan:null,week:null,dom:null,own:null,fs:'',q:'',grace:0,all:false},ls.get(UIK,{}));
-D.fs='';D.q='';D.pq='';D.uq='';
-const saveUI=()=>ls.set(UIK,{pmode:D.pmode,mplan:D.mplan,mode:D.mode,plan:D.plan,week:D.week,dom:D.dom,own:D.own,grace:D.grace});
+D.fs='';D.q='';D.pq='';D.uq='';D.pbq='';D.pbf='all';
+const saveUI=()=>ls.set(UIK,{pmode:D.pmode,mplan:D.mplan,mode:D.mode,plan:D.plan,week:D.week,dom:D.dom,own:D.own,grace:D.grace,pb:D.pb});
 const ORIG={};BASEP.forEach(p=>{ORIG[p.id]=JSON.parse(JSON.stringify(p))});
 const CO_COL='executions';let LASTUP=new Date();
 let CO=[],SUB=false,WHO='',REMOVED=[];let PEOPLE={};
@@ -308,7 +308,7 @@ function planDialog(id){const isNew=id==null,pl=isNew?{name:'',desc:'',owner:'',
   const {m,close}=openModal(`<div class="cd-mh"><h3>${isNew?'إضافة خطة جديدة':'تعديل الخطة'}</h3><button class="btn cd-sm" data-x aria-label="إغلاق">✕</button></div>
   <div class="cd-form">
    <div class="f full req"><label for="pl-name">اسم الخطة</label><input id="pl-name" value="${esc(pl.name||'')}" placeholder="مثال: خطة النشاط الطلابي 1448هـ"></div>
-   <div class="f"><label for="pl-own">المسؤول عن الخطة</label>${ownerSelect((pl.owner||'').trim(),'id="pl-own"')}</div>
+   <div class="f"><label for="pl-own">منسق الخطة (المسؤول عنها)</label>${ownerSelect((pl.owner||'').trim(),'id="pl-own"')}</div>
    <div class="f"><label for="pl-year">العام / الفترة</label><input id="pl-year" value="${esc(pl.year||'1448هـ')}"></div>
    <div class="f full"><label for="pl-desc">وصف الخطة وهدفها</label><textarea id="pl-desc" placeholder="الهدف العام من الخطة ومجالها">${esc(pl.desc||'')}</textarea></div>
    <div class="f full"><label for="pl-pdf">ملف الخطة (PDF)</label><div class="pl-pdf">${pl.pdf&&pl.pdf.url?`<span class="pl-pdf-cur"><a href="${esc(pl.pdf.url)}" target="_blank" rel="noopener">${esc(pl.pdf.name||'ملف الخطة.pdf')}</a><label class="pl-pdf-rm"><input type="checkbox" id="pl-pdf-rm"> إزالة الملف</label></span>`:''}<input id="pl-pdf" type="file" accept="application/pdf,.pdf"><small class="muted">${pl.pdf&&pl.pdf.url?'اختر ملفًا جديدًا لاستبدال الحالي. ':''}يُحفظ الملف ويظهر في صفحة الخطة للاطلاع والتنزيل (حتى 25 ميجابايت).</small></div></div>
@@ -424,7 +424,9 @@ function bind(v){
   v.querySelectorAll('[data-ogroup]').forEach(b=>b.onclick=async()=>{const n=b.dataset.ogroup,er=v.querySelector('#ol-err');
     b.disabled=true;try{await write({type:'owner-link',from:n,group:true,name:n});toast('اعتُمد الاسم جهة أو مجموعة')}catch(e){b.disabled=false;if(er)er.textContent=e.message||'تعذّر الحفظ'}});
   const sq=(id,k)=>{const el=v.querySelector(id);if(!el)return;let t;el.oninput=()=>{clearTimeout(t);t=setTimeout(()=>{D[k]=el.value;route(true);const n=document.querySelector(id);if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}},250)}};
-  sq('#cd-pq','pq');sq('#cd-uq','uq');
+  sq('#cd-pq','pq');sq('#cd-uq','uq');sq('#pb-q','pbq');
+  v.querySelectorAll('[data-pbplan]').forEach(b=>b.onclick=()=>{D.pb=b.dataset.pbplan;D.pbf='all';D.pbq='';saveUI();route(true)});
+  v.querySelectorAll('[data-pbf]').forEach(b=>b.onclick=()=>{D.pbf=b.dataset.pbf;route(true)});
   const ns=v.querySelector('#np-s');if(ns)ns.onchange=()=>{const e=v.querySelector('#np-e');if(!e.value||e.value<ns.value)e.value=ns.value};
   const na=v.querySelector('#np-add');if(na)na.onclick=async()=>{const g=id=>v.querySelector(id).value.trim(),er=v.querySelector('#np-err');
     const f={name:g('#np-name'),owner_name:g('#np-own'),beneficiary:g('#np-ben'),planned_date:g('#np-s'),planned_end:g('#np-e')||g('#np-s'),plan_id:+(document.getElementById('cd-mplan')||{}).value||+D.mplan,status:'لم يبدأ'};
@@ -472,9 +474,10 @@ function updBell(){
 /* ---------- ترويسة لوحة التحكم الموحدة (هوية النواة): للمنسق والمنفذ معًا ---------- */
 Object.assign(IC,{desk:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',refresh:'<path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 4v7h-7"/>',trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'});
 const ADM=['admin','admin-alerts','admin-plans','admin-people','admin-trash'],EXP=['me','me-docs'],NTF='notifications';
-const TITLES={notifications:'الإشعارات',me:'مكتبي الإلكتروني','me-docs':'توثيق برامجي','admin-alerts':'التنبيهات',admin:'مهام المتابعة','admin-plans':'إدارة الخطة','admin-people':'المنفذون','admin-trash':'المحذوفات'};
+const TITLES={notifications:'الإشعارات','plan-board':'لوحة منسق الخطة',me:'مكتبي الإلكتروني','me-docs':'توثيق برامجي','admin-alerts':'التنبيهات',admin:'مهام المتابعة','admin-plans':'إدارة الخطة','admin-people':'المنفذون','admin-trash':'المحذوفات'};
 const PINFO={
   notifications:'ما ينتظر إجراءك ونتائج طلباتك ومستجدات الخطط الذكية.',
+  'plan-board':'خطتك وبرامجها وتفاصيلها: ما تم تحديثه وما تبقى، وما يحتاج متابعتك الآن. كل خطة مستقلة بتبويبها.',
   me:'برامجك المسندة إليك: ما يحتاج توثيقًا الآن، وما يجري، وما هو قادم.',
   'me-docs':'وثّق تنفيذ برامجك واطّلع على تقارير التنفيذ السابقة.',
   admin:'ما يحتاج إجراءً منك الآن: اعتماد التوثيق، والمتأخر، والمتعثر، وبرامج هذا الأسبوع.',
@@ -483,7 +486,74 @@ const PINFO={
   'admin-people':'منفذو البرامج من منسوبي النواة، وربط الأسماء المكتوبة يدويًا بمنسوبيها.',
   'admin-trash':'ما حُذف من البرامج والخطط، مع إمكانية استعادته.'};
 const hhmm=d=>{try{return d.toLocaleTimeString('ar-SA-u-ca-gregory-nu-latn',{hour:'2-digit',minute:'2-digit'})}catch(e){return ''}};
-const roleName=()=>{const a=(window.SP&&SP.access)||{};return a.admin?'مدير النواة الرقمية':a.coordinator?'منسق الخطط الذكية':canAdd()?'محرر الخطط الذكية':'منفذ البرامج'};
+const roleName=()=>{const a=(window.SP&&SP.access)||{};return a.admin?'مدير النواة الرقمية':a.coordinator?'منسق الخطط الذكية':canAdd()?'محرر الخطط الذكية':(READY&&myPlans().length)?'منسق الخطة':'منفذ البرامج'};
+
+/* ---------- لوحة منسق الخطة: لمن أُسندت إليه خطة («المسؤول عن الخطة» من إدارة الخطة) ----------
+ * لا تعديل على قاعدة البيانات: الاطلاع عام، وأزرار التعديل والاعتماد تظهر لمن يملك صلاحيتها فقط (canAdd/canApprove).
+ * كل خطة في تبويب مستقل، ولا توجد صفحة تدمج الخطط معًا. */
+const PB='plan-board';
+const myPlans=()=>{const id=isExec()?SP.access.staff_id:null;return id?PL.filter(x=>x.owner_staff_id===id):[]};
+const isPlanCoord=()=>READY&&myPlans().length>0;
+const PBF=[['all','كل البرامج'],['rem','المتبقي'],['مكتمل','مكتملة'],['قيد التنفيذ','جارية'],['لم يبدأ','مخطط'],['متأخر','متأخرة التوثيق'],['متعثر','متعثرة']];
+const pbMatch=(p,f)=>f==='all'||(f==='rem'?!['مكتمل','ملغي'].includes(ds(p)):ds(p)===f);
+function pbTable(list){
+  return `<div class="cd-tw"><table class="cd-t"><thead><tr><th>البرنامج</th><th>من</th><th>إلى</th><th>المنفذ</th><th>الحالة</th><th>التوثيق والاعتماد</th></tr></thead><tbody>${list.map(p=>{const s=ds(p),ex=exFor(p.id).length,id=esc(String(p.id));
+   return `<tr style="--sc:${SC[s]}"><td class="cd-nm"><a href="#p-${id}">${esc(p.name)}</a><small>${esc(p.code||'')}${p.domain?' • '+esc(p.domain):''}${p.location?' • '+esc(p.location):''}</small></td><td>${esc(dmy(startOf(p))||'—')}</td><td>${esc(dmy(endOf(p))||'—')}</td><td><span class="cd-pn sm">${avatar(ownerOf(p),24)}${esc(ownerOf(p))}</span></td><td>${pill(s)}${p.status==='متعثر'?`<span class="cd-why" title="${esc(p.stall_note||'')}">${esc(p.stall_note||'لم يُكتب سبب')}</span>`:''}</td><td><span class="cd-dcell">${ex?`<a class="cd-doc ok" href="#p-${id}" title="عرض سجل التوثيق والتقارير">${ic('check')} موثق${ex>1?' '+ex+' مرات':''}</a>`:'<span class="cd-doc">لم يُوثق</span>'}${p.approved_at?`<span class="cd-appr">${ic('check')} معتمد ${dmy(p.approved_at)}</span>`:''}</span></td></tr>`}).join('')}</tbody></table></div>`}
+// آخر ما تحدّث في الخطة: تقارير التنفيذ وتعديلات المنسق على برامجها
+function pbUpdates(L,pl){
+  const ids=new Map(L.map(p=>[String(p.id),p])),out=[];
+  for(const p of L)for(const e of exFor(p.id))out.push({at:e.createdAt||((e.date||'')+'T12:00:00'),t:p.name,s:'وُثّق التنفيذ'+(e.no>1?' رقم '+e.no:'')+(e.date?' • '+dmy(e.date):'')+' • '+(e.executor||ownerOf(p)),href:'#report-'+e.id,c:'مكتمل'});
+  for(const d of CO){
+    if(d.type==='plan-edit'&&String(d.planId)===String(pl.id)){out.push({at:d.at||'',t:pl.name,s:'عُدّلت بيانات الخطة',href:'',c:'قيد التنفيذ'});continue}
+    const k=d.progId!=null?String(d.progId):(d.type==='add'?'c-'+d.id:null),p=k&&ids.get(k);if(!p)continue;
+    if(d.type==='add')out.push({at:d.at||'',t:p.name,s:'أُضيف البرنامج إلى الخطة',href:'#p-'+p.id,c:'لم يبدأ'});
+    else if(d.type==='edit')out.push({at:d.at||'',t:p.name,s:d.summary||'عُدّل البرنامج',href:'#p-'+p.id,c:'قيد التنفيذ'});
+    else if(d.type==='restore')out.push({at:d.at||'',t:p.name,s:'استُعيد البرنامج',href:'#p-'+p.id,c:'قيد التنفيذ'})}
+  return out.sort((a,b)=>String(b.at).localeCompare(String(a.at))).slice(0,8)}
+function planBoardPage(){
+  const plans=myPlans();if(!plans.length)return '';
+  if(!plans.some(x=>String(x.id)===String(D.pb)))D.pb=String(plans[0].id);
+  const pl=plans.find(x=>String(x.id)===String(D.pb)),ED=canAdd(),today=T();
+  const L=P.filter(p=>String(p.plan_id)===String(pl.id)),total=L.length,cnt=countBy(L);
+  const dn=cnt['مكتمل']||0,cx=cnt['ملغي']||0,eff=total-cx,rem=eff-dn,pct=eff?Math.round(dn/eff*100):0;
+  const pid=p=>esc(String(p.id)),edBtn=p=>ED?`<button class="btn cd-sm" data-edit="${pid(p)}">تعديل</button>`:'';
+  const byEnd=(a,b)=>endOf(a).localeCompare(endOf(b));
+  const need=L.filter(needs).sort(byEnd),stl=L.filter(p=>p.status==='متعثر'),appr=L.filter(p=>!p.approved_at&&p.status!=='ملغي'&&exFor(p.id).length).sort(byEnd);
+  const qrow=(p,s,meta,acts)=>`<div class="cd-al" style="--sc:${SC[s]}"><i></i><a href="#p-${pid(p)}">${esc(p.name)}</a>${meta}${acts?`<span class="acts">${acts}</span>`:''}</div>`;
+  const lateRow=p=>qrow(p,'متأخر',`<span class="m">انتهت فترته ${dmy(endOf(p))} • منذ ${daysBetween(endOf(p),today)} يومًا • ${esc(ownerOf(p))}</span>`,wa(p,'late')+(ED?`<button class="btn cd-sm" data-stall="${pid(p)}">تسجيل التعثر</button>`+edBtn(p):''));
+  const stallRow=p=>qrow(p,'متعثر',`<span class="why">السبب: ${esc(p.stall_note||'لم يُكتب سبب')}</span><span class="m">${esc(ownerOf(p))}</span>`,ED?`<button class="btn cd-sm" data-stall="${pid(p)}">تعديل السبب</button>`+edBtn(p):'');
+  const apprRow=p=>{const ex=exFor(p.id),last=ex[ex.length-1]||{};return qrow(p,'مكتمل',`<span class="m">وُثّق ${ex.length>1?ex.length+' مرات':''} • آخر تنفيذ ${dmy(last.date||'')} • ${esc(last.executor||ownerOf(p))} • ${(last.images||[]).length} صور</span>`,`<a class="btn cd-sm" href="#p-${pid(p)}">مراجعة التوثيق</a>${ED&&canApprove()?`<button class="btn pri cd-sm" data-approve="${pid(p)}">${ic('check')} اعتماد</button>`:''}`)};
+  const wkRow=p=>{const s=ds(p),st=startOf(p),en=endOf(p),multi=en&&en!==st;return `<div class="cd-up" style="--sc:${SC[s]}"><span class="d"><b>${st&&!multi?esc(dayName(st)):'خلال الأسبوع'}</b><small>${multi?dmy(st)+' – '+dmy(en):dmy(st)}${p.time?' • '+t12(p.time):''}</small></span><span class="n"><a href="#p-${pid(p)}">${esc(p.name)}</a><small><span class="cd-pn sm">${avatar(ownerOf(p),22)}${esc(ownerOf(p))}</span>${p.location?' • '+esc(p.location):''}</small></span><span class="s">${pill(s)}<span class="acts">${wa(p,'up')}${edBtn(p)}</span></span></div>`};
+  const sec=(icon,title,n,body,sub)=>`<section class="panel cp-sec"><div class="cd-ph"><h2>${ic(icon)} ${title}<b class="cp-n${n?'':' z'}">${n}</b></h2>${sub||''}</div>${body}</section>`;
+  const lim=(list,fn,empty,max)=>{max=max||5;return list.length?list.slice(0,max).map(fn).join('')+(list.length>max?`<p class="muted small cp-more">و${list.length-max} أخرى، تجدها في جدول برامج الخطة أدناه.</p>`:''):`<p class="muted cp-empty">${empty}</p>`};
+  // الأسبوعان: الحالي (أو أقرب قادم) ثم الذي يليه
+  const wl=CAL(),cw=curWeek(),w1=cw||wl.find(w=>w.start_date>today)||null,w2=w1?wl[wl.indexOf(w1)+1]||null:null;
+  const wkL=w=>w?L.filter(p=>inWeek(p,w)&&p.status!=='ملغي'&&ds(p)!=='مكتمل').sort((a,b)=>(startOf(a)+(a.time||'')).localeCompare(startOf(b)+(b.time||''))):[];
+  const wkSec=(w,label)=>{const l=wkL(w);return sec('cal',label,l.length,w?`<p class="muted small" style="margin:0 0 6px">الأسبوع ${w.number} • ${dmy(w.start_date)} – ${dmy(w.end_date)}</p>`+lim(l,wkRow,'لا برامج متبقية في هذا الأسبوع.',6):'<p class="muted cp-empty">لا أسابيع قادمة في التقويم.</p>')};
+  const upd=pbUpdates(L,pl);
+  const updRow=u=>`<div class="cd-al" style="--sc:${SC[u.c]}"><i></i>${u.href?`<a href="${esc(u.href)}">${esc(u.t)}</a>`:`<b>${esc(u.t)}</b>`}<span class="m">${esc(u.s)}${u.at?' • '+esc(fmtWhen(u.at)):''}</span></div>`;
+  // رأس الخطة
+  const nm=(dirOf()[SP.access.staff_id]||{}).name||SP.access.name||'';
+  const head=`<section class="panel pb-head" style="${C(PC(pl.id))}"><div class="pb-ring">${ring(pct,'نسبة الإنجاز',dn+' من '+eff,'var(--f)')}</div>
+    <div class="pb-info"><h2>${esc(pl.name)}</h2>${pl.desc?`<p>${esc(pl.desc)}</p>`:''}<small class="muted">منسق الخطة: ${esc(nm)}${pl.year?' • '+esc(pl.year):''}</small>${pl.pdf&&pl.pdf.url?`<a class="btn soft cd-sm" href="${esc(pl.pdf.url)}" target="_blank" rel="noopener">${ic('rep')} ملف الخطة</a>`:''}${total?stack(cnt,total)+legend(ORDER.filter(s=>cnt[s])):''}</div>
+    <div class="pb-rem"><b>${rem}</b><span>برنامجًا متبقيًا</span><small>${dn} مكتمل${cx?' • '+cx+' ملغي':''} • ${total} في الخطة</small></div></section>`;
+  // تبويبات الخطط: تظهر عند وجود أكثر من خطة، وكل تبويب مستقل
+  const tabs=plans.length>1?`<div class="cd-ptabs" role="tablist" aria-label="خططي">${plans.map(x=>{const l=P.filter(p=>String(p.plan_id)===String(x.id)),c=countBy(l),d=c['مكتمل']||0,lt=(c['متأخر']||0)+(c['متعثر']||0),on=String(x.id)===String(pl.id);
+    return `<button type="button" role="tab" aria-selected="${on}" class="cd-ptab${on?' on':''}" data-pbplan="${esc(String(x.id))}"><b>${esc(x.name)}</b>${stack(c,l.length)}<small>${l.length} برامج • ${Math.round(d/Math.max(1,l.length)*100)}% مكتمل${lt?' • <span style="color:var(--bad)">'+lt+' متأخر/متعثر</span>':''}</small></button>`}).join('')}</div>`:'';
+  // جدول برامج الخطة مع التصفية والبحث
+  const f=PBF.some(x=>x[0]===D.pbf)?D.pbf:'all';D.pbf=f;const q=(D.pbq||'').trim();
+  const list=L.filter(p=>pbMatch(p,f)&&(!q||(p.name+ownerOf(p)+(p.code||'')+(p.domain||'')).includes(q))).sort((a,b)=>(startOf(a)||'9').localeCompare(startOf(b)||'9')||a.name.localeCompare(b.name,'ar'));
+  const chips=`<div class="cd-tabs" role="group" aria-label="تصفية برامج الخطة">${PBF.map(([k,t])=>{const n=L.filter(p=>pbMatch(p,k)).length;return `<button type="button" class="${f===k?'on':''}" aria-pressed="${f===k}" style="--sc:${SC[k]||'var(--brand)'}" data-pbf="${esc(k)}">${t} <b class="${n?'':'z'}">${n}</b></button>`}).join('')}</div>`;
+  const all=`<section class="panel" id="pb-all"><div class="cd-ph"><h2>${ic('layers')} برامج الخطة<b class="cp-n">${total}</b></h2><input type="search" class="cd-srch" id="pb-q" placeholder="ابحث باسم البرنامج أو المنفذ" value="${esc(D.pbq||'')}" aria-label="بحث في برامج الخطة"></div>${chips}
+    ${list.length?(ED?rowsHTML(list,false,true):pbTable(list)):`<div class="cd-empty">${total?'لا توجد برامج مطابقة للتصفية.':'لا توجد برامج في هذه الخطة بعد.'}</div>`}</section>`;
+  return `<div class="cd cp-board pb">${tabs}${head}<div class="cp-grid">
+   ${sec('check','بانتظار الاعتماد',appr.length,lim(appr,apprRow,'لا توجد برامج موثقة بانتظار الاعتماد.'))}
+   ${sec('bell','متأخرة التوثيق',need.length,lim(need,lateRow,'لا توجد برامج متأخرة. كل ما انتهت فترته موثق أو مسجّلة حالته.'))}
+   ${sec('x','متعثرة',stl.length,lim(stl,stallRow,'لا توجد برامج مسجّلة متعثرة.'))}
+   ${sec('rep','آخر ما تحدّث في الخطة',upd.length,upd.length?upd.map(updRow).join(''):'<p class="muted cp-empty">لم يُسجَّل تحديث على برامج هذه الخطة بعد.</p>')}
+   ${wkSec(w1,cw?'هذا الأسبوع':'الأسبوع القادم')}
+   ${wkSec(w2,'الأسبوع الذي يليه')}
+  </div>${all}</div>`}
 
 /* التنبيهات: تُحسب من البيانات الحالية (لا جدول خاص بها)، وتُعلَّم مقروءةً في المتصفح */
 const NSK='sp-notif-seen';
@@ -497,6 +567,13 @@ function notifs(){
       if(e<=t){skip.add(p.id);out.push({id:'x:due:'+p.id+':'+e,tone:'bad',o:0,d:e,t:p.name,s:'بانتظار توثيقك • انتهت فترته '+dmy(e),href:'#me-docs'})}
       else if(s<=t)out.push({id:'x:now:'+p.id+':'+s,tone:'info',o:2,d:s,t:p.name,s:'برنامجك جارٍ الآن حتى '+dmy(e),href:'#me'})
       else if(s<=soon)out.push({id:'x:soon:'+p.id+':'+s,tone:'info',o:3,d:s,t:p.name,s:'برنامجك القادم • يبدأ '+dmy(s),href:'#me'})}}
+  if(READY&&!canAdd()&&mid){/* منسق خطة بلا صلاحية تحرير: ينبّه على متابعة برامج خطته (غير المسندة إليه كمنفذ) */
+    const mine=new Set(myPlans().map(x=>String(x.id)));
+    for(const p of P){
+      if(!mine.has(String(p.plan_id))||p.owner_staff_id===mid||p.status==='ملغي')continue;
+      if(!p.approved_at&&exFor(p.id).length)out.push({id:'pc:appr:'+p.id+':'+exFor(p.id).length,tone:'ok',o:1,d:endOf(p),t:p.name,s:'في خطتك: موثّق بانتظار الاعتماد • '+ownerOf(p),href:'#plan-board'});
+      else if(p.status==='متعثر')out.push({id:'pc:stall:'+p.id,tone:'warn',o:1,d:endOf(p),t:p.name,s:'في خطتك: متعثر • '+(p.stall_note||'لم يُكتب سبب'),href:'#plan-board'});
+      else if(needs(p))out.push({id:'pc:late:'+p.id+':'+endOf(p),tone:'bad',o:0,d:endOf(p),t:p.name,s:'في خطتك: متأخر التوثيق منذ '+daysBetween(endOf(p),t)+' يومًا • '+ownerOf(p),href:'#plan-board'})}}
   if(READY&&canAdd()){
     for(const p of P){
       if(p.status==='ملغي')continue;
@@ -505,21 +582,21 @@ function notifs(){
       else if(needs(p)&&!skip.has(p.id))out.push({id:'c:late:'+p.id+':'+endOf(p),tone:'bad',o:0,d:endOf(p),t:p.name,s:'متأخر التوثيق منذ '+daysBetween(endOf(p),t)+' يومًا • '+ownerOf(p),href:'#p-'+p.id})}}
   return out.sort((a,b)=>a.o-b.o||String(a.d).localeCompare(String(b.d)))}
 function barHTML(h){
-  const N=notifs(),seen=getSeen(),un=N.filter(n=>!seen.has(n.id)).length,adm=READY&&canAdd(),ex=isExec(),cur=h==='admin-alerts'?'admin':h;
+  const N=notifs(),seen=getSeen(),un=N.filter(n=>!seen.has(n.id)).length,adm=READY&&canAdd(),ex=isExec(),pc=isPlanCoord(),cur=h==='admin-alerts'?'admin':h;
   const it=(href,icon,label,badge)=>`<a href="#${href}" class="${cur===href?'on':''}"${cur===href?' aria-current="page"':''}>${ic(icon)}<span>${label}</span>${badge?`<b>${badge}</b>`:''}</a>`;
   const nm=(window.SP&&SP.access&&SP.access.name)||WHO||'';
   return `<div class="cp-top"><div class="wrap cp-topin">
     <a class="cp-sys" href="#${adm&&!EXP.includes(h)?'admin':ex?'me':'admin'}"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M30 4c2 14 8 20 24 24-16 4-22 10-24 26-2-16-8-22-24-26 16-4 22-10 24-24z" fill="#0f8a94"/><path d="M50 4c.8 5 3 7.2 8 8-5 .8-7.2 3-8 8-.8-5-3-7.2-8-8 5-.8 7.2-3 8-8z" fill="#f0b34a"/></svg><span><b>الخطط الذكية</b><small>متوسطة لبيد بن ربيعة</small></span></a>
     <span class="cp-idl"><a class="cp-site" href="#home">الموقع الإلكتروني</a><i class="cp-vsep" aria-hidden="true"></i><a class="coreid" href="https://i3zalmadeni.github.io/digital-core" title="النواة الرقمية"><img src="assets/core-logo.svg" alt="" width="36" height="36"><span><b>النواة الرقمية</b><small>الهوية الموحدة</small></span></a><span class="moe"><b>وزارة التعليم</b><small>Ministry of Education</small></span></span></div></div>
   <div class="cp-strip" aria-hidden="true"></div>
-  <div class="cp-sub"><div class="wrap cp-subin"><nav class="cp-nav" aria-label="صفحات لوحة التحكم">${ex?it('me','desk','مكتبي الإلكتروني')+it('me-docs','rep','توثيق برامجي'):''}${adm?it('admin','check',ex?'المهام':'مكتبي الإلكتروني')+it('admin-plans','plan','إدارة الخطة')+it('admin-people','users','المنفذون')+it('admin-trash','trash','المحذوفات',REMOVED.length||''):''}</nav>
+  <div class="cp-sub"><div class="wrap cp-subin"><nav class="cp-nav" aria-label="صفحات لوحة التحكم">${ex?it('me','desk','مكتبي الإلكتروني')+it('me-docs','rep','توثيق برامجي'):''}${pc?it(PB,'plan','لوحة منسق الخطة'):''}${adm?it('admin','check',ex?'المهام':'مكتبي الإلكتروني')+it('admin-plans','plan','إدارة الخطة')+it('admin-people','users','المنفذون')+it('admin-trash','trash','المحذوفات',REMOVED.length||''):''}</nav>
     <span class="cp-user">${ubBarHTML(nm, ex ? '#me' : '#admin')}</span></div></div>
   <div class="cp-page"><div class="wrap cp-pagein"><div class="cp-pt"><small>${roleName()}</small><h1>${h==='admin'&&!ex?'مكتبي الإلكتروني':TITLES[h]||''}</h1></div><p class="cp-pd">${PINFO[h]||''}</p>
     <div class="cp-pm"><span class="cp-up">آخر تحديث ${hhmm(LASTUP)}</span><button type="button" class="btn cd-sm" id="cp-refresh">${ic('refresh')} تحديث</button></div></div>
     ${ADM.includes(h)?`<div class="wrap cp-acts" role="group" aria-label="إضافة سريعة"><button type="button" class="cx-pri" data-cx-add="plan">${ic('plus')}<span>برنامج في الخطة</span></button><button type="button" data-cx-add="unplanned">${ic('plus')}<span>برنامج غير مدرج</span></button><button type="button" data-cx-add="newplan">${ic('plus')}<span>خطة جديدة</span></button></div>`:''}</div>`}
 const shell=(h,inner)=>inner;
 let BARH=null;
-function showBar(h){if(h!==BARH){NOPEN=false;BARH=h}let bar=document.getElementById('cx-bar');const on=!!(h&&READY&&(ADM.includes(h)?canAdd():EXP.includes(h)?isExec():h===NTF&&(canAdd()||isExec())));
+function showBar(h){if(h!==BARH){NOPEN=false;BARH=h}let bar=document.getElementById('cx-bar');const on=!!(h&&READY&&(ADM.includes(h)?canAdd():EXP.includes(h)?isExec():h===PB?isPlanCoord():h===NTF&&(canAdd()||isExec())));
   document.body.classList.toggle('cp-on',on);
   if(!on){NOPEN=false;if(bar)bar.hidden=true;return}
   if(!bar){bar=document.createElement('div');bar.id='cx-bar';document.body.prepend(bar)}
@@ -567,6 +644,12 @@ route=function(keep){
     if(!READY){showBar(null);v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
     if(!(canAdd()||isExec())){showBar(null);v.innerHTML=`<div class="cd-lockpage">${ic('user')}<h2>الإشعارات لمنسوبي النواة المصرّح لهم</h2><p class="muted">سجّل الدخول بحساب النواة الرقمية.</p></div>`;return}
     showBar(h);v.innerHTML='<div class="wrap" id="ubHost"></div>';ubPage(document.getElementById('ubHost'),'الخطط الذكية');window.scrollTo(0,0);return}
+  if(h===PB){const v=document.getElementById('view'),sy=scrollY;document.querySelectorAll('#nav a').forEach(a=>a.classList.remove('on'));tip&&tip.remove();
+    if(!READY||!(window.SP&&SP.access!==undefined)){showBar(null);v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
+    if(!isPlanCoord()){const sg=!!(window.SP&&SP.signedIn);showBar(null);
+      v.innerHTML=`<div class="cd-lockpage">${ic('user')}<h2>${sg?'لوحة منسق الخطة لمنسقي الخطط':'سجّل الدخول لعرض لوحة خطتك'}</h2><p class="muted">${sg?'تظهر هذه اللوحة لمن أُسندت إليه خطة بصفته منسقًا لها. يحدد مدير النواة أو منسق الخطط الذكية منسق كل خطة من «إدارة الخطة ← تعديل الخطة ← منسق الخطة».':'الدخول موحد بمعرّف الدخول نفسه في النواة الرقمية.'}</p><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${sg?'':'<button class="btn pri" type="button" id="cd-login">دخول</button>'}<a class="btn soft" href="#home">الرئيسية</a></span></div>`;
+      const lb=document.getElementById('cd-login');if(lb)lb.onclick=()=>{const x=document.getElementById('lg-in');if(x)x.click();else if(window.SP&&SP.login)SP.login()};return}
+    showBar(h);v.innerHTML=planBoardPage();bind(v);window.scrollTo(0,keep===true?sy:0);return}
   if(!ADM.includes(h)){showBar(null);const r=_route(keep);updBell();try{decorate(document.getElementById('view'))}catch(e){console.error(e)}return r}
   updBell();
   document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.n==='admin'));
