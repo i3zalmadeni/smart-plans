@@ -511,3 +511,5 @@ body.cp-on>header{display:none}
 .pb-ra{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 @media (max-width:860px){.pb-hero{grid-template-columns:1fr;padding:20px}.pb-pulse{height:56px}.pb-pc{padding-inline-start:0;border-inline-start:0}}
 @media (prefers-reduced-motion:reduce){.pb-pulse .a{animation:none;stroke-dasharray:none}.pb-t,.pb-pc i::after{animation:none}.pb-t{transition:none}}
+.cd-rs button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.cd-rs button:disabled{opacity:.45;cursor:not-allowed;text-decoration:line-through}

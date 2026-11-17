@@ -22,7 +22,7 @@ const SC={'مكتمل':'var(--ok)','قيد التنفيذ':'var(--info)','لم �
 const SL={'مكتمل':'مكتمل','قيد التنفيذ':'قيد التنفيذ','لم يبدأ':'مخطط','متأخر':'متأخر التوثيق','متعثر':'متعثر','ملغي':'ملغي'};
 const ORDER=['مكتمل','قيد التنفيذ','لم يبدأ','متأخر','متعثر','ملغي'];
 const REASONS=['تعارض مع جدول المدرسة','غياب المنفذ','نقص الموارد أو المتطلبات','تأجيل بقرار الإدارة','لم يُرفع التوثيق في وقته'];
-const FL={beneficiary:'الفئة المستهدفة',name:'الاسم',plan_id:'الخطة',domain:'الموضوع',planned_date:'تاريخ البداية',planned_end:'تاريخ النهاية',time:'الوقت',location:'المكان',facility_id:'المكان',owner_name:'المنفذ',beneficiary:'المستفيد',goal:'الهدف',indicator:'المؤشر',required_evidence:'الشواهد',status:'الحالة',stall_note:'سبب التعثر',approved_at:'الاعتماد'};
+const FL={periods:'الحصص',beneficiary:'الفئة المستهدفة',name:'الاسم',plan_id:'الخطة',domain:'الموضوع',planned_date:'تاريخ البداية',planned_end:'تاريخ النهاية',time:'الوقت',location:'المكان',facility_id:'المكان',owner_name:'المنفذ',beneficiary:'المستفيد',goal:'الهدف',indicator:'المؤشر',required_evidence:'الشواهد',status:'الحالة',stall_note:'سبب التعثر',approved_at:'الاعتماد'};
 const T=()=>todayISO();
 const addDays=(s,n)=>{const x=new Date(s+'T12:00:00');x.setDate(x.getDate()+n);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0')};
 const daysBetween=(a,b)=>Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5);
@@ -55,7 +55,7 @@ function setFields(p,f){
   }
 }
 function apply(){
-  LASTUP=new Date();
+  LASTUP=new Date();loadFac();
   for(let i=BASEP.length-1;i>=0;i--)if(BASEP[i]._co)BASEP.splice(i,1);
   for(const p of BASEP){const o=ORIG[p.id];if(!o)continue;for(const k of Object.keys(p))if(!(k in o))delete p[k];Object.assign(p,JSON.parse(JSON.stringify(o)))}
   const docs=CO.slice().sort((a,b)=>(a.at||'').localeCompare(b.at||''));
@@ -109,19 +109,20 @@ async function write(doc){
   return await DB.collection(CO_COL).add({...linkDoc(doc),kind:'coordinator',at:new Date().toISOString(),by:WHO||''});
 }
 /* ---------- مكان التنفيذ من مرافق النواة + الحجز الرسمي لمجموعات التعلم المهنية ---------- */
-let FAC=[],FACP=null;const COMK={};
+let FAC=[],FACP=null,PER=[];const COMK={};
 const PDCODE=(window.SMART_PLANS_CONFIG||{}).pdHallCode||'F-0023'; // قاعة التنمية المهنية
-function loadFac(){if(!FACP&&window.SP&&SP.sb)FACP=Promise.resolve(SP.sb.rpc('sp_facilities')).then(r=>{FAC=(r&&r.data)||[]}).catch(()=>{FACP=null});return FACP||Promise.resolve()}
+function loadFac(){if(!FACP&&window.SP&&SP.sb)FACP=Promise.all([SP.sb.rpc('sp_facilities'),SP.sb.rpc('sp_periods')]).then(([a,b])=>{FAC=(a&&a.data)||[];PER=((b&&b.data)||[]).filter(x=>x.bookable)}).catch(()=>{FACP=null});return FACP||Promise.resolve()}
 const pdHall=()=>FAC.find(f=>f.code===PDCODE);
 const facLabel=f=>f.name+(f.building?' — '+f.building:'')+(f.room_no?' ('+f.room_no+')':'');
 async function isPLC(plan){const c=plan&&plan.pc_community_id;if(!c)return false;if(!(c in COMK)){try{const r=await SP.sb.rpc('sp_community_kind',{p_community:c});COMK[c]=(r&&r.data)||''}catch(e){COMK[c]=''}}return COMK[c]==='plc'}
-const BOOKMSG={slot_taken:'تعذّر الحجز: المرفق محجوز في هذا الموعد، اختر وقتًا آخر.',no_period:'الوقت خارج حصص الحجز، فلم يُنشأ حجز رسمي.',facility_unavailable:'المرفق غير مفعّل للحجز في «احجز مرفق».',incomplete:'حدد التاريخ والوقت ليُسجَّل الحجز الرسمي.',no_booker:'تعذّر تحديد صاحب الحجز.'};
+const BOOKMSG={slot_taken:'تعذّر الحجز: المرفق محجوز في هذا الموعد، اختر وقتًا آخر.',no_period:'حصة غير متاحة للحجز.',facility_unavailable:'المرفق غير مفعّل للحجز في «احجز مرفق».',incomplete:'اختر الحصة أو الحصص ليُسجَّل الحجز الرسمي.',no_booker:'تعذّر تحديد صاحب الحجز.'};
 // يُزامن حجز البرنامج: مجموعات التعلم المهنية فقط، ويُلغى الحجز إن تغيّر المكان أو الشروط
 async function syncBooking(ref,f,plan){try{const sb=SP.sb,fac=FAC.find(x=>x.id===f.facility_id),plc=await isPLC(plan);
   if(!plc){return null}
-  if(!fac||!fac.bookable||!f.planned_date||!f.time){await sb.rpc('sp_unbook_program',{p_ref:String(ref)});return fac&&fac.bookable?{ok:false,reason:'incomplete'}:null}
-  const r=await sb.rpc('sp_book_program',{p_ref:String(ref),p_facility:fac.id,p_date:f.planned_date,p_from:f.time,p_to:null,p_owner:staffIdByName(f.owner_name),p_purpose:f.name,p_community:plan.pc_community_id});
+  if(!fac||!fac.bookable||!f.planned_date||!(f.periods||[]).length){await sb.rpc('sp_unbook_program',{p_ref:String(ref)});return fac&&fac.bookable?{ok:false,reason:'incomplete'}:null}
+  const r=await sb.rpc('sp_book_program_periods',{p_ref:String(ref),p_facility:fac.id,p_date:f.planned_date,p_codes:f.periods,p_owner:staffIdByName(f.owner_name),p_purpose:f.name,p_community:plan.pc_community_id});
   if(r.error)throw r.error;return {...(r.data||{}),fac:fac.name}}catch(e){return {ok:false,reason:'error',msg:e.message}}}
+const plbl=p=>{const c=(p.periods||[]).map(k=>PER.find(x=>x.code===k)).filter(Boolean);return c.length?(c.length>1?c[0].name+' – '+c[c.length-1].name:c[0].name):(p.time?t12(p.time):'')};
 const bookToast=r=>r?(r.ok?toast('سُجّل حجز معتمد رسميًا في «'+r.fac+'»'):toast(BOOKMSG[r.reason]||r.msg||'تعذّر تسجيل الحجز')):0;
 async function saveEdit(p,fields,label){
   const f={};for(const[k,v]of Object.entries(fields))if(String(p[k]??'')!==String(v??''))f[k]=v;
@@ -169,7 +170,7 @@ function rowsHTML(list,showPlan,ED){
     return `<tr data-id="${id}" style="--sc:${SC[s]}"><td class="cd-nm"><a href="#p-${id}">${esc(p.name)}</a><small>${esc(p.code)}${showPlan?' • '+esc(p.plan_name):''}${p.location?' • '+esc(p.location):''}</small></td>
     <td>${ED?`<input type="date" data-f="planned_date" value="${esc(startOf(p))}" aria-label="من تاريخ">`:esc(dmy(startOf(p))||'—')}</td>
     <td>${ED?`<input type="date" data-f="planned_end" value="${esc(endOf(p))}" aria-label="إلى تاريخ">`:esc(dmy(endOf(p))||'—')}</td>
-    <td>${ED?`<input type="time" data-f="time" value="${esc(p.time||'')}" aria-label="الوقت">`:esc(t12(p.time)||'—')}</td>
+    <td>${esc(plbl(p)||'—')}</td>
     <td>${ED?ownerSelect(ownerOf(p),'class="own" data-f="owner_name" aria-label="المنفذ"'):esc(ownerOf(p))}</td>
     <td>${ED?`<select data-f="status" aria-label="الحالة">${STS.map(x=>`<option value="${x}"${x===(p.status||'لم يبدأ')?' selected':''}>${SL[x]}</option>`).join('')}</select>`:pill(s)}${s==='متأخر'?`<span class="cd-flag">⚠ انتهت فترته ${dmy(endOf(p))} دون توثيق</span>`:''}${p.status==='متعثر'?`<span class="cd-why" title="${esc(p.stall_note||'')}">${esc(p.stall_note||'لم يُكتب سبب')}</span>`:''}</td>
     <td><span class="cd-dcell">${ex?`<a class="cd-doc ok" href="#p-${id}" title="عرض سجل التوثيق والتقارير">${ic('check')} موثق${ex>1?' '+ex+' مرات':''}</a>`:'<span class="cd-doc">لم يُوثق</span>'}${ED?`<button class="btn ${ex?'':'pri '}cd-sm" data-doc="${id}">${ic('rep')} ${ex?'توثيق جديد':'توثيق'}</button>`:''}${appr}</span></td>
@@ -206,7 +207,7 @@ function normPhone(v){let d=String(v||'').replace(/[٠-٩]/g,c=>'٠١٢٣٤٥٦�
   if(/^05\d{8}$/.test(d))d='966'+d.slice(1);else if(/^5\d{8}$/.test(d))d='966'+d;return /^\d{9,15}$/.test(d)?d:null}
 const showPhone=d=>!d?'':/^9665\d{8}$/.test(d)?'0'+d.slice(3):'+'+d;
 const waLink=(phone,text)=>`https://wa.me/${phone||''}${text?'?text='+encodeURIComponent(text):''}`;
-const wa=(p,kind)=>{const t=kind==='late'?`تذكير من منسق الخطة: برنامج «${p.name}» (${p.plan_name}) انتهت فترته في ${dmy(endOf(p))} ولم يُوثَّق تنفيذه بعد. نأمل رفع التوثيق والشواهد في بوابة الخطط الذكية، أو إفادتنا بسبب التأخر.`:`تذكير من منسق الخطة: موعد برنامج «${p.name}» ${startOf(p)?'يبدأ '+dayName(startOf(p))+' '+dmy(startOf(p)):''}${p.time?' الساعة '+t12(p.time):''}${p.location?' في '+p.location:''}. نأمل التنفيذ في موعده ورفع التوثيق والشواهد بعده.`;const ph=(PEOPLE[ownerOf(p)]||{}).phone;return `<a class="btn cd-sm cd-wa" href="${waLink(ph,t)}" target="_blank" rel="noopener" title="فتح واتساب برسالة تذكير جاهزة">${ic('bell')} تذكير</a>`};
+const wa=(p,kind)=>{const t=kind==='late'?`تذكير من منسق الخطة: برنامج «${p.name}» (${p.plan_name}) انتهت فترته في ${dmy(endOf(p))} ولم يُوثَّق تنفيذه بعد. نأمل رفع التوثيق والشواهد في بوابة الخطط الذكية، أو إفادتنا بسبب التأخر.`:`تذكير من منسق الخطة: موعد برنامج «${p.name}» ${startOf(p)?'يبدأ '+dayName(startOf(p))+' '+dmy(startOf(p)):''}${p.time?' في '+plbl(p):''}${p.location?' في '+p.location:''}. نأمل التنفيذ في موعده ورفع التوثيق والشواهد بعده.`;const ph=(PEOPLE[ownerOf(p)]||{}).phone;return `<a class="btn cd-sm cd-wa" href="${waLink(ph,t)}" target="_blank" rel="noopener" title="فتح واتساب برسالة تذكير جاهزة">${ic('bell')} تذكير</a>`};
 const dayName=d=>{try{return new Date(d+'T12:00:00').toLocaleDateString('ar-SA-u-ca-gregory-nu-latn',{weekday:'long'})}catch(e){return ''}};
 const tasksPage=()=>buildDash('tasks'),alertsPage=()=>buildDash('alerts');
 function buildDash(view){
@@ -230,7 +231,7 @@ function buildDash(view){
   const upW=cw?{this:wl[ci],next:wl[ci+1]}:{this:null,next:ci>=0?wl[ci]:null};
   if(!['this','next'].includes(D.up))D.up=upW.this?'this':'next';
   const uw=upW[D.up];const upL=uw?L.filter(p=>inWeek(p,uw)).sort((a,b)=>(startOf(a)+(a.time||'')).localeCompare(startOf(b)+(b.time||''))):[];
-  const upRow=p=>{const s=ds(p),st=startOf(p),en=endOf(p),multi=en&&en!==st;return `<div class="cd-up" style="--sc:${SC[s]}"><span class="d"><b>${st&&!multi?esc(dayName(st)):'خلال الأسبوع'}</b><small>${multi?dmy(st)+' – '+dmy(en):dmy(st)}${p.time?' • '+t12(p.time):''}</small></span><span class="n"><a href="#p-${pid(p)}">${esc(p.name)}</a><small><span class="cd-pn sm">${avatar(ownerOf(p),22)}${esc(ownerOf(p))}</span>${p.location?' • '+esc(p.location):''}</small></span><span class="s">${pill(s)}${ED?`<span class="acts">${wa(p,'up')}<button class="btn cd-sm" data-edit="${pid(p)}">تعديل</button></span>`:''}</span></div>`};
+  const upRow=p=>{const s=ds(p),st=startOf(p),en=endOf(p),multi=en&&en!==st;return `<div class="cd-up" style="--sc:${SC[s]}"><span class="d"><b>${st&&!multi?esc(dayName(st)):'خلال الأسبوع'}</b><small>${multi?dmy(st)+' – '+dmy(en):dmy(st)}${plbl(p)?' • '+plbl(p):''}</small></span><span class="n"><a href="#p-${pid(p)}">${esc(p.name)}</a><small><span class="cd-pn sm">${avatar(ownerOf(p),22)}${esc(ownerOf(p))}</span>${p.location?' • '+esc(p.location):''}</small></span><span class="s">${pill(s)}${ED?`<span class="acts">${wa(p,'up')}<button class="btn cd-sm" data-edit="${pid(p)}">تعديل</button></span>`:''}</span></div>`};
   const doms={};for(const p of L){const k=p.domain||'أخرى';(doms[k]||=[]).push(p)}
   const domRows=Object.entries(doms).sort((a,b)=>b[1].length-a[1].length);const dmax=Math.max(1,...domRows.map(r=>r[1].length));
   const owners={};for(const p of L){const k=ownerOf(p);(owners[k]||=[]).push(p)}
@@ -287,7 +288,7 @@ function editor0(id,preset){const isNew=id==null;const p0=isNew?null:P.find(x=>S
    <div class="f"><label for="cf-dom">المجال</label>${domainSelect(p.domain||'','id="cf-dom"')}</div>
    <div class="f req"><label for="cf-s">من تاريخ</label><input id="cf-s" type="date" value="${esc(p.planned_date||'')}"></div>
    <div class="f"><label for="cf-e">إلى تاريخ</label><input id="cf-e" type="date" value="${esc(p.planned_end||'')}"></div>
-   <div class="f"><label for="cf-t">الوقت</label><input id="cf-t" type="time" value="${esc(p.time||'')}"></div>
+   <div class="f full"><label>الحصص</label><div class="cd-rs" id="cf-per" style="margin:0">${PER.length?PER.map(x=>`<button type="button" data-pc="${esc(x.code)}" class="${(p.periods||[]).includes(x.code)?'on':''}" title="${esc(x.starts+' – '+x.ends)}">${esc(x.name)}</button>`).join(''):'<span class="muted small">تعذّر تحميل الحصص</span>'}</div><small id="cf-pbusy" class="muted"></small></div>
    <div class="f"><label for="cf-fac">مكان التنفيذ</label>${FAC.length?`<select id="cf-fac"><option value="">— اختر المرفق —</option>${FAC.map(x=>`<option value="${esc(x.id)}"${x.id===locSel?' selected':''}>${esc(facLabel(x))}</option>`).join('')}<option value="__other"${locSel==='__other'?' selected':''}>مكان آخر (كتابة)</option></select><input id="cf-loc" placeholder="اكتب المكان" value="${esc(locSel==='__other'?(p.location||''):'')}"${locSel==='__other'?'':' hidden'} style="margin-top:6px">`:`<input id="cf-loc" value="${esc(p.location||'')}">`}<small id="cf-bk" class="muted" hidden>مجموعة تعلم مهنية: يُسجَّل حجز معتمد رسميًا في المرفق بحسب التاريخ والوقت.</small></div>
    <div class="f"><label for="cf-own">المنفذ</label>${ownerSelect((p.owner_name||'').trim(),'id="cf-own"')}</div>
    <div class="f"><label for="cf-ben">الفئة المستفيدة</label><input id="cf-ben" list="cf-bens" value="${esc(p.beneficiary||'')}"><datalist id="cf-bens">${(LOOK().beneficiary||[]).map(t=>`<option value="${esc(t)}">`).join('')}</datalist></div>
@@ -306,13 +307,24 @@ function editor0(id,preset){const isNew=id==null;const p0=isNew?null:P.find(x=>S
   const syncPlc=async()=>{const plc=await isPLC(planNow());const bk=$('#cf-bk');if(bk)bk.hidden=!plc;
     if(plc&&facSel&&!facSel.value&&isNew){const h=pdHall();if(h){facSel.value=h.id}}};
   if(facSel){facSel.onchange=()=>{const l=$('#cf-loc');l.hidden=facSel.value!=='__other';if(!l.hidden)l.focus()}}
+  const sel=new Set(p.periods||[]);
+  const paint=()=>m.querySelectorAll('#cf-per [data-pc]').forEach(b=>b.classList.toggle('on',sel.has(b.dataset.pc)));
+  const busy=async()=>{const fid=facSel&&FAC.find(x=>x.id===facSel.value),d=$('#cf-s').value,o=$('#cf-pbusy');if(!o)return;
+    m.querySelectorAll('#cf-per [data-pc]').forEach(b=>{b.disabled=false;b.title=''});
+    if(!fid||!fid.bookable||!d){o.textContent='';return}
+    try{const r=await SP.sb.rpc('sp_busy_periods',{p_facility:fid.id,p_date:d,p_ref:isNew?null:String(p0.id)});const bz=(r&&r.data)||[];
+      m.querySelectorAll('#cf-per [data-pc]').forEach(b=>{if(bz.includes(b.dataset.pc)){b.disabled=true;b.title='محجوزة';sel.delete(b.dataset.pc)}});paint();
+      o.textContent=bz.length?'الحصص المعطّلة محجوزة في '+fid.name+' في هذا اليوم.':''}catch(e){}};
+  m.querySelectorAll('#cf-per [data-pc]').forEach(b=>b.onclick=()=>{sel.has(b.dataset.pc)?sel.delete(b.dataset.pc):sel.add(b.dataset.pc);paint()});
+  if(facSel)facSel.addEventListener('change',busy);$('#cf-s').addEventListener('change',busy);paint();busy();
+  m.__periods=()=>PER.filter(x=>sel.has(x.code)).map(x=>x.code);
   $('#cf-plan').onchange=syncPlc;syncPlc();
   $('#cf-st').onchange=()=>{$('#cf-nw').hidden=$('#cf-st').value!=='متعثر'};
   $('#cf-s').onchange=()=>{if(!$('#cf-e').value||$('#cf-e').value<$('#cf-s').value)$('#cf-e').value=$('#cf-s').value};
   m.querySelectorAll('#cf-nw [data-r]').forEach(b=>b.onclick=()=>{const t=$('#cf-note');t.value=t.value.trim()?t.value.trim()+'، '+b.dataset.r:b.dataset.r});
   const del=$('#cf-del');if(del)del.onclick=async()=>{if(!del.dataset.sure){del.dataset.sure=1;del.textContent='اضغط مجددًا لتأكيد الحذف';return}del.disabled=true;try{await write({type:'remove',progId:String(p0.id),name:p0.name});try{await SP.sb.rpc('sp_unbook_program',{p_ref:String(p0.id)})}catch(_){}close();toast('حُذف البرنامج، ويمكنك استعادته من «المحذوفات»')}catch(e){$('#cf-err').textContent=e.message}};
   $('#cf-save').onclick=async e=>{
-    const f={name:$('#cf-name').value.trim(),plan_id:+$('#cf-plan').value,domain:$('#cf-dom').value.trim(),planned_date:$('#cf-s').value,planned_end:$('#cf-e').value||$('#cf-s').value,time:$('#cf-t').value,...(()=>{const fs=$('#cf-fac');if(!fs)return {location:$('#cf-loc').value.trim()};const fc=FAC.find(x=>x.id===fs.value);return fc?{location:fc.name,facility_id:fc.id}:{location:fs.value==='__other'?$('#cf-loc').value.trim():'',facility_id:''}})(),owner_name:$('#cf-own').value.trim(),beneficiary:$('#cf-ben').value.trim(),goal:$('#cf-goal').value.trim(),indicator:$('#cf-ind').value.trim(),required_evidence:$('#cf-ev').value.trim(),status:$('#cf-st').value,stall_note:$('#cf-st').value==='متعثر'?$('#cf-note').value.trim():''};
+    const f={name:$('#cf-name').value.trim(),plan_id:+$('#cf-plan').value,domain:$('#cf-dom').value.trim(),planned_date:$('#cf-s').value,planned_end:$('#cf-e').value||$('#cf-s').value,periods:m.__periods(),time:((PER.find(x=>x.code===m.__periods()[0])||{}).starts)||'',...(()=>{const fs=$('#cf-fac');if(!fs)return {location:$('#cf-loc').value.trim()};const fc=FAC.find(x=>x.id===fs.value);return fc?{location:fc.name,facility_id:fc.id}:{location:fs.value==='__other'?$('#cf-loc').value.trim():'',facility_id:''}})(),owner_name:$('#cf-own').value.trim(),beneficiary:$('#cf-ben').value.trim(),goal:$('#cf-goal').value.trim(),indicator:$('#cf-ind').value.trim(),required_evidence:$('#cf-ev').value.trim(),status:$('#cf-st').value,stall_note:$('#cf-st').value==='متعثر'?$('#cf-note').value.trim():''};
     f.approved_at=$('#cf-ap').checked?(p.approved_at||T()):'';
     const err=!f.name?'اكتب اسم البرنامج.':!f.planned_date?'حدد تاريخ البداية.':f.planned_end<f.planned_date?'تاريخ النهاية قبل تاريخ البداية.':f.status==='متعثر'&&!f.stall_note?'اكتب سبب التعثر.':'';
     if(err){$('#cf-err').textContent=err;return}
