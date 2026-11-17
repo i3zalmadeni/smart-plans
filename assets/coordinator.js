@@ -117,7 +117,8 @@ const facLabel=f=>f.name+(f.building?' — '+f.building:'')+(f.room_no?' ('+f.ro
 async function isPLC(plan){const c=plan&&plan.pc_community_id;if(!c)return false;if(!(c in COMK)){try{const r=await SP.sb.rpc('sp_community_kind',{p_community:c});COMK[c]=(r&&r.data)||''}catch(e){COMK[c]=''}}return COMK[c]==='plc'}
 const BOOKMSG={slot_taken:'تعذّر الحجز: المرفق محجوز في هذا الموعد، اختر وقتًا آخر.',no_period:'حصة غير متاحة للحجز.',facility_unavailable:'المرفق غير مفعّل للحجز في «احجز مرفق».',incomplete:'اختر الحصة أو الحصص ليُسجَّل الحجز الرسمي.',no_booker:'تعذّر تحديد صاحب الحجز.'};
 // يُزامن حجز البرنامج: مجموعات التعلم المهنية فقط، ويُلغى الحجز إن تغيّر المكان أو الشروط
-async function syncBooking(ref,f,plan){try{const sb=SP.sb,fac=FAC.find(x=>x.id===f.facility_id),plc=await isPLC(plan);
+async function syncBooking(ref,f,plan,prog){if(prog&&prog.pc_meeting_id)return null; // برامج مجتمع المعلمين يُحجز اجتماعها من هناك
+  try{const sb=SP.sb,fac=FAC.find(x=>x.id===f.facility_id),plc=await isPLC(plan);
   if(!plc){return null}
   if(!fac||!fac.bookable||!f.planned_date||!(f.periods||[]).length){await sb.rpc('sp_unbook_program',{p_ref:String(ref)});return fac&&fac.bookable?{ok:false,reason:'incomplete'}:null}
   const r=await sb.rpc('sp_book_program_periods',{p_ref:String(ref),p_facility:fac.id,p_date:f.planned_date,p_codes:f.periods,p_owner:staffIdByName(f.owner_name),p_purpose:f.name,p_community:plan.pc_community_id});
@@ -331,7 +332,7 @@ function editor0(id,preset){const isNew=id==null;const p0=isNew?null:P.find(x=>S
     e.target.disabled=true;e.target.textContent='جارٍ الحفظ…';
     try{const plan=PL.find(x=>String(x.id)===String(f.plan_id));
       if(isNew){const r=await write({type:'add',name:f.name,data:f});close();toast('أُضيف البرنامج إلى الخطة');if(r&&r.id)bookToast(await syncBooking('c-'+r.id,f,plan))}
-      else{const cmp={...f};const ch=await saveEdit(p0,{...cmp,planned_date:f.planned_date,planned_end:f.planned_end},null);close();toast(ch?'حُفظت التعديلات':'لا توجد تغييرات');bookToast(await syncBooking(p0.id,f,plan))}}
+      else{const cmp={...f};const ch=await saveEdit(p0,{...cmp,planned_date:f.planned_date,planned_end:f.planned_end},null);close();toast(ch?'حُفظت التعديلات':'لا توجد تغييرات');bookToast(await syncBooking(p0.id,f,plan,p0))}}
     catch(er){e.target.disabled=false;e.target.textContent=isNew?'إضافة البرنامج':'حفظ التعديلات';$('#cf-err').textContent=er.message||'تعذّر الحفظ'}}}
 
 function personDialog(name){toPlans('owner',{own:name})}
