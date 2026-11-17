@@ -25,42 +25,44 @@ const row=(p,acts)=>`<div class="ex-row"><div class="nm"><b>${esc(p.name)}</b><s
 const docBtn=p=>`<button type="button" class="btn pri cd-sm" data-doc="${p.id}">${ic('plus')} توثيق تنفيذ</button>`;
 const openBtn=p=>`<a class="btn soft cd-sm" href="#p-${p.id}">فتح البرنامج</a>`;
 
-function meHeader(){const a0=(window.SP&&SP.access)||{};if(a0.admin||a0.coordinator||a0.add)return '';const id=me(),m=(SP.dir&&SP.dir[id])||{name:(SP.access&&SP.access.name)||'',title:'',photo:null};
-  const av=m.photo?`<img src="${esc(m.photo)}" alt="">`:`<span class="ex-av" aria-hidden="true">${esc((m.name||'؟').trim().charAt(0))}</span>`;
-  if(window.PK){PK.use(SP.sb);return PK.welcomeHTML({name:m.name,role:roleName()})}
-  return `<div class="ex-me">${av}<div><h2>مرحبًا ${esc(m.name)}</h2><p>${esc(m.title||'منسوب النواة الرقمية')}</p></div></div>`}
+const PULSE='M0,40 L90,40 L105,34 L120,40 L170,40 L192,8 L206,70 L218,24 L228,40 L300,40 L318,32 L336,40 L400,40 L422,14 L436,66 L448,28 L458,40 L600,40';
+const wd=s=>{try{return new Date(s+'T12:00:00').toLocaleDateString('ar-SA-u-ca-gregory-nu-latn',{weekday:'long'})}catch(e){return ''}};
+const mo=s=>{try{return new Date(s+'T12:00:00').toLocaleDateString('ar-SA-u-ca-gregory-nu-latn',{month:'long'})}catch(e){return ''}};
+const inDays=s=>Math.round((new Date(s+'T12:00:00')-new Date(T()+'T12:00:00'))/864e5);
+const short2=n=>{const w=String(n||'').trim().split(/\s+/);return w.length>1?w[0]+' '+w[w.length-1]:(w[0]||'')};
+const FT=[['all','كل البرامج','layers','var(--brand)'],['done','موثّقة','check','#2e9e5b'],['now','قيد التنفيذ','clock','#2f6fd0'],['soon','قادمة','cal','#7a8a94'],['due','تحتاج توثيقًا','bell','#c0392b'],['stall','متعثرة','x','#d98a00']];
+const fm=(p,k)=>k==='all'?kind(p)!=='x':k==='stall'?p.status==='متعثر'&&kind(p)!=='x':kind(p)===k;
 
 function pageMe(){
-  const L=mine(),g=k=>L.filter(p=>kind(p)===k);
-  const due=g('due'),now=g('now'),soon=g('soon').sort((a,b)=>rng(a)[0].localeCompare(rng(b)[0])),dn=g('done');
-  const last=L.flatMap(p=>exs(p).map(e=>({e,p}))).sort((a,b)=>String(b.e.date).localeCompare(String(a.e.date))).slice(0,5);
-  const kp=(n,l,f,w)=>`<button type="button" data-go="${f}" class="${w||''}"><b>${fmt(n)}</b><span>${l}</span></button>`;
-  const sec=(t,items,empty,more)=>`<section class="ex-sec"><h3>${t}<small>${items.length||''}</small></h3>${items.length?items.join(''):`<div class="ex-empty">${empty}</div>`}${more||''}</section>`;
-  return `<div class="wrap ex">${meHeader()}
-  <div class="ex-kp">${kp(L.length,'برامجي','all')}${kp(dn.length,'موثّقة','done')}${kp(due.length,'بانتظار التوثيق','due',due.length?'warn':'')}${kp(now.length+soon.length,'جارية وقادمة','soon')}</div>
-  ${sec('تحتاج توثيقًا الآن',due.map(p=>row(p,docBtn(p))),'لا توجد برامج بانتظار التوثيق.')}
-  ${sec('جارية حاليًا',now.map(p=>row(p,docBtn(p)+openBtn(p))),'لا توجد برامج جارية اليوم.')}
-  ${sec('القادمة',soon.slice(0,6).map(p=>row(p,openBtn(p))),'لا توجد برامج قادمة.')}
-  ${sec('آخر توثيقاتي',last.map(({e,p})=>`<div class="ex-row"><div class="nm"><b>${esc(p.name)}</b><small>${esc(greg(e.date))} • تنفيذ رقم ${esc(e.no||1)}</small></div><div class="ex-act"><a class="btn soft cd-sm" href="#report-${esc(e.id)}">${ic('rep')} التقرير</a></div></div>`),'لم توثّق أي تنفيذ بعد.','<p style="margin:10px 0 0"><a class="btn soft" href="#me-docs">إلى توثيق برامجي</a></p>')}
-  </div>`}
-
-function pageDocs(){
-  const L=mine(),F=[['all','الكل'],['due','بانتظار التوثيق'],['now','جارية'],['soon','قادمة'],['done','موثّقة']];
-  const cnt=k=>k==='all'?L.length:L.filter(p=>kind(p)===k).length;
-  const list=L.filter(p=>S.f==='all'||kind(p)===S.f).sort((a,b)=>(rng(a)[0]||'9').localeCompare(rng(b)[0]||'9'));
-  const item=p=>{const E=exs(p);
-    return `<div class="ex-row" style="align-items:flex-start"><div class="nm"><b>${esc(p.name)}</b><small>${esc(p.plan_name||'')} • ${esc(when(p))}${p.location?' • '+esc(p.location):''}</small>
-      ${E.map(e=>`<div class="ex-rep"><div class="top"><b>تنفيذ رقم ${esc(e.no||1)} • ${esc(greg(e.date))}</b><a class="btn soft cd-sm" href="#report-${esc(e.id)}">${ic('rep')} تقرير التنفيذ</a></div>
-        <p>${esc(clip(e.description,160))}</p><small class="muted">${e.beneficiaries!=null?fmt(e.beneficiaries)+' مستفيد • ':''}${(e.images||[]).length} صور${(e.attachments||[]).length?' • '+(e.attachments||[]).length+' مرفقات':''}</small></div>`).join('')}
-    </div><div class="ex-act">${chip(p)}${kind(p)==='x'?'':docBtn(p)}</div></div>`};
-  return `<div class="wrap ex"><section class="ex-sec"><div class="ex-flt" role="group" aria-label="تصفية البرامج">${F.map(([k,t])=>`<button type="button" data-f="${k}" class="${S.f===k?'on':''}" aria-pressed="${S.f===k}">${t} (${cnt(k)})</button>`).join('')}</div></section>
-  <section class="ex-sec">${list.length?list.map(item).join(''):'<div class="ex-empty">لا توجد برامج في هذا التصنيف.</div>'}</section></div>`}
+  const L=mine(),id=me(),m=(SP.dir&&SP.dir[id])||{},nm=m.name||(SP.access&&SP.access.name)||'';
+  const live=L.filter(p=>kind(p)!=='x'),dn=live.filter(p=>kind(p)==='done').length,pct=live.length?Math.round(dn/live.length*100):0;
+  const due=L.filter(p=>fm(p,'due'));
+  if(!S.init){S.init=1;S.f=due.length?'due':'all'}
+  const av=m.photo?`<img src="${esc(m.photo)}" alt="" class="ex-hav">`:`<span class="ex-hav" aria-hidden="true">${esc((nm||'؟').trim().charAt(0))}</span>`;
+  const head=`<section class="pb-hero ex-hero"><div class="pb-tt"><div class="ex-hid">${av}<div><small>مرحبًا بك</small><h2>${esc(short2(nm))}</h2></div></div><span class="pb-chip">${ic('target')} ${esc(roleName())}</span></div>
+    <svg class="pb-pulse" viewBox="0 0 600 80" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path class="b" d="${PULSE}"/><path class="a" pathLength="100" d="${PULSE}"/></svg>
+    <div class="pb-pc"><small>${typeof hijri==='function'?esc(hijri(T())):''}</small><b>${pct}%</b><span>${dn} من ${live.length} موثّق</span><i style="--w:${pct}%"></i></div></section>`;
+  const tiles=`<div class="pb-tiles" role="group" aria-label="تصفية برامجي">${FT.filter(([k])=>k!=='stall'||L.some(p=>fm(p,'stall'))||S.f==='stall').map(([k,tt,i,c],ix)=>{const n=L.filter(p=>fm(p,k)).length;return `<button type="button" class="pb-t${S.f===k?' on':''}" style="--tc:${c};--i:${ix}" data-f="${k}" aria-pressed="${S.f===k}"><span class="e">${ic(i)}</span><b>${n}</b><span class="l">${tt}</span></button>`}).join('')}</div>`;
+  const nxt=L.filter(p=>kind(p)==='now'||kind(p)==='soon').sort((a,b)=>(rng(a)[0]||'9').localeCompare(rng(b)[0]||'9'))[0];
+  const spot=nxt?(()=>{const [s]=rng(nxt),k=kind(nxt),n=s?inDays(s):null;
+    return `<section class="ex-spot"><div class="ex-sd" aria-hidden="true">${s?`<small>${esc(wd(s))}</small><b>${esc(String(+s.slice(8,10)))}</b><span>${esc(mo(s))}</span>`:'<b>—</b>'}</div>
+    <div class="ex-si"><small>${k==='now'?'برنامجك الجاري الآن':'برنامجك القادم'}</small><h3>${esc(nxt.name)}</h3><p>${esc(nxt.plan_name||'')} • ${esc(when(nxt))}${nxt.time?' • '+esc(nxt.time):''}${nxt.location?' • '+esc(nxt.location):''}</p>
+    <div class="ex-sa"><span class="ex-chip ${k==='now'?'warn':'info'}">${k==='now'?'يجري الآن':(n===0?'اليوم':n===1?'غدًا':'بعد '+n+' أيام')}</span>${openBtn(nxt)}</div></div></section>`})():'';
+  const order={due:0,now:1,soon:2,nodate:3,done:4,x:5},st=p=>rng(p)[0]||'9';
+  const list=L.filter(p=>fm(p,S.f)).sort((a,b)=>S.f==='done'?String(rng(b)[1]).localeCompare(String(rng(a)[1])):S.f==='all'?(order[kind(a)]-order[kind(b)]||st(a).localeCompare(st(b))):st(a).localeCompare(st(b)));
+  const lbl=(FT.find(x=>x[0]===S.f)||FT[0])[1];
+  const item=p=>{const E=exs(p),k=kind(p);
+    return `<div class="pb-r ex-pr" style="--sc:${k==='done'?'#2e9e5b':k==='due'?'#c0392b':k==='now'?'#2f6fd0':'#7a8a94'}"><div class="pb-rm"><a href="#p-${esc(String(p.id))}">${esc(p.name)}</a><small>${esc(p.plan_name||'')} • ${esc(when(p))}${p.location?' • '+esc(p.location):''}</small>${p.status==='متعثر'?`<em>السبب: ${esc(p.stall_note||'لم يُكتب سبب')}</em>`:''}
+      ${E.length?`<span class="ex-reps">${E.map(x=>`<a class="ex-rl" href="#report-${esc(x.id)}">${ic('rep')}<span>تنفيذ رقم ${esc(x.no||1)} • ${esc(greg(x.date))}</span><small>${(x.images||[]).length} صور${x.beneficiaries!=null?' • '+fmt(x.beneficiaries)+' مستفيد':''}</small></a>`).join('')}</span>`:''}</div>
+      <span class="pb-ra">${chip(p)}${k==='x'?'':docBtn(p)}${openBtn(p)}</span></div>`};
+  return `<div class="cd cp-board pb">${head}${tiles}${spot}<section class="panel pb-list"><div class="pb-lh"><h3>${lbl}<b>${list.length}</b></h3></div>${list.length?list.map(item).join(''):`<p class="muted cp-empty">${S.f==='due'?'لا توجد برامج بانتظار التوثيق. أحسنت.':'لا توجد برامج في هذا التصنيف.'}</p>`}</section></div>`}
 
 function lock(sg){return `<div class="wrap"><div class="ex-lock">${ic('user')}<h2>${sg?'حسابك غير مرتبط بمنسوبي النواة':'سجّل الدخول لعرض مكتبك'}</h2><p class="muted">${sg?'يلزم أن يكون حسابك منسوبًا نشطًا في النواة الرقمية لتظهر برامجك. راجع مدير النواة.':'الدخول موحد بمعرّف الدخول نفسه في النواة الرقمية.'}</p>${sg?'':'<button class="btn pri" type="button" id="ex-login">دخول</button>'}</div></div>`}
 
 const _route=route;
 route=function(keep){
   const h=(location.hash||'#home').slice(1);
+  if(h==='me-docs'){location.replace('#me');return}
   if(h==='me-docs'){location.replace('#me');return}
   if(!PAGES[h])return _route(keep);
   const v=document.getElementById('view'),sy=scrollY;
