@@ -295,7 +295,15 @@ function buildDash(view){
     <p class="muted small dk-note">${res.length} برنامجًا${D.dks||D.dkp||q?' مطابقًا':''}. من كل صف: افتح التفاصيل للتعديل، أو ذكّر المنفذ، أو راسل منسق الخطة.</p>
     ${shown.length?shown.map(p=>prog(p)).join(''):'<p class="muted cp-empty">لا برامج مطابقة.</p>'}${res.length>30?`<button class="btn soft cd-sm" id="cd-all" style="margin-top:8px">${D.all?'عرض أقل':'عرض الكل ('+res.length+')'}</button>`:''}`;
   }
-  return `<div class="cd dk-desk">${tabsHTML}<section class="panel dk-panel" role="tabpanel">${body}</section></div>`;
+  const nm=((window.SP&&SP.access&&SP.access.name)||WHO||'').trim(),hr=new Date().getHours(),gr=hr<12?'صباح الخير':hr<17?'مساء الخير':'مساء الخير',pct=(a,b)=>b?Math.round(a*100/b):0;
+  const doneN=live.filter(p=>ds(p)==='مكتمل').length,wkAll=cw?live.filter(p=>inWeek(p,cw)):[];
+  const kp=[['الخطط',PL.length,'plan','var(--brand)','all'],['البرامج',live.length,'layers','var(--brand)','all'],['برامج هذا الأسبوع',thisN,'cal','var(--brand)','week'],['تحتاج توثيقًا',need.length,'rep',SC['متأخر'],'late'],['بانتظار الاعتماد',appr.length,'check',SC['مكتمل'],'appr'],['متعثرة',stl.length,'x',SC['متعثر'],'stall'],['نسبة الإنجاز العامة',pct(doneN,live.length)+'%','pulse',SC['مكتمل'],'all']];
+  const plc=PL.map(pl=>{const ps=live.filter(p=>String(p.plan_id)===String(pl.id)),d=ps.filter(p=>ds(p)==='مكتمل').length,wk=cw?ps.filter(p=>inWeek(p,cw)).length:0,nd=ps.filter(needs).length,st=ps.filter(p=>p.status==='متعثر').length,pr=pct(d,ps.length);
+    return `<button type="button" class="dk-plan" data-dkplan="${esc(String(pl.id))}" title="عرض برامج هذه الخطة"><span class="dk-pn"><b>${esc(pl.name)}</b><small>${esc((pl.owner||'').trim()||'بلا منسق')}</small></span><span class="dk-pb" role="progressbar" aria-valuenow="${pr}" aria-valuemin="0" aria-valuemax="100" aria-label="نسبة إنجاز ${esc(pl.name)}"><i style="width:${pr}%"></i></span><span class="dk-ps"><b>${pr}%</b><small>${d} من ${ps.length} مكتمل</small></span><span class="dk-pt">${wk?`<em>${wk} هذا الأسبوع</em>`:''}${nd?`<em class="bad">${nd} تحتاج توثيقًا</em>`:''}${st?`<em class="warn">${st} متعثر</em>`:''}</span></button>`}).join('');
+  const hero=`<section class="panel dk-hero"><div class="dk-wl"><small>${esc(dayName(today))} ${dmy(today)}${cw?' • الأسبوع '+cw.number:''}</small><h2>${gr}${nm?'، '+esc(nm):''}</h2><p>هذه صورتك الشاملة لخطط المدرسة وبرامجها اليوم${need.length?`، ويحتاج <b>${need.length}</b> ${need.length>2&&need.length<11?'برامج':'برنامجًا'} إلى توثيق`:'، ولا توجد برامج متأخرة في التوثيق'}.</p></div>
+    <div class="dk-kpis">${kp.map(([t,n,i,c,k])=>`<button type="button" class="dk-kpi" style="--sc:${c}" data-dk="${k}"><i>${ic(i)}</i><b>${n}</b><span>${t}</span></button>`).join('')}</div>
+    <h3 class="dk-h">الخطط ونسب إنجازها</h3><div class="dk-plans">${plc||'<p class="muted">لا خطط.</p>'}</div></section>`;
+  return `<div class="cd dk-desk">${hero}${tabsHTML}<section class="panel dk-panel" role="tabpanel">${body}</section></div>`;
 }
 
 /* ---------- النوافذ ---------- */
@@ -500,6 +508,7 @@ function bind(v){
   const dkn=v.querySelector('[data-dkwnow]');if(dkn)dkn.onclick=()=>{const c=curWeek();if(c){D.dkw=c.number;route(true)}};
   v.querySelectorAll('[data-dks]').forEach(b=>b.onclick=()=>{D.dks=D.dks===b.dataset.dks?'':b.dataset.dks;D.all=false;route(true)});
   const dkp=v.querySelector('#dk-plan');if(dkp)dkp.onchange=()=>{D.dkp=dkp.value;D.all=false;route(true)};
+  v.querySelectorAll('[data-dkplan]').forEach(b=>b.onclick=()=>{D.dkp=b.dataset.dkplan;D.dk='all';D.dks='';D.all=false;route(true);setTimeout(()=>{const t=document.querySelector('.dk-tabs');t&&t.scrollIntoView({behavior:'smooth',block:'start'})},50)});
   const dka=v.querySelector('[data-dkadd]');if(dka)dka.onclick=()=>{const [x,y]=dka.dataset.dkadd.split('|');editor(null,{planned_date:x,planned_end:y})};
   v.querySelectorAll('[data-pbplan]').forEach(b=>b.onclick=()=>{D.pb=b.dataset.pbplan;D.pbf='';D.pbq='';saveUI();route(true)});
   v.querySelectorAll('[data-pbf]').forEach(b=>b.onclick=()=>{D.pbf=D.pbf===b.dataset.pbf?'all':b.dataset.pbf;route(true)});

@@ -542,3 +542,19 @@ body.cp-on>header{display:none}
 .dk-row .acts{align-items:center}
 @media (max-width:860px){.dk-cal{grid-template-columns:1fr}.dk-day{min-height:0}.dk-wnav #dk-add{margin-inline-start:0;width:100%}}
 @media (prefers-reduced-motion:reduce){.dk-tab,.dk-ev{transition:none}.dk-tab:hover,.dk-ev:hover{transform:none}}
+
+.dk-hero{padding:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--brand) 9%,var(--surface)),var(--surface))}
+.dk-wl small{color:var(--muted)}.dk-wl h2{margin:2px 0 4px;font-size:1.35rem}.dk-wl p{margin:0 0 12px;color:var(--ink2)}
+.dk-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.dk-kpi{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:8px;align-items:center;text-align:start;border:1px solid var(--line);border-inline-start:4px solid var(--sc);background:var(--surface);border-radius:14px;padding:10px 12px;font:inherit;color:var(--ink);cursor:pointer;min-height:56px}
+.dk-kpi i{grid-row:1/3;color:var(--sc)}.dk-kpi i svg{width:24px;height:24px}.dk-kpi b{font-size:1.4rem;line-height:1.1}.dk-kpi span{color:var(--muted);font-size:.8rem}
+.dk-kpi:hover{box-shadow:0 4px 12px rgba(8,40,60,.12)}.dk-kpi:focus-visible,.dk-plan:focus-visible{outline:3px solid var(--idgold,#f0b34a);outline-offset:2px}
+.dk-plans{display:grid;gap:8px}
+.dk-plan{display:grid;grid-template-columns:minmax(120px,1.2fr) minmax(100px,2fr) auto;gap:6px 14px;align-items:center;text-align:start;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:10px 14px;font:inherit;color:var(--ink);cursor:pointer}
+.dk-plan:hover{border-color:var(--brand)}.dk-pn{display:flex;flex-direction:column}.dk-pn small,.dk-ps small{color:var(--muted)}
+.dk-pb{height:10px;border-radius:99px;background:var(--cd-track,#e4ecef);overflow:hidden}.dk-pb i{display:block;height:100%;background:var(--brand);border-radius:99px}
+.dk-ps{display:flex;flex-direction:column;align-items:end;min-width:90px}.dk-ps b{font-size:1.1rem}
+.dk-pt{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}.dk-pt:empty{display:none}
+.dk-pt em{font-style:normal;font-size:.75rem;padding:2px 8px;border-radius:99px;background:color-mix(in srgb,var(--brand) 12%,transparent)}
+.dk-pt em.bad{background:color-mix(in srgb,#c0392b 14%,transparent)}.dk-pt em.warn{background:color-mix(in srgb,#d98a00 16%,transparent)}
+@media (max-width:640px){.dk-plan{grid-template-columns:1fr auto}.dk-pb{grid-column:1/-1;order:3}}
