@@ -10,7 +10,7 @@
 const ls={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const UIK='sp-coord-ui';
 const D=Object.assign({mode:'plan',plan:null,week:null,dom:null,own:null,fs:'',q:'',grace:0,all:false},ls.get(UIK,{}));
-D.fs='';D.q='';D.pq='';D.uq='';D.pbq='';D.pbf='';
+D.fs='';D.q='';D.pq='';D.uq='';D.pbq='';D.pbf='';D.dk='week';D.dkq='';D.dks='';D.dkp='';
 const saveUI=()=>ls.set(UIK,{pmode:D.pmode,mplan:D.mplan,mode:D.mode,plan:D.plan,week:D.week,dom:D.dom,own:D.own,grace:D.grace,pb:D.pb});
 const ORIG={};BASEP.forEach(p=>{ORIG[p.id]=JSON.parse(JSON.stringify(p))});
 const CO_COL='executions';let LASTUP=new Date();
@@ -250,19 +250,52 @@ function buildDash(view){
    <section class="panel"><div class="cd-ph"><h2>${ic('cal')} القادم</h2><div class="cd-tabs sm" role="tablist">${upW.this?`<button type="button" class="${D.up==='this'?'on':''}" data-up="this">هذا الأسبوع</button>`:''}${upW.next?`<button type="button" class="${D.up==='next'?'on':''}" data-up="next">الأسبوع ${upW.next.number}</button>`:''}</div></div>
     ${uw?`<p class="muted small" style="margin:0 0 6px">الأسبوع ${uw.number} • ${dmy(uw.start_date)} – ${dmy(uw.end_date)} • ${upL.length} برامج</p>${upL.length?upL.map(upRow).join(''):'<div class="cd-empty">لا توجد برامج مجدولة في هذا الأسبوع.</div>'}`:'<div class="cd-empty">لا توجد أسابيع دراسية قادمة.</div>'}</section>
   </div></div>`;
-  // لوحة المهام: طوابير عمل بإجراءات مباشرة (لا مؤشرات إحصائية)
+  // المكتب التنفيذي (مكتبي الإلكتروني لمدير البوابة): وجهة واحدة لكل البرامج ومتابعتها والتواصل مع المنسقين
   const unassigned=L.filter(p=>ownerOf(p)==='غير محدد'),legacyN=new Set(L.filter(p=>ownerOf(p)!=='غير محدد'&&!p.owner_staff_id&&!OGROUP[ownerOf(p)]).map(ownerOf));
-  const sec=(id,icon,title,n,body,more)=>`<section class="panel cp-sec" id="${id}"><div class="cd-ph"><h2>${ic(icon)} ${title}<b class="cp-n${n?'':' z'}">${n}</b></h2>${more||''}</div>${body}</section>`;
-  const lim=(list,fn,empty,max)=>{max=max||5;return list.length?list.slice(0,max).map(fn).join('')+(list.length>max?`<p class="muted small cp-more">و${list.length-max} أخرى…</p>`:''):`<p class="muted cp-empty">${empty}</p>`};
-  const all=k=>`<a class="btn soft cd-sm" href="#admin-alerts" data-gotab="${k}">عرض الكل</a>`;
   const unRow=p=>row(p,'لم يبدأ',`<span class="m">${esc(p.plan_name)} • ${startOf(p)?dmy(startOf(p)):'بلا موعد'}</span>`,`<button class="btn pri cd-sm" data-edit="${pid(p)}">${ic('users')} إسناد منفذ</button>`);
-  return `<div class="cd cp-board"><div class="cp-grid">
-   ${sec('t-appr','check','بانتظار الاعتماد',appr.length,lim(appr,apprRow,'لا توجد برامج موثقة بانتظار الاعتماد.'),appr.length>5?all('appr'):'')}
-   ${sec('t-late','bell','متأخرة التوثيق',need.length,lim(need,lateRow,'لا توجد برامج متأخرة. كل ما انتهت فترته موثق أو مسجّلة حالته.'),need.length>5?all('late'):'')}
-   ${sec('t-stall','x','متعثرة',stl.length,lim(stl,stallRow,'لا توجد برامج مسجّلة متعثرة.'),stl.length>5?all('stall'):'')}
-   ${sec('t-week','cal',uw?(D.up==='next'?'الأسبوع القادم':'هذا الأسبوع'):'القادم',upL.length,uw?`<p class="muted small" style="margin:0 0 6px">الأسبوع ${uw.number} • ${dmy(uw.start_date)} – ${dmy(uw.end_date)}</p>${upL.length?upL.slice(0,6).map(upRow).join('')+(upL.length>6?`<p class="muted small cp-more">و${upL.length-6} أخرى…</p>`:''):'<p class="muted cp-empty">لا برامج مجدولة في هذا الأسبوع.</p>'}`:'<p class="muted cp-empty">لا أسابيع قادمة في التقويم.</p>','<a class="btn soft cd-sm" href="#week">الرزنامة</a>')}
-   ${sec('t-own','users','المنفذون',unassigned.length+legacyN.size,(legacyN.size?`<div class="cd-al" style="--sc:var(--warn)"><i></i><span class="m">${legacyN.size} اسمًا مكتوبًا يدويًا تحتاج ربطًا بمنسوبي النواة</span><span class="acts"><a class="btn pri cd-sm" href="#admin-people">${ic('users')} ربط الأسماء</a></span></div>`:'')+lim(unassigned,unRow,legacyN.size?'':'كل البرامج لها منفذ مرتبط بالنواة.'))}
-  </div></div>`;
+  const live=L.filter(p=>p.status!=='ملغي');
+  const wlist=CAL();
+  if(!D.dkw||!wkInfo(D.dkw))D.dkw=cw?cw.number:((wlist.find(w=>w.start_date>today)||wlist[wlist.length-1]||{}).number||null);
+  const dw=D.dkw?wkInfo(D.dkw):null;
+  const wkL=dw?live.filter(p=>inWeek(p,dw)).sort((a,b)=>(startOf(a)+(a.time||'')).localeCompare(startOf(b)+(b.time||''))):[];
+  const thisN=cw?live.filter(p=>inWeek(p,cw)).length:0;
+  const coordName=p=>(planOf(p.plan_id).owner||'').trim();
+  const wc=p=>{const cn=coordName(p);if(!cn)return `<button type="button" class="btn cd-sm" disabled title="لم يُحدَّد منسق لهذه الخطة">${ic('users')} لا منسق</button>`;
+    const ph=(PEOPLE[cn]||{}).phone,t=`السلام عليكم ${cn}، بخصوص برنامج «${p.name}» ضمن خطة «${p.plan_name}» (${startOf(p)?dayName(startOf(p))+' '+dmy(startOf(p)):'بلا موعد محدد'}): نأمل مراجعته وتعديل ما يلزم (الموعد أو المنفذ أو المكان) أو إفادتنا بالمستجدات.`;
+    return `<a class="btn cd-sm cd-wa" href="${waLink(ph,t)}" target="_blank" rel="noopener" title="مراسلة منسق الخطة (${esc(cn)}) عبر واتساب برسالة جاهزة">${ic('users')} مراسلة المنسق</a>`};
+  const prog=(p,extra)=>{const s=ds(p),ex=exFor(p.id).length;
+    return `<div class="cd-al dk-row" style="--sc:${SC[s]}"><i></i><a href="#p-${pid(p)}">${esc(p.name)}</a><span class="m">${esc(p.plan_name)} • ${startOf(p)?dmy(startOf(p))+(endOf(p)&&endOf(p)!==startOf(p)?' – '+dmy(endOf(p)):''):'بلا موعد'}${plbl(p)?' • '+esc(plbl(p)):''}${p.location?' • '+esc(p.location):''} • ${esc(ownerOf(p))}${ex?' • موثق':''}${p.approved_at?' • معتمد':''}</span>
+    <span class="acts">${pill(s)}${extra||''}<button class="btn cd-sm" data-edit="${pid(p)}">تفاصيل / تعديل</button>${wa(p,s==='متأخر'?'late':'up')}${wc(p)}</span></div>`};
+  const dkTabs=[['week','cal','هذا الأسبوع',thisN,'قيد التنفيذ'],['late','rep','تحتاج توثيقًا',need.length,'متأخر'],['appr','check','بانتظار الاعتماد',appr.length,'مكتمل'],['stall','x','متعثرة',stl.length,'متعثر'],['all','layers','كل البرامج',live.length,'']];
+  if(unassigned.length+legacyN.size)dkTabs.push(['own','users','بلا منفذ',unassigned.length+legacyN.size,'متعثر']);
+  if(!dkTabs.some(t=>t[0]===D.dk))D.dk='week';
+  const tabsHTML=`<div class="dk-tabs" role="tablist" aria-label="أقسام المكتب التنفيذي">${dkTabs.map(([k,i,t,n,sc])=>`<button type="button" role="tab" aria-selected="${D.dk===k}" class="dk-tab${D.dk===k?' on':''}${n&&['late','stall','own'].includes(k)?' alert':''}" style="--sc:${sc?SC[sc]:'var(--brand)'}" data-dk="${k}"><i>${ic(i)}</i><span>${t}</span><b class="${n?'':'z'}">${n}</b></button>`).join('')}</div>`;
+  let body='';
+  if(D.dk==='week'){
+    if(!dw)body='<p class="muted cp-empty">لا أسابيع في التقويم الدراسي.</p>';
+    else{
+      const days=[];for(let d=dw.start_date;d<=dw.end_date&&days.length<7;d=addDays(d,1))days.push(d);
+      const span=p=>{const sd=startOf(p),ed=endOf(p)||sd;return {sd,ed}};
+      const dated=wkL.filter(p=>startOf(p)),undated=wkL.filter(p=>!startOf(p));
+      const cell=d=>{const ps=dated.filter(p=>{const x=span(p);return x.sd<=d&&d<=x.ed}),isT=d===today,wk=/^(5|6)$/.test(String(new Date(d+'T12:00:00').getDay()));
+        return `<div class="dk-day${isT?' today':''}${wk?' off':''}"><div class="dk-dh"><b>${esc(dayName(d))}</b><small>${dmy(d)}</small></div>${ps.length?ps.map(p=>{const sd=span(p).sd,ed=span(p).ed;return `<button type="button" class="dk-ev" style="--sc:${SC[ds(p)]}" data-edit="${pid(p)}" title="${esc(p.name)} — اضغط للتفاصيل والتعديل"><b>${esc(p.name)}</b><small>${plbl(p)?esc(plbl(p))+' • ':''}${esc(ownerOf(p))}${ed!==sd?' • يمتد حتى '+dmy(ed):''}</small></button>`}).join(''):'<span class="dk-none">—</span>'}</div>`};
+      body=`<div class="dk-wnav"><button type="button" class="btn cd-sm" data-dkwstep="-1" aria-label="الأسبوع السابق">‹ السابق</button><span class="dk-wt"><b>الأسبوع ${dw.number}${cw&&cw.number===dw.number?' (الحالي)':''}</b><small>${dmy(dw.start_date)} – ${dmy(dw.end_date)} • ${wkL.length} برامج</small></span><button type="button" class="btn cd-sm" data-dkwstep="1" aria-label="الأسبوع التالي">التالي ›</button>${cw&&cw.number!==dw.number?'<button type="button" class="btn soft cd-sm" data-dkwnow>الأسبوع الحالي</button>':''}<button type="button" class="btn pri cd-sm" id="dk-add" data-dkadd="${dw.start_date}|${dw.end_date}">${ic('plus')} برنامج في هذا الأسبوع</button></div>
+      <div class="dk-cal" style="--n:${days.length}">${days.map(cell).join('')}</div>
+      ${undated.length?`<p class="muted small" style="margin:10px 0 4px">برامج الأسبوع بلا يوم محدد (${undated.length}): ${undated.map(p=>`<a href="#p-${pid(p)}">${esc(p.name)}</a>`).join('، ')}</p>`:''}
+      <h3 class="dk-h">برامج الأسبوع ${dw.number}</h3>${wkL.length?wkL.map(p=>prog(p)).join(''):'<p class="muted cp-empty">لا برامج مجدولة في هذا الأسبوع.</p>'}`}
+  }else if(D.dk==='late')body=need.length?`<p class="muted small dk-note">برامج انتهت فترتها دون توثيق. ذكّر المنفذ أو راسل المنسق أو سجّل التعثر.</p>`+need.map(p=>lateRow(p).replace('</span></div>',`${wc(p)}</span></div>`)).join(''):'<p class="muted cp-empty">لا توجد برامج متأخرة. كل ما انتهت فترته موثق أو مسجّلة حالته.</p>';
+  else if(D.dk==='appr')body=appr.length?appr.map(apprRow).join(''):'<p class="muted cp-empty">لا توجد برامج موثقة بانتظار الاعتماد.</p>';
+  else if(D.dk==='stall')body=stl.length?stl.map(p=>stallRow(p).replace(/<\/span><\/div>$/,`${wc(p)}</span></div>`)).join(''):'<p class="muted cp-empty">لا توجد برامج مسجّلة متعثرة.</p>';
+  else if(D.dk==='own')body=(legacyN.size?`<div class="cd-al" style="--sc:var(--warn)"><i></i><span class="m">${legacyN.size} اسمًا مكتوبًا يدويًا تحتاج ربطًا بمنسوبي النواة</span><span class="acts"><a class="btn pri cd-sm" href="#admin-people">${ic('users')} ربط الأسماء</a></span></div>`:'')+(unassigned.length?unassigned.map(unRow).join(''):'');
+  else{
+    const q=(D.dkq||'').trim(),fl=p=>(!D.dks||ds(p)===D.dks)&&(!D.dkp||String(p.plan_id)===String(D.dkp))&&(!q||(p.name+(p.code||'')+(p.owner_name||'')+(p.location||'')+(p.plan_name||'')).includes(q));
+    const res=live.filter(fl).sort((a,b)=>(startOf(a)||'9').localeCompare(startOf(b)||'9')),shown=D.all?res:res.slice(0,30);
+    body=`<div class="dk-filters"><input type="search" id="dk-q" class="cd-sel" placeholder="ابحث باسم البرنامج أو المنفذ أو المكان" value="${esc(D.dkq||'')}" aria-label="بحث في البرامج"><select id="dk-plan" class="cd-sel" aria-label="الخطة"><option value="">كل الخطط</option>${PL.map(pl=>`<option value="${esc(String(pl.id))}"${String(D.dkp)===String(pl.id)?' selected':''}>${esc(pl.name)}</option>`).join('')}</select></div>
+    <div class="cd-tabs sm" role="group" aria-label="تصفية بالحالة">${['متأخر','متعثر','لم يبدأ','قيد التنفيذ','مكتمل'].map(k=>`<button type="button" class="${D.dks===k?'on':''}" style="--sc:${SC[k]}" data-dks="${k}" aria-pressed="${D.dks===k}">${SL[k]} <b class="${(countBy(live)[k]||0)?'':'z'}">${countBy(live)[k]||0}</b></button>`).join('')}</div>
+    <p class="muted small dk-note">${res.length} برنامجًا${D.dks||D.dkp||q?' مطابقًا':''}. من كل صف: افتح التفاصيل للتعديل، أو ذكّر المنفذ، أو راسل منسق الخطة.</p>
+    ${shown.length?shown.map(p=>prog(p)).join(''):'<p class="muted cp-empty">لا برامج مطابقة.</p>'}${res.length>30?`<button class="btn soft cd-sm" id="cd-all" style="margin-top:8px">${D.all?'عرض أقل':'عرض الكل ('+res.length+')'}</button>`:''}`;
+  }
+  return `<div class="cd dk-desk">${tabsHTML}<section class="panel dk-panel" role="tabpanel">${body}</section></div>`;
 }
 
 /* ---------- النوافذ ---------- */
@@ -461,7 +494,13 @@ function bind(v){
   v.querySelectorAll('[data-ogroup]').forEach(b=>b.onclick=async()=>{const n=b.dataset.ogroup,er=v.querySelector('#ol-err');
     b.disabled=true;try{await write({type:'owner-link',from:n,group:true,name:n});toast('اعتُمد الاسم جهة أو مجموعة')}catch(e){b.disabled=false;if(er)er.textContent=e.message||'تعذّر الحفظ'}});
   const sq=(id,k)=>{const el=v.querySelector(id);if(!el)return;let t;el.oninput=()=>{clearTimeout(t);t=setTimeout(()=>{D[k]=el.value;route(true);const n=document.querySelector(id);if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}},250)}};
-  sq('#cd-pq','pq');sq('#cd-uq','uq');sq('#pb-q','pbq');
+  sq('#cd-pq','pq');sq('#cd-uq','uq');sq('#pb-q','pbq');sq('#dk-q','dkq');
+  v.querySelectorAll('[data-dk]').forEach(b=>b.onclick=()=>{D.dk=b.dataset.dk;D.all=false;route(true)});
+  v.querySelectorAll('[data-dkwstep]').forEach(b=>b.onclick=()=>{const a=CAL(),i=a.findIndex(w=>w.number===+D.dkw)+ +b.dataset.dkwstep;if(a[i]){D.dkw=a[i].number;route(true)}});
+  const dkn=v.querySelector('[data-dkwnow]');if(dkn)dkn.onclick=()=>{const c=curWeek();if(c){D.dkw=c.number;route(true)}};
+  v.querySelectorAll('[data-dks]').forEach(b=>b.onclick=()=>{D.dks=D.dks===b.dataset.dks?'':b.dataset.dks;D.all=false;route(true)});
+  const dkp=v.querySelector('#dk-plan');if(dkp)dkp.onchange=()=>{D.dkp=dkp.value;D.all=false;route(true)};
+  const dka=v.querySelector('[data-dkadd]');if(dka)dka.onclick=()=>{const [x,y]=dka.dataset.dkadd.split('|');editor(null,{planned_date:x,planned_end:y})};
   v.querySelectorAll('[data-pbplan]').forEach(b=>b.onclick=()=>{D.pb=b.dataset.pbplan;D.pbf='';D.pbq='';saveUI();route(true)});
   v.querySelectorAll('[data-pbf]').forEach(b=>b.onclick=()=>{D.pbf=D.pbf===b.dataset.pbf?'all':b.dataset.pbf;route(true)});
   const ns=v.querySelector('#np-s');if(ns)ns.onchange=()=>{const e=v.querySelector('#np-e');if(!e.value||e.value<ns.value)e.value=ns.value};
@@ -522,13 +561,13 @@ function updBell(){
 /* ---------- ترويسة لوحة التحكم الموحدة (هوية النواة): للمنسق والمنفذ معًا ---------- */
 Object.assign(IC,{pulse:'<path d="M3 12h4l2.5-6.5 4 13 2.5-6.5H21"/>',desk:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',refresh:'<path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 4v7h-7"/>',trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'});
 const ADM=['admin','admin-alerts','admin-plans','admin-people','admin-trash'],EXP=['me','me-docs'],NTF='notifications';
-const TITLES={notifications:'الإشعارات','coord-plan':'نبض الخطة',me:'مكتبي الإلكتروني','me-docs':'توثيق برامجي','admin-alerts':'التنبيهات',admin:'إدارة متابعة الخطط','admin-plans':'إدارة الخطة','admin-people':'المنفذون','admin-trash':'المحذوفات'};
+const TITLES={notifications:'الإشعارات','coord-plan':'نبض الخطة',me:'مكتبي الإلكتروني','me-docs':'توثيق برامجي','admin-alerts':'التنبيهات',admin:'المكتب الإلكتروني التنفيذي','admin-plans':'إدارة الخطة','admin-people':'المنفذون','admin-trash':'المحذوفات'};
 const PINFO={
   notifications:'ما ينتظر إجراءك ونتائج طلباتك ومستجدات الخطط الذكية.',
   'coord-plan':'خطتك وبرامجها: ما يحتاج متابعتك الآن وما تبقى.',
   me:'برامجك المسندة إليك: ما يحتاج توثيقًا الآن، وما يجري، وما هو قادم.',
   'me-docs':'وثّق تنفيذ برامجك واطّلع على تقارير التنفيذ السابقة.',
-  admin:'متابعة تنفيذ الخطط من مكان واحد: ما ينتظر الاعتماد، والمتأخر، والمتعثر، وبرامج هذا الأسبوع.',
+  admin:'وجهتك الكاملة: برامج هذا الأسبوع وتقويمه، وما يحتاج توثيقًا أو اعتمادًا، وكل البرامج مع مراسلة المنسق لتعديلها.',
   'admin-alerts':'البرامج التي تحتاج تدخلك: المتأخرة في التوثيق، والمتعثرة وأسباب تعثرها، والقادمة قريبًا.',
   'admin-plans':'تحرير برامج كل خطة وتوثيقها واعتمادها، وإضافة الخطط وإرفاق ملفاتها.',
   'admin-people':'منفذو البرامج من منسوبي النواة، وربط الأسماء المكتوبة يدويًا بمنسوبيها.',
@@ -611,7 +650,7 @@ function barHTML(h){
     <a class="cp-sys" href="#${adm&&!EXP.includes(h)?'admin':ex?'me':'admin'}"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M30 4c2 14 8 20 24 24-16 4-22 10-24 26-2-16-8-22-24-26 16-4 22-10 24-24z" fill="#0f8a94"/><path d="M50 4c.8 5 3 7.2 8 8-5 .8-7.2 3-8 8-.8-5-3-7.2-8-8 5-.8 7.2-3 8-8z" fill="#f0b34a"/></svg><span><b>الخطط الذكية</b><small>متوسطة لبيد بن ربيعة</small></span></a>
     <span class="cp-idl"><a class="cp-site" href="#home">الموقع الإلكتروني</a><i class="cp-vsep" aria-hidden="true"></i><a class="coreid" href="https://i3zalmadeni.github.io/digital-core" title="النواة الرقمية"><img src="assets/core-logo.svg" alt="" width="36" height="36"><span><b>النواة الرقمية</b><small>الهوية الموحدة</small></span></a><span class="moe"><b>وزارة التعليم</b><small>Ministry of Education</small></span></span></div></div>
   <div class="cp-strip" aria-hidden="true"></div>
-  <div class="cp-sub"><div class="wrap cp-subin"><nav class="cp-nav" aria-label="صفحات لوحة التحكم">${ex?it('me','desk','مكتبي الإلكتروني')+it('me-docs','rep','توثيق برامجي'):''}${pc?it(PB,'pulse','نبض الخطة'):''}${adm?it('admin','check','إدارة متابعة الخطط')+it('admin-plans','plan','إدارة الخطة')+it('admin-people','users','المنفذون')+it('admin-trash','trash','المحذوفات',REMOVED.length||''):''}</nav>
+  <div class="cp-sub"><div class="wrap cp-subin"><nav class="cp-nav" aria-label="صفحات لوحة التحكم">${ex?it('me','desk','مكتبي الإلكتروني')+it('me-docs','rep','توثيق برامجي'):''}${pc?it(PB,'pulse','نبض الخطة'):''}${adm?it('admin','desk','المكتب التنفيذي')+it('admin-plans','plan','إدارة الخطة')+it('admin-people','users','المنفذون')+it('admin-trash','trash','المحذوفات',REMOVED.length||''):''}</nav>
     <span class="cp-user">${ubBarHTML(nm, ex ? '#me' : '#admin')}</span></div></div>
   <div class="cp-page"><div class="wrap cp-pagein"><div class="cp-pt"><small>${roleName()}</small><h1>${TITLES[h]||''}</h1></div><p class="cp-pd">${PINFO[h]||''}</p>
     <div class="cp-pm"><span class="cp-up">آخر تحديث ${hhmm(LASTUP)}</span><button type="button" class="btn cd-sm" id="cp-refresh">${ic('refresh')} تحديث</button></div></div>
