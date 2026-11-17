@@ -25,7 +25,7 @@ const row=(p,acts)=>`<div class="ex-row"><div class="nm"><b>${esc(p.name)}</b><s
 const docBtn=p=>`<button type="button" class="btn pri cd-sm" data-doc="${p.id}">${ic('plus')} توثيق تنفيذ</button>`;
 const openBtn=p=>`<a class="btn soft cd-sm" href="#p-${p.id}">فتح البرنامج</a>`;
 
-function meHeader(){const id=me(),m=(SP.dir&&SP.dir[id])||{name:(SP.access&&SP.access.name)||'',title:'',photo:null};
+function meHeader(){const a0=(window.SP&&SP.access)||{};if(a0.admin||a0.coordinator||a0.add)return '';const id=me(),m=(SP.dir&&SP.dir[id])||{name:(SP.access&&SP.access.name)||'',title:'',photo:null};
   const av=m.photo?`<img src="${esc(m.photo)}" alt="">`:`<span class="ex-av" aria-hidden="true">${esc((m.name||'؟').trim().charAt(0))}</span>`;
   if(window.PK){PK.use(SP.sb);return PK.welcomeHTML({name:m.name,role:roleName()})}
   return `<div class="ex-me">${av}<div><h2>مرحبًا ${esc(m.name)}</h2><p>${esc(m.title||'منسوب النواة الرقمية')}</p></div></div>`}
