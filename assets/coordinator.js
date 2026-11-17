@@ -339,7 +339,7 @@ function editor0(id,preset){const isNew=id==null;const p0=isNew?null:P.find(x=>S
   const p=isNew?{name:'',plan_id:+D.plan||(PL[0]||{}).id,domain:'',planned_date:'',planned_end:'',time:'',location:'',owner_name:'',beneficiary:'',goal:'',indicator:'',required_evidence:'',status:'لم يبدأ',stall_note:'',...preset}:{...p0,planned_date:startOf(p0),planned_end:endOf(p0)};
   const topics=[...new Set(P.map(x=>x.domain).filter(Boolean).concat(LOOK().domain||[]))];const ex=isNew?[]:exFor(p0.id);
   const locSel=p.facility_id&&FAC.some(x=>x.id===p.facility_id)?p.facility_id:(FAC.find(x=>x.name===(p.location||'').trim())||{}).id||((p.location||'').trim()?'__other':'');
-  const plans=PL.slice();
+  const plans=canAdd()?PL.slice():myPlans();
   const {m,close}=openModal(`<div class="cd-mh"><h3>${isNew?'إضافة برنامج إلى الخطة':'تعديل البرنامج'}</h3><button class="btn cd-sm" data-x aria-label="إغلاق">✕</button></div>
   ${isNew?'':`<div class="cd-info" style="margin-bottom:12px"><span>${esc(p.code)} • ${pill(ds(p0))}</span><span>${ex.length?`موثق ${ex.length} مرة • آخر تنفيذ ${dmy(ex[ex.length-1].date||'')}`:'لم يُوثَّق تنفيذ بعد'}${p0.approved_at?' • معتمد '+dmy(p0.approved_at):''}</span><span style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn soft cd-sm" id="cf-doc">${ic('rep')} توثيق ورفع الشواهد</button><a class="btn cd-sm" href="#p-${esc(String(p.id))}" data-x>فتح صفحة البرنامج</a></span></div>`}
   <div class="cd-form">
@@ -446,7 +446,11 @@ function plansPage(){
     <td>${ED?`<input type="date" data-f="planned_end" value="${esc(endOf(p))}" aria-label="تاريخ النهاية">`:esc(dmy(endOf(p))||'—')}</td>
     <td>${ED?`<input class="bn" data-f="beneficiary" list="cd-bens" value="${esc(p.beneficiary||'')}" aria-label="الفئة المستهدفة">`:esc(p.beneficiary||'—')}</td>
     ${ED?`<td><button class="btn cd-bad cd-sm" data-del="${id}" title="حذف البرنامج">حذف</button></td>`:''}</tr>`};
-  return `<div class="cd">${pageHead('إدارة الخطة','بيانات برامج الخطة','عدّل برامج الخطط ووثّقها واعتمدها، واختر طريقة العرض المناسبة.')}${PSEG}
+  const hv=all.filter(p=>p.status!=='ملغي'),hdn=hv.filter(p=>ds(p)==='مكتمل').length,hpc=hv.length?Math.round(hdn/hv.length*100):0;
+  const planHero=`<section class="pb-hero" style="${ALL?'':C(PC(pl.id))}"><div class="pb-tt"><h2>${esc(pl.name)}</h2><span class="pb-chip">${ic(ALL?'layers':'target')} ${ALL?plans.length+' خطط • '+hv.length+' برنامجًا':'منسق الخطة: '+esc(pl.owner||'لم يُحدَّد')}</span></div>
+    <svg class="pb-pulse" viewBox="0 0 600 80" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path class="b" d="${PB_PULSE}"/><path class="a" pathLength="100" d="${PB_PULSE}"/></svg>
+    <div class="pb-pc"><small>إدارة الخطة${!ALL&&pl.year?' • '+esc(pl.year):''}</small><b>${hpc}%</b><span>${hdn} من ${hv.length} مكتمل</span><i style="--w:${hpc}%"></i></div></section>`;
+  return `<div class="cd cp-board">${planHero}${PSEG}
   <section class="panel"><div class="cd-mgh"><label class="cd-plpick"><span>الخطة</span><select id="cd-mplan" aria-label="اختر الخطة"><option value="all"${ALL?' selected':''}>كل الخطط (${P.length})</option>${plans.map(x=>`<option value="${x.id}"${x===pl?' selected':''}>${esc(x.name)} (${P.filter(p=>String(p.plan_id)===String(x.id)).length})</option>`).join('')}</select></label>${ED?`<button class="btn soft cd-sm" type="button" data-pl-new>${ic('plus')} خطة جديدة</button>${ALL?'':`<button class="btn cd-sm" type="button" data-pl-edit="${esc(String(pl.id))}">${ic('edit')} تعديل الخطة</button>`}`:''}<input type="search" class="cd-srch" id="cd-pq" placeholder="ابحث في برامج الخطة" value="${esc(D.pq||'')}" aria-label="بحث في برامج الخطة">${D.fs?`<button class="cd-fchip" style="--sc:${SC[D.fs]}" data-fs="">الحالة: ${SL[D.fs]} ✕</button>`:''}<span class="muted small">${list.length} برنامجًا</span></div>
    ${!ALL&&(pl.desc||pl.owner)?`<div class="pl-info" style="${C(PC(pl.id))}">${ic('plan')}<span>${pl.desc?esc(pl.desc):''}${pl.owner?`<small>المسؤول: ${esc(pl.owner)}${pl.year?' • '+esc(pl.year):''}</small>`:''}</span></div>`:''}
    <datalist id="cd-bens">${benList().map(b=>`<option value="${esc(b)}">`).join('')}</datalist>
@@ -526,6 +530,7 @@ function bind(v){
   const dkn=v.querySelector('[data-dkwnow]');if(dkn)dkn.onclick=()=>{const c=curWeek();if(c){D.dkw=c.number;route(true)}};
   v.querySelectorAll('[data-dks]').forEach(b=>b.onclick=()=>{D.dks=D.dks===b.dataset.dks?'':b.dataset.dks;D.all=false;route(true)});
   const dkp=v.querySelector('#dk-plan');if(dkp)dkp.onchange=()=>{D.dkp=dkp.value;D.all=false;route(true)};
+  v.querySelectorAll('[data-pbadd]').forEach(b=>b.onclick=()=>editor(null,{plan_id:+b.dataset.pbadd||b.dataset.pbadd}));
   v.querySelectorAll('[data-dkplan]').forEach(b=>b.onclick=()=>{D.dkp=b.dataset.dkplan;D.dk='all';D.dks='';D.all=false;route(true);setTimeout(()=>{const t=document.querySelector('.dk-tabs');t&&t.scrollIntoView({behavior:'smooth',block:'start'})},50)});
   const dka=v.querySelector('[data-dkadd]');if(dka)dka.onclick=()=>{const [x,y]=dka.dataset.dkadd.split('|');editor(null,{planned_date:x,planned_end:y})};
   v.querySelectorAll('[data-pbplan]').forEach(b=>b.onclick=()=>{D.pb=b.dataset.pbplan;D.pbf='';D.pbq='';saveUI();route(true)});
@@ -640,7 +645,7 @@ function planBoardPage(){
     return `<div class="pb-r" style="--sc:${SC[s]}"><div class="pb-rm"><a href="#p-${id}">${esc(p.name)}</a><small>${st?dmy(st)+(en&&en!==st?' – '+dmy(en):''):'بلا موعد'} • <span class="cd-pn sm">${avatar(ownerOf(p),20)}${esc(ownerOf(p))}</span></small>${note?`<em>${esc(note)}</em>`:''}</div><span class="pb-ra">${pill(s)}${acts}</span></div>`};
   const lbl=(PBT.find(x=>x[0]===f)||PBT[0])[1];
   const empty=f==='attn'&&!q?'لا شيء يحتاج متابعتك الآن.':L.length?'لا توجد برامج مطابقة.':'لا توجد برامج في هذه الخطة بعد.';
-  const body=`<section class="panel pb-list"><div class="pb-lh"><h3>${lbl}<b>${list.length}</b></h3><input type="search" class="cd-srch" id="pb-q" placeholder="ابحث باسم البرنامج أو المنفذ" value="${esc(D.pbq||'')}" aria-label="بحث في برامج الخطة"></div>${list.length?list.map(row).join(''):`<p class="muted cp-empty">${empty}</p>`}</section>`;
+  const body=`<section class="panel pb-list"><div class="pb-lh"><h3>${lbl}<b>${list.length}</b></h3><button type="button" class="btn pri cd-sm pb-add" data-pbadd="${esc(String(pl.id))}">${ic('plus')} إضافة برنامج إلى الخطة</button><input type="search" class="cd-srch" id="pb-q" placeholder="ابحث باسم البرنامج أو المنفذ" value="${esc(D.pbq||'')}" aria-label="بحث في برامج الخطة"></div>${list.length?list.map(row).join(''):`<p class="muted cp-empty">${empty}</p>`}</section>`;
   return `<div class="cd cp-board pb">${tabs}${head}${tiles}${body}</div>`}
 
 /* التنبيهات: تُحسب من البيانات الحالية (لا جدول خاص بها)، وتُعلَّم مقروءةً في المتصفح */
