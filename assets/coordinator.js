@@ -592,7 +592,7 @@ const TITLES={notifications:'الإشعارات','coord-plan':'نبض الخطة
 const PINFO={
   notifications:'ما ينتظر إجراءك ونتائج طلباتك ومستجدات الخطط الذكية.',
   'coord-plan':'خطتك وبرامجها: ما يحتاج متابعتك الآن وما تبقى.',
-  me:'برامجك المسندة إليك: ما يحتاج توثيقًا الآن، وما يجري، وما هو قادم.',
+  me:'برامجك المسندة إليك: ما يحتاج توثيقًا، وما يجري، وما هو قادم، مع توثيق التنفيذ وتقاريره في صفحة واحدة.',
   'me-docs':'وثّق تنفيذ برامجك واطّلع على تقارير التنفيذ السابقة.',
   admin:'مكتبك كمدير للبوابة: برامج هذا الأسبوع وتقويمه، وما يحتاج توثيقًا أو اعتمادًا، وكل البرامج مع مراسلة المنسق لتعديلها.',
   'admin-alerts':'البرامج التي تحتاج تدخلك: المتأخرة في التوثيق، والمتعثرة وأسباب تعثرها، والقادمة قريبًا.',
@@ -677,7 +677,7 @@ function barHTML(h){
     <a class="cp-sys" href="#${adm?'admin':ex?'me':'admin'}"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M30 4c2 14 8 20 24 24-16 4-22 10-24 26-2-16-8-22-24-26 16-4 22-10 24-24z" fill="#0f8a94"/><path d="M50 4c.8 5 3 7.2 8 8-5 .8-7.2 3-8 8-.8-5-3-7.2-8-8 5-.8 7.2-3 8-8z" fill="#f0b34a"/></svg><span><b>الخطط الذكية</b><small>متوسطة لبيد بن ربيعة</small></span></a>
     <span class="cp-idl"><a class="cp-site" href="#home">الموقع الإلكتروني</a><i class="cp-vsep" aria-hidden="true"></i><a class="coreid" href="https://i3zalmadeni.github.io/digital-core" title="النواة الرقمية"><img src="assets/core-logo.svg" alt="" width="36" height="36"><span><b>النواة الرقمية</b><small>الهوية الموحدة</small></span></a><span class="moe"><b>وزارة التعليم</b><small>Ministry of Education</small></span></span></div></div>
   <div class="cp-strip" aria-hidden="true"></div>
-  <div class="cp-sub"><div class="wrap cp-subin"><nav class="cp-nav" aria-label="صفحات لوحة التحكم">${adm?it('admin','desk','مكتبي الإلكتروني')+it('admin-plans','plan','إدارة الخطة')+it('admin-portal','bell','إعدادات البوابة'):''}${ex?it('me','user','برامجي')+it('me-docs','rep','توثيق برامجي'):''}${pc?it(PB,'pulse','نبض الخطة'):''}</nav>
+  <div class="cp-sub"><div class="wrap cp-subin"><nav class="cp-nav" aria-label="صفحات لوحة التحكم">${adm?it('admin','desk','مكتبي الإلكتروني'):''}${ex?it('me','user','برامجي'):''}${pc?it(PB,'pulse','نبض الخطة'):''}${adm?it('admin-plans','plan','إدارة الخطة')+it('admin-portal','bell','إعدادات البوابة'):''}</nav>
     <span class="cp-user">${ubBarHTML(nm, adm ? '#admin' : '#me')}</span></div></div>
   <div class="cp-page"><div class="wrap cp-pagein"><div class="cp-pt"><small>${roleName()}</small><h1>${TITLES[h]||''}</h1></div><p class="cp-pd">${PINFO[h]||''}</p>
     <div class="cp-pm"><span class="cp-up">آخر تحديث ${hhmm(LASTUP)}</span><button type="button" class="btn cd-sm" id="cp-refresh">${ic('refresh')} تحديث</button></div></div>
@@ -743,7 +743,7 @@ route=function(keep){
   updBell();
   document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.n==='admin'));
   const sy=scrollY,v=document.getElementById('view');tip&&tip.remove();
-  showBar(h);
+  showBar(h);v.style.minHeight=h==='admin-portal'?'0':'';v.style.paddingBottom=h==='admin-portal'?'0':'';
   if(!READY){v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
   if(!canAdd()){const sg=!!(window.SP&&SP.signedIn);
     v.innerHTML=`<div class="cd-lockpage">${ic('user')}<h2>${sg?'لا تملك صلاحية لوحة التحكم':'لوحة التحكم لمنسوبي النواة المصرّح لهم'}</h2><p class="muted">${sg?'حسابك في النواة الرقمية لا يحمل صلاحية الخطط الذكية. يمنحها مدير النواة من صفحة «الصلاحيات» في النواة الرقمية.':'سجّل الدخول بحساب النواة الرقمية لعرض لوحة التحكم وإدارة الخطة والمنفذين.'}</p><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${sg?'':'<button class="btn pri" type="button" id="cd-login">دخول</button>'}<a class="btn soft" href="#home">الرئيسية</a></span></div>`;const lb=document.getElementById('cd-login');if(lb)lb.onclick=()=>{const x=document.getElementById('lg-in');if(x)x.click();else if(window.SP&&SP.login)SP.login()};return}

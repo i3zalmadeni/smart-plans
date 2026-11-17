@@ -61,16 +61,17 @@ function lock(sg){return `<div class="wrap"><div class="ex-lock">${ic('user')}<h
 const _route=route;
 route=function(keep){
   const h=(location.hash||'#home').slice(1);
+  if(h==='me-docs'){location.replace('#me');return}
   if(!PAGES[h])return _route(keep);
   const v=document.getElementById('view'),sy=scrollY;
   document.querySelectorAll('#nav a').forEach(a=>a.classList.remove('on'));
   if(!READY||!(window.SP&&SP.access!==undefined)){showBar(h);v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
   if(!SP.signedIn||!me()||!(SP.access&&SP.access.executor)){showBar(null);v.innerHTML=lock(SP.signedIn);const lg=v.querySelector('#ex-login');if(lg)lg.onclick=SP.login;return}
   showBar(h);
-  v.innerHTML=h==='me'?pageMe():pageDocs();
+  v.innerHTML=pageMe()+pageDocs().replace('<section class="ex-sec">','<section class="ex-sec" id="ex-docs"><h3>كل برامجي وتوثيقها</h3>');
   v.querySelectorAll('[data-doc]').forEach(b=>b.onclick=()=>{const p=P.find(x=>String(x.id)===b.dataset.doc);if(p)execForm(p)});
   v.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{S.f=b.dataset.f;route(true)});
-  v.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{S.f=b.dataset.go;location.hash='#me-docs'});
+  v.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{S.f=b.dataset.go;route(true);const d=document.getElementById('ex-docs');if(d)d.scrollIntoView({behavior:'smooth',block:'start'})});
   if(keep===true)window.scrollTo(0,sy);else window.scrollTo(0,0);
 };
 route(true);
