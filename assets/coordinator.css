@@ -559,3 +559,6 @@ body.cp-on>header{display:none}
 .dk-pt{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}.dk-pt:empty{display:none}
 .dk-pt em{font-style:normal;font-size:.68rem;padding:1px 6px;border-radius:99px;background:color-mix(in srgb,var(--brand) 12%,transparent)}
 .dk-pt em.bad{background:color-mix(in srgb,#c0392b 14%,transparent)}.dk-pt em.warn{background:color-mix(in srgb,#d98a00 16%,transparent)}
+
+.cd-dash{display:flex;flex-direction:column;gap:18px}
+.dk-desk{gap:18px}
