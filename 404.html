@@ -2482,7 +2482,7 @@ addEventListener('hashchange',()=>route());route();initRuntime();
 /* قائمة الجوال: زر يفتح صفحات الموقع ويُغلق عند الانتقال */
 (function(){const hd=document.getElementById('hdr'),mb=document.getElementById('menuB');if(!hd||!mb)return;const set=o=>{hd.classList.toggle('open',o);mb.setAttribute('aria-expanded',String(o))};mb.onclick=()=>set(!hd.classList.contains('open'));addEventListener('hashchange',()=>set(false));document.getElementById('nav').addEventListener('click',e=>{if(e.target.closest('a'))set(false)});document.addEventListener('keydown',e=>{if(e.key==='Escape')set(false)});document.addEventListener('click',e=>{if(hd.classList.contains('open')&&!hd.contains(e.target))set(false)})})();
 </script>
-<script src="assets/coordinator.js?v=20261117y"></script>
+<script src="assets/coordinator.js?v=20261117z"></script>
 <script src="assets/plans.js?v=20261113b"></script>
 <script src="assets/executor.js?v=20261113b"></script>
 <script>
