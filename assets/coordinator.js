@@ -533,11 +533,19 @@ function planBoardPage(){
   const wkSec=(w,label)=>{const l=wkL(w);return sec('cal',label,l.length,w?`<p class="muted small" style="margin:0 0 6px">الأسبوع ${w.number} • ${dmy(w.start_date)} – ${dmy(w.end_date)}</p>`+lim(l,wkRow,'لا برامج متبقية في هذا الأسبوع.',6):'<p class="muted cp-empty">لا أسابيع قادمة في التقويم.</p>')};
   const upd=pbUpdates(L,pl);
   const updRow=u=>`<div class="cd-al" style="--sc:${SC[u.c]}"><i></i>${u.href?`<a href="${esc(u.href)}">${esc(u.t)}</a>`:`<b>${esc(u.t)}</b>`}<span class="m">${esc(u.s)}${u.at?' • '+esc(fmtWhen(u.at)):''}</span></div>`;
-  // رأس الخطة
+  // رأس الخطة: ترويسة فنية تُولَّد من اسم الخطة مع إحصاءات سريعة
   const nm=(dirOf()[SP.access.staff_id]||{}).name||SP.access.name||'';
-  const head=`<section class="panel pb-head" style="${C(PC(pl.id))}"><div class="pb-ring">${ring(pct,'نسبة الإنجاز',dn+' من '+eff,'var(--f)')}</div>
-    <div class="pb-info"><h2>${esc(pl.name)}</h2>${pl.desc?`<p>${esc(pl.desc)}</p>`:''}<small class="muted">منسق الخطة: ${esc(nm)}${pl.year?' • '+esc(pl.year):''}</small>${pl.pdf&&pl.pdf.url?`<a class="btn soft cd-sm" href="${esc(pl.pdf.url)}" target="_blank" rel="noopener">${ic('rep')} ملف الخطة</a>`:''}${total?stack(cnt,total)+legend(ORDER.filter(s=>cnt[s])):''}</div>
-    <div class="pb-rem"><b>${rem}</b><span>برنامجًا متبقيًا</span><small>${dn} مكتمل${cx?' • '+cx+' ملغي':''} • ${total} في الخطة</small></div></section>`;
+  const hsh=String(pl.name||'x').split('').reduce((h,c)=>(h*31+c.charCodeAt(0))>>>0,7),rnd=(()=>{let z=hsh||1;return()=>{z^=z<<13;z>>>=0;z^=z>>17;z^=z<<5;z>>>=0;return z/4294967296}})();
+  const nodes=Array.from({length:15},()=>[40+rnd()*1120,30+rnd()*300]);let lines='';
+  nodes.forEach((a,i)=>nodes.slice(i+1).forEach(b2=>{const d=Math.hypot(a[0]-b2[0],a[1]-b2[1]);if(d<230)lines+=`<line x1="${a[0].toFixed(0)}" y1="${a[1].toFixed(0)}" x2="${b2[0].toFixed(0)}" y2="${b2[1].toFixed(0)}" stroke="#fff" stroke-opacity="${(.3-d/950).toFixed(2)}"/>`}));
+  const dots=nodes.map((a,i)=>`<circle cx="${a[0].toFixed(0)}" cy="${a[1].toFixed(0)}" r="${(3+rnd()*5).toFixed(1)}" fill="${i%5===0?'#f0b34a':'#fff'}" fill-opacity=".6"/>`).join('');
+  const bars=Array.from({length:9},(_,k)=>`<rect x="${620+k*62}" y="${360-(50+k*24)}" width="38" height="${50+k*24}" rx="9" fill="#fff" fill-opacity="${(.05+k*.012).toFixed(2)}"/>`).join('');
+  const art=`<svg class="pb-art" viewBox="0 0 1200 360" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><rect width="1200" height="360" fill="color-mix(in srgb,var(--f) 82%,#06202c)"/><circle cx="1050" cy="40" r="280" fill="#f0b34a" fill-opacity=".14"/>${bars}${lines}${dots}</svg>`;
+  const st=(i,v,l,tone)=>`<div class="pb-st${tone?' '+tone:''}"><span class="e">${ic(i)}</span><b>${v}</b><small>${l}</small></div>`;
+  const head=`<section class="pb-hero" style="${C(PC(pl.id))}">${art}<div class="pb-shade"></div>
+    <div class="pb-top"><span class="pb-kind">${ic('layers')} خطتي${pl.year?' • '+esc(pl.year):''}</span>${pl.pdf&&pl.pdf.url?`<a class="pb-lb" href="${esc(pl.pdf.url)}" target="_blank" rel="noopener">${ic('rep')} ملف الخطة</a>`:''}</div>
+    <div class="pb-id"><div class="pb-ringw">${ring(pct,'نسبة الإنجاز',dn+' من '+eff,'var(--f)')}</div><div class="pb-tt"><h2>${esc(pl.name)}</h2>${pl.desc?`<p>${esc(pl.desc)}</p>`:''}<div class="pb-facts"><span>${ic('target')} منسق الخطة: <b>${esc(nm)}</b></span><span>${rem} برنامجًا متبقيًا</span></div></div></div>
+    <div class="pb-stats">${st('layers',total,'برنامج في الخطة')}${st('check',dn,'مكتمل')}${st('clock',cnt['قيد التنفيذ']||0,'جارٍ الآن')}${st('bell',need.length,'متأخر التوثيق',need.length?'warn':'')}${st('x',stl.length,'متعثر',stl.length?'warn':'')}${st('rep',appr.length,'بانتظار الاعتماد',appr.length?'ok':'')}</div></section>`;
   // تبويبات الخطط: تظهر عند وجود أكثر من خطة، وكل تبويب مستقل
   const tabs=plans.length>1?`<div class="cd-ptabs" role="tablist" aria-label="خططي">${plans.map(x=>{const l=P.filter(p=>String(p.plan_id)===String(x.id)),c=countBy(l),d=c['مكتمل']||0,lt=(c['متأخر']||0)+(c['متعثر']||0),on=String(x.id)===String(pl.id);
     return `<button type="button" role="tab" aria-selected="${on}" class="cd-ptab${on?' on':''}" data-pbplan="${esc(String(x.id))}"><b>${esc(x.name)}</b>${stack(c,l.length)}<small>${l.length} برامج • ${Math.round(d/Math.max(1,l.length)*100)}% مكتمل${lt?' • <span style="color:var(--bad)">'+lt+' متأخر/متعثر</span>':''}</small></button>`}).join('')}</div>`:'';
@@ -547,14 +555,14 @@ function planBoardPage(){
   const chips=`<div class="cd-tabs" role="group" aria-label="تصفية برامج الخطة">${PBF.map(([k,t])=>{const n=L.filter(p=>pbMatch(p,k)).length;return `<button type="button" class="${f===k?'on':''}" aria-pressed="${f===k}" style="--sc:${SC[k]||'var(--brand)'}" data-pbf="${esc(k)}">${t} <b class="${n?'':'z'}">${n}</b></button>`}).join('')}</div>`;
   const all=`<section class="panel" id="pb-all"><div class="cd-ph"><h2>${ic('layers')} برامج الخطة<b class="cp-n">${total}</b></h2><input type="search" class="cd-srch" id="pb-q" placeholder="ابحث باسم البرنامج أو المنفذ" value="${esc(D.pbq||'')}" aria-label="بحث في برامج الخطة"></div>${chips}
     ${list.length?(ED?rowsHTML(list,false,true):pbTable(list)):`<div class="cd-empty">${total?'لا توجد برامج مطابقة للتصفية.':'لا توجد برامج في هذه الخطة بعد.'}</div>`}</section>`;
-  return `<div class="cd cp-board pb">${tabs}${head}<div class="cp-grid">
-   ${sec('check','بانتظار الاعتماد',appr.length,lim(appr,apprRow,'لا توجد برامج موثقة بانتظار الاعتماد.'))}
-   ${sec('bell','متأخرة التوثيق',need.length,lim(need,lateRow,'لا توجد برامج متأخرة. كل ما انتهت فترته موثق أو مسجّلة حالته.'))}
-   ${sec('x','متعثرة',stl.length,lim(stl,stallRow,'لا توجد برامج مسجّلة متعثرة.'))}
-   ${sec('rep','آخر ما تحدّث في الخطة',upd.length,upd.length?upd.map(updRow).join(''):'<p class="muted cp-empty">لم يُسجَّل تحديث على برامج هذه الخطة بعد.</p>')}
+  return `<div class="cd cp-board pb">${tabs}${head}<div class="pb-grid"><div class="pb-work">${all}${sec('rep','آخر ما تحدّث في الخطة',upd.length,upd.length?upd.map(updRow).join(''):'<p class="muted cp-empty">لم يُسجَّل تحديث على برامج هذه الخطة بعد.</p>')}</div>
+   <aside class="pb-side" aria-label="ما يحتاج متابعتك">
+   ${sec('check','بانتظار الاعتماد',appr.length,lim(appr,apprRow,'لا توجد برامج موثقة بانتظار الاعتماد.',4))}
+   ${sec('bell','متأخرة التوثيق',need.length,lim(need,lateRow,'لا توجد برامج متأخرة. كل ما انتهت فترته موثق أو مسجّلة حالته.',4))}
+   ${sec('x','متعثرة',stl.length,lim(stl,stallRow,'لا توجد برامج مسجّلة متعثرة.',4))}
    ${wkSec(w1,cw?'هذا الأسبوع':'الأسبوع القادم')}
    ${wkSec(w2,'الأسبوع الذي يليه')}
-  </div>${all}</div>`}
+   </aside></div></div>`}
 
 /* التنبيهات: تُحسب من البيانات الحالية (لا جدول خاص بها)، وتُعلَّم مقروءةً في المتصفح */
 const NSK='sp-notif-seen';
