@@ -117,25 +117,37 @@
 .cp-pm .btn{display:inline-flex;align-items:center;gap:6px;border-radius:12px;color:var(--brand2);font-weight:700}
 
 @media (max-width:1000px){.cp-idl .coreid small,.cp-idl .moe small{display:none}}
+.dmb{display:none}
+@media (prefers-reduced-motion:reduce){.cp-sub.open .cp-nav{animation:none}}
 @media (max-width:760px){
   .cp-topin{gap:8px 12px}
   .cp-idl{gap:10px}
   .cp-idl .coreid span,.cp-idl .moe,.cp-vsep{display:none}
   .cp-site{display:inline-flex;align-items:center;min-height:44px}
-  /* الشريط الداكن صفان: الجرس والاسم والخروج أعلى، والتبويبات أسفل؛ عند التمرير يبقى صف التبويبات وحده ثابتًا */
+  /* قائمة الجوال بنمط النواة الرقمية: صف واحد (زر «القائمة» + الجرس والخروج) ثم لائحة عمودية كاملة عند الفتح */
   .cp-sub{top:calc(env(safe-area-inset-top,0px) - 56px)}
-  .cp-subin{flex-wrap:wrap;gap:0}
-  .cp-user{order:-1;flex:1 1 100%;height:44px;margin-block:6px;padding-inline-start:0;border-inline-start:0}
+  .cp-subin{flex-wrap:wrap;gap:8px;padding-block:8px}
+  .dmb{display:inline-flex;align-items:center;gap:8px;flex:1 1 0;min-width:0;min-height:44px;padding:0 14px;border-radius:14px;font:inherit;font-weight:700;font-size:.95rem;color:#fff;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);cursor:pointer;text-align:start}
+  .dmb:hover,.cp-sub.open .dmb{background:rgba(255,255,255,.2)}
+  .dmb:focus-visible{outline:2px solid #f0b34a;outline-offset:2px}
+  .dmb .ico{width:20px;height:20px;margin:0;flex:none}
+  .dmb-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dmb-ch{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s}
+  .cp-sub.open .dmb-ch{transform:rotate(180deg)}
+  .cp-user{order:2;flex:none;height:44px;margin-block:0;padding-inline-start:0;border-inline-start:0}
+  .cp-user .ub a.ub-u{display:none}
   .cp-who{flex:1;max-width:none}
   .cp-bell{width:44px;height:44px}
   .cp-out{min-height:44px;padding-inline:18px}
-  .cp-nav{flex:1 1 100%;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(80px,1fr);border-top:1px solid rgba(255,255,255,.08)}
-  .cp-nav.more{-webkit-mask-image:linear-gradient(to right,transparent 0,#000 28px);mask-image:linear-gradient(to right,transparent 0,#000 28px)}
-  .cp-nav.pre{-webkit-mask-image:linear-gradient(to left,transparent 0,#000 28px);mask-image:linear-gradient(to left,transparent 0,#000 28px)}
-  .cp-nav.pre.more{-webkit-mask-image:linear-gradient(to right,transparent 0,#000 28px,#000 calc(100% - 28px),transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 28px,#000 calc(100% - 28px),transparent 100%)}
-  .cp-nav a{flex-direction:column;justify-content:center;gap:3px;min-height:56px;padding:7px 4px 5px;font-size:.74rem;line-height:1.25;text-align:center;white-space:normal}
-  .cp-nav a .ico{width:20px;height:20px}
-  .cp-nav b{position:absolute;top:3px;inset-inline-end:10px}
+  .cp-nav,.cp-nav.more,.cp-nav.pre,.cp-nav.pre.more{-webkit-mask-image:none;mask-image:none}
+  .cp-nav{order:3;flex:1 0 100%;display:none;flex-direction:column;gap:2px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;max-height:calc(100dvh - 190px);padding:6px;margin-bottom:6px;border-radius:16px;background:rgba(6,30,40,.35);border:1px solid rgba(255,255,255,.14);-webkit-overflow-scrolling:touch}
+  .cp-sub.open .cp-nav{display:flex;animation:dmIn .18s ease-out}
+  @keyframes dmIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  .cp-nav a{flex:none;flex-direction:row;justify-content:flex-start;align-items:center;gap:10px;min-height:48px;padding:10px 14px;font-size:1rem;line-height:1.5;text-align:start;white-space:normal;border-bottom:0;border-radius:12px}
+  .cp-nav a .ico{width:20px;height:20px;flex:none}
+  .cp-nav a.on{background:rgba(255,255,255,.16);box-shadow:inset -4px 0 0 #f0b34a;border-bottom:0}
+  .cp-nav b{position:static;margin-inline-start:auto}
+  .cp-nav .pk-more{display:none!important}
   .cp-nwrap{position:static}
   .cp-npop{top:100%;inset-inline:12px;width:auto;margin-top:8px}
   .cp-npop .nmark{min-height:36px;padding-inline:8px}

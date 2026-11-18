@@ -682,7 +682,7 @@ function barHTML(h){
     <a class="cp-sys" href="#${adm?'admin':ex?'me':'admin'}"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M30 4c2 14 8 20 24 24-16 4-22 10-24 26-2-16-8-22-24-26 16-4 22-10 24-24z" fill="#0f8a94"/><path d="M50 4c.8 5 3 7.2 8 8-5 .8-7.2 3-8 8-.8-5-3-7.2-8-8 5-.8 7.2-3 8-8z" fill="#f0b34a"/></svg><span><b>الخطط الذكية</b><small>متوسطة لبيد بن ربيعة</small></span></a>
     <span class="cp-idl"><a class="cp-site" href="#home">الموقع الإلكتروني</a><i class="cp-vsep" aria-hidden="true"></i><a class="coreid" href="https://i3zalmadeni.github.io/digital-core" title="النواة الرقمية"><img src="assets/core-logo.svg" alt="" width="36" height="36"><span><b>النواة الرقمية</b><small>الهوية الموحدة</small></span></a><span class="moe"><b>وزارة التعليم</b><small>Ministry of Education</small></span></span></div></div>
   <div class="cp-strip" aria-hidden="true"></div>
-  <div class="cp-sub"><div class="wrap cp-subin"><nav class="cp-nav" aria-label="صفحات لوحة التحكم">${adm?it('admin','desk','مكتبي الإلكتروني'):''}${ex?it('me','user','برامجي'):''}${pc?it(PB,'pulse','نبض الخطة'):''}${adm?it('admin-plans','plan','إدارة الخطة')+it('admin-portal','bell','إعدادات البوابة'):''}</nav>
+  <div class="cp-sub"><div class="wrap cp-subin"><button type="button" class="dmb" id="dmb" aria-expanded="false" aria-controls="cpNav"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span class="dmb-t">القائمة</span><svg class="dmb-ch" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><nav class="cp-nav" id="cpNav" aria-label="صفحات لوحة التحكم">${adm?it('admin','desk','مكتبي الإلكتروني'):''}${ex?it('me','user','برامجي'):''}${pc?it(PB,'pulse','نبض الخطة'):''}${adm?it('admin-plans','plan','إدارة الخطة')+it('admin-portal','bell','إعدادات البوابة'):''}</nav>
     <span class="cp-user">${ubBarHTML(nm, adm ? '#admin' : '#me')}</span></div></div>
   <div class="cp-page"><div class="wrap cp-pagein"><div class="cp-pt"><small>${roleName()}</small><h1>${TITLES[h]||''}</h1></div><p class="cp-pd">${PINFO[h]||''}</p>
     <div class="cp-pm"><span class="cp-up">آخر تحديث ${hhmm(LASTUP)}</span><button type="button" class="btn cd-sm" id="cp-refresh">${ic('refresh')} تحديث</button></div></div>
@@ -703,6 +703,15 @@ function showBar(h){if(h!==BARH){NOPEN=false;BARH=h}let bar=document.getElementB
   if(nv){if(on2&&innerWidth<=760)nv.scrollLeft+=on2.getBoundingClientRect().left+on2.offsetWidth/2-(nv.getBoundingClientRect().left+nv.clientWidth/2);
     const mk=()=>{const x=Math.abs(nv.scrollLeft);nv.classList.toggle('pre',x>8);nv.classList.toggle('more',nv.scrollWidth-nv.clientWidth-x>8)};mk();nv.onscroll=mk}}
 function bindBar(r,h){
+  // قائمة الجوال بنمط النواة الرقمية: زر «القائمة» يفتح لائحة عمودية بكل التبويبات
+  {const d=r.querySelector('.cp-sub'),b=r.querySelector('#dmb'),nv=r.querySelector('.cp-nav');
+    if(d&&b&&nv){const set=o=>{d.classList.toggle('open',o);b.setAttribute('aria-expanded',o)};
+      b.onclick=e=>{e.stopPropagation();set(!d.classList.contains('open'))};
+      nv.addEventListener('click',e=>{if(e.target.closest('a'))set(false)});
+      if(!window.__cpDmb){window.__cpDmb=1;
+        document.addEventListener('click',e=>{const s=document.querySelector('.cp-sub.open');if(s&&!s.contains(e.target)){s.classList.remove('open');const q=s.querySelector('#dmb');if(q)q.setAttribute('aria-expanded','false')}});
+        document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;const s=document.querySelector('.cp-sub.open');if(s){s.classList.remove('open');const q=s.querySelector('#dmb');if(q){q.setAttribute('aria-expanded','false');q.focus()}}});
+        matchMedia('(min-width:761px)').addEventListener('change',m=>{if(m.matches){const s=document.querySelector('.cp-sub.open');if(s){s.classList.remove('open');const q=s.querySelector('#dmb');if(q)q.setAttribute('aria-expanded','false')}}})}}}
   r.querySelectorAll('[data-cx-add]').forEach(b=>b.onclick=()=>{if(b.dataset.cxAdd==='newplan'){planDialog(null);return}if(b.dataset.cxAdd==='unplanned'){if(typeof unplannedForm==='function')unplannedForm();else toast('غير متاح')}else editor(null,{plan_id:+(D.mplan||D.plan)||(PL[0]||{}).id})});
   const out=r.querySelector('#out');if(out)out.onclick=()=>{if(window.SP&&SP.signOut)SP.signOut();else location.reload()};
   const rf=r.querySelector('#cp-refresh');if(rf)rf.onclick=()=>{rf.disabled=true;try{if(DB&&DB.refresh)DB.refresh()}catch(e){}LASTUP=new Date();setTimeout(()=>{route(true);toast('حُدّثت البيانات')},350)};
