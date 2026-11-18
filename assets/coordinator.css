@@ -17,7 +17,7 @@
 .cd-ring{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px 14px;min-width:132px}
 .cd-ring svg{width:92px;height:92px}
 .cd-ring b{font-size:.9rem}.cd-ring small{color:var(--muted);font-size:.76rem;text-align:center}
-@media (max-width:860px){.cd-hero{grid-template-columns:1fr}.cd-rings{justify-content:flex-start}}
+@media (max-width:860px){.cd-hero{grid-template-columns:minmax(0,1fr)}.cd-rings{justify-content:flex-start}}
 @media (max-width:520px){.cd-ring{min-width:0;flex:1 1 30%;padding:10px 6px}.cd-ring svg{width:74px;height:74px}}
 /* بطاقات الأرقام: تعمل كمرشحات */
 .cd-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
@@ -34,7 +34,7 @@
 /* الشبكات */
 .cd-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px}
 .cd-grid.eq{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-@media (max-width:900px){.cd-grid,.cd-grid.eq{grid-template-columns:1fr}}
+@media (max-width:900px){.cd-grid,.cd-grid.eq{grid-template-columns:minmax(0,1fr)}}
 .cd-ph{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
 .cd-ph .muted{font-size:.85rem}
 .cd-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.82rem;color:var(--ink2)}
@@ -467,7 +467,7 @@ body.cp-on>header{display:none}
 .cp-n.z{background:var(--line);color:var(--muted)}
 .cp-empty{margin:6px 0;padding:10px 12px;border-radius:12px;background:var(--soft)}
 .cp-more{margin:8px 2px 0}
-@media (max-width:900px){.cp-grid{grid-template-columns:1fr}}
+@media (max-width:900px){.cp-grid{grid-template-columns:minmax(0,1fr)}}
 .cd-olsel{max-width:280px}
 
 /* ===== لوحة منسق الخطة (#coord-plan): بانر + بطاقات + قائمة واحدة، بهوية «يحدث في لبيد» ومكتبي الإلكتروني ===== */
@@ -562,3 +562,13 @@ body.cp-on>header{display:none}
 
 .cd-dash{display:flex;flex-direction:column;gap:18px}
 .dk-desk{gap:18px}
+
+/* mobile hardening */
+.cd,.cd-page,.cd-page>*,.cd>*{min-width:0}
+html,body{overflow-x:clip}
+@media (max-width:640px){
+  .cd-t input,.cd-t select,.frm input,.frm select,.frm textarea{font-size:16px;min-height:44px;padding:8px 10px}
+  .cd-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cd-rings{flex-wrap:nowrap;overflow-x:auto}
+  .cd-hic{font-size:.72rem;min-height:40px}
+}
