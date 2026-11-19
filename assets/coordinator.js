@@ -146,7 +146,7 @@ function reviewReport(eid){
   const e=EX.find(x=>String(x.id)===String(eid)),p=e&&P.find(x=>x.id===e.programId);if(!e||!p)return;
   let imgs=(e.images||[]).map(a=>({...a})),removed=[];
   const ok=!!e.approved_at,CA=canApprove();
-  const {m,close}=openModal(`<div class="cd-mh"><h3>مراجعة تقرير: ${esc(p.name)}</h3><button class="btn cd-sm" data-x aria-label="إغلاق">✕</button></div>
+  const {m,close}=openModal(`<div class="cd-mh"><h3>مراجعة تقرير: ${esc(p.name)}</h3><button class="btn cd-sm" data-x aria-label="إغلاق"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;display:block"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
    <p class="cx-intro" style="margin:0 0 10px">${ok?'هذا التقرير معتمد ومنشور. أي تعديل يُحفظ مباشرة، ويمكنك سحب الاعتماد لإخفائه.':'هذا التقرير غير منشور. عدّل ما يلزم ثم اعتمده لينشر في الموقع و«يحدث في لبيد».'}</p>
    <div class="cd-fg">
     <div class="f"><label for="rv-date">تاريخ التنفيذ</label><input id="rv-date" type="date" value="${esc(e.date||'')}"></div>
@@ -382,7 +382,7 @@ function buildDash(view){
 /* ---------- النوافذ ---------- */
 function openModal(html){const m=document.createElement('div');m.className='modal';m.innerHTML=`<div class="big" role="dialog" aria-modal="true">${html}</div>`;document.body.append(m);const close=()=>{m.remove();route(true)};m.addEventListener('click',e=>{if(e.target===m)close()});m.addEventListener('keydown',e=>{if(e.key==='Escape')close()});m.querySelectorAll('[data-x]').forEach(b=>b.onclick=close);setTimeout(()=>{const f=m.querySelector('textarea,input,select');f&&f.focus()},30);return {m,close}}
 function stallDialog(id){const p=P.find(x=>String(x.id)===String(id));if(!p)return;
-  const {m,close}=openModal(`<div class="cd-mh"><h3>تسجيل تعثر البرنامج</h3><button class="btn cd-sm" data-x aria-label="إغلاق">✕</button></div><p class="muted small" style="margin:0">${esc(p.name)} • ${esc(p.owner_name||'')}${endOf(p)?' • انتهت فترته '+dmy(endOf(p)):''}</p>
+  const {m,close}=openModal(`<div class="cd-mh"><h3>تسجيل تعثر البرنامج</h3><button class="btn cd-sm" data-x aria-label="إغلاق"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;display:block"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><p class="muted small" style="margin:0">${esc(p.name)} • ${esc(p.owner_name||'')}${endOf(p)?' • انتهت فترته '+dmy(endOf(p)):''}</p>
   <div class="cd-rs">${REASONS.map(r=>`<button type="button" data-r="${esc(r)}">${esc(r)}</button>`).join('')}</div>
   <div class="cd-form"><div class="f full req"><label for="cd-sn">وصف سبب التعثر أو ملاحظة</label><textarea id="cd-sn" placeholder="مثال: تعارض موعد البرنامج مع الاختبارات، ويُقترح نقله إلى الأسبوع القادم">${esc(p.stall_note||'')}</textarea></div></div><div class="cd-err" id="cd-se"></div>
   <div class="cd-ma"><span></span><span><button class="btn" data-x>إلغاء</button><button class="btn pri" id="cd-sok">حفظ الحالة «متعثر»</button></span></div>`);
@@ -395,7 +395,7 @@ function editor0(id,preset){const isNew=id==null;const p0=isNew?null:P.find(x=>S
   const topics=[...new Set(P.map(x=>x.domain).filter(Boolean).concat(LOOK().domain||[]))];const ex=isNew?[]:exFor(p0.id);
   const locSel=p.facility_id&&FAC.some(x=>x.id===p.facility_id)?p.facility_id:(FAC.find(x=>x.name===(p.location||'').trim())||{}).id||((p.location||'').trim()?'__other':'');
   const plans=canAdd()?PL.slice():myPlans();
-  const {m,close}=openModal(`<div class="cd-mh"><h3>${isNew?'إضافة برنامج إلى الخطة':'تعديل البرنامج'}</h3><button class="btn cd-sm" data-x aria-label="إغلاق">✕</button></div>
+  const {m,close}=openModal(`<div class="cd-mh"><h3>${isNew?'إضافة برنامج إلى الخطة':'تعديل البرنامج'}</h3><button class="btn cd-sm" data-x aria-label="إغلاق"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;display:block"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   ${isNew?'':`<div class="cd-info" style="margin-bottom:12px"><span>${esc(p.code)} • ${pill(ds(p0))}</span><span>${ex.length?`موثق ${ex.length} مرة • آخر تنفيذ ${dmy(ex[ex.length-1].date||'')}`:'لم يُوثَّق تنفيذ بعد'}${p0.approved_at?' • معتمد '+dmy(p0.approved_at):''}</span><span style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn soft cd-sm" id="cf-doc">${ic('rep')} توثيق ورفع الشواهد</button><a class="btn cd-sm" href="#p-${esc(String(p.id))}" data-x>فتح صفحة البرنامج</a></span></div>`}
   <div class="cd-form">
    <div class="f full req"><label for="cf-name">اسم البرنامج</label><input id="cf-name" value="${esc(p.name)}"></div>
@@ -456,7 +456,7 @@ const PCOLORS=[[0,'فيروزي'],[3,'أصفر'],[2,'بنفسجي'],[1,'أزرق
 function planDialog(id){const isNew=id==null,pl=isNew?{name:'',desc:'',owner:'',year:'1448هـ',color:''}:{...(PL.find(x=>String(x.id)===String(id))||{})};
   const used=new Set(PL.map(x=>PC(x.id)));const defc=isNew?(PCOLORS.find(c=>!used.has(c[0]))||PCOLORS[0])[0]:PC(pl.id);
   const n=isNew?0:P.filter(p=>String(p.plan_id)===String(pl.id)).length;
-  const {m,close}=openModal(`<div class="cd-mh"><h3>${isNew?'إضافة خطة جديدة':'تعديل الخطة'}</h3><button class="btn cd-sm" data-x aria-label="إغلاق">✕</button></div>
+  const {m,close}=openModal(`<div class="cd-mh"><h3>${isNew?'إضافة خطة جديدة':'تعديل الخطة'}</h3><button class="btn cd-sm" data-x aria-label="إغلاق"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;display:block"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   <div class="cd-form">
    <div class="f full req"><label for="pl-name">اسم الخطة</label><input id="pl-name" value="${esc(pl.name||'')}" placeholder="مثال: خطة النشاط الطلابي 1448هـ"></div>
    <div class="f"><label for="pl-own">منسق الخطة (المسؤول عنها)</label>${ownerSelect((pl.owner||'').trim(),'id="pl-own"')}</div>
