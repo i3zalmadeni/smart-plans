@@ -690,6 +690,7 @@ td.small .cd-who{font-weight:600;color:var(--ink)}
 .rpv-hint{margin:0 0 12px;color:var(--muted);font-size:.85rem}
 .rpv-wrap{overflow:hidden;background:#d9e2e7;border-radius:18px;padding:18px 0;display:flex;justify-content:center}
 .rpv{width:210mm;flex:none;align-self:flex-start;transform-origin:top center;display:flex;flex-direction:column;gap:18px}
+#rpv-f{display:block;width:210mm;border:0;background:transparent}#rpv-f[hidden]{display:none}.rpv-load{padding:60px 20px;text-align:center;color:#3d566b;font-weight:700}
 .rs-pg{flex:none}
 .rpv-cap{gap:0}
 .rs-pg{position:relative;width:210mm;height:296.5mm;box-sizing:border-box;padding:18mm 16mm 16mm;background:#fff;color:#14263a;font-family:"Tajawal","Segoe UI",Tahoma,sans-serif;direction:rtl;display:flex;flex-direction:column;gap:3.2mm;overflow:hidden;box-shadow:0 10px 30px rgba(10,40,60,.18);font-size:10.5pt;line-height:1.65;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -1951,19 +1952,21 @@ function reportPage(id){
   const e=EX.find(x=>String(x.id)===String(id)),p=e&&P.find(x=>x.id===e.programId);
   if(!e||!p)return '<div class="empty">التقرير غير موجود. <a href="#reports">البرامج المنفذة</a></div>';
   return `<div class="rpv-bar"><a class="btn soft" href="#news-${esc(e.id)}">${ic('arrow')} صفحة الخبر</a><span class="rpv-t">${ic('rep')} تقرير تنفيذ: ${esc(p.name)}</span><span class="rpv-a"><button class="btn pri" type="button" id="rpv-print">${ic('rep')} طباعة / حفظ PDF</button><button class="btn" type="button" id="rpv-dl">${ic('download')} تنزيل PDF</button></span></div>
-  <p class="rpv-hint">للطباعة أو حفظ PDF بأعلى جودة: اختر «طباعة / حفظ PDF» ثم «حفظ بتنسيق PDF»، بحجم A4 ودون هوامش إضافية.</p>
-  <div class="rpv-wrap"><div class="rpv" id="rpv" style="${C(PC(p.plan_id))}">${reportSheets(p,e)}</div></div>`}
+  <p class="rpv-hint">معاينة التقرير بالهوية الموحدة للنواة الرقمية. عند «طباعة / حفظ PDF» يُسجَّل التقرير برقم تحقق ورمز QR في تذييل كل صفحة، ثم اختر «حفظ بتنسيق PDF».</p>
+  <div class="rpv-wrap"><div class="rpv" id="rpv"><div class="rpv-load" id="rpv-load">جارٍ إعداد المعاينة…</div><iframe id="rpv-f" title="معاينة التقرير" hidden></iframe></div></div>`}
 function fitReport(){const w=document.querySelector('.rpv-wrap'),r=document.getElementById('rpv');if(!w||!r)return;r.style.transform='';const s=Math.min(1,(w.clientWidth-4)/r.offsetWidth);r.style.transform=s<1?`scale(${s})`:'';w.style.height=s<1?(r.offsetHeight*s+8)+'px':''}
 function bindReport(id){
   const e=EX.find(x=>String(x.id)===String(id)),p=e&&P.find(x=>x.id===e.programId);
   fitReport();setTimeout(fitReport,300);
+  const fr=document.getElementById('rpv-f'),ld=document.getElementById('rpv-load');
+  const show=()=>{if(!window.ReportKit){setTimeout(show,300);return}ReportKit.preview(kitOpts(p,e)).then(html=>{if(!fr.isConnected)return;fr.onload=()=>{try{fr.style.height=fr.contentDocument.documentElement.scrollHeight+'px'}catch(_){fr.style.height='1200px'}fr.hidden=false;if(ld)ld.remove();fitReport();setTimeout(fitReport,400)};fr.srcdoc=html}).catch(()=>{if(ld)ld.textContent='تعذّرت المعاينة. يمكنك الطباعة مباشرة.'})};
+  if(fr&&p)show();
   const pr=document.getElementById('rpv-print');if(pr&&p)pr.onclick=()=>kitReport(p,e);
   const dl=document.getElementById('rpv-dl');if(dl&&p)dl.onclick=()=>kitReport(p,e);
   const na=document.querySelector('#nav a[data-n="reports"]');if(na)na.classList.add('on')}
 addEventListener('resize',()=>{if(document.getElementById('rpv'))fitReport()});
 /* تقرير التنفيذ بالهوية الموحدة للنواة الرقمية (ترويسة وتذييل ورمز تحقق في كل صفحة) */
-function kitReport(p,e){
-  if(!window.ReportKit){toast('أداة الطباعة لم تُحمّل بعد، أعد المحاولة');return}
+function kitOpts(p,e){
   const im=e.images||[],ev=(p.required_evidence||'').split(/[؛;]/).map(s=>s.trim()).filter(Boolean),att=e.attachments||[];
   const kv=rows=>{const r=rows.filter(x=>x[1]||x[1]===0);return r.length?`<div class="kv">${r.map(([k,v])=>`<div>${esc(k)}</div><div>${esc(v)}</div>`).join('')}</div>`:''};
   const box=(t,v)=>v?`<h2>${t}</h2><div class="box">${esc(v)}</div>`:'';
@@ -1973,8 +1976,9 @@ function kitReport(p,e){
    ${im.length?`<h2>الشواهد المصورة (${fmt(im.length)})</h2><div class="gal">${im.map(a=>`<figure><img src="${esc(imgUrl(a))}" alt=""><figcaption>${esc(a.caption||'من تنفيذ البرنامج')}</figcaption></figure>`).join('')}</div>`:''}
    ${ev.length?`<h2>الشواهد المطلوبة في الخطة</h2><ul>${ev.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${att.length?`<h2>المرفقات (${fmt(att.length)})</h2><ul>${att.map(a=>`<li>${esc(a.name||'مرفق')}</li>`).join('')}</ul>`:''}
    <h2>الاعتماد</h2>${kv([['منفذ البرنامج',e.executor||p.owner_name||''],['منسق التقويم الذاتي','عبدالعزيز بن يوسف المديني'],['مدير المدرسة','خالد بن عبدالرحمن الباش']])}`;
-  ReportKit.print({system:'smart_plans',systemName:'الخطط الذكية',systemLogo:new URL('assets/favicon.svg',location.href).href,title:'تقرير تنفيذ برنامج',sub:p.name,body,fname:`Report_${p.code}_${e.date}`,publicFull:true});
+  return {system:'smart_plans',systemName:'الخطط الذكية',systemLogo:new URL('assets/favicon.svg',location.href).href,title:'تقرير تنفيذ برنامج',sub:p.name,body,fname:`Report_${p.code}_${e.date}`,publicFull:true};
 }
+function kitReport(p,e){if(!window.ReportKit){toast('أداة الطباعة لم تُحمّل بعد، أعد المحاولة');return}ReportKit.print(kitOpts(p,e))}
 async function downloadReport(p,e,btn){
   const old=btn.innerHTML;btn.disabled=true;btn.textContent='جارٍ إعداد الملف…';
   const box=document.getElementById('sheet');
