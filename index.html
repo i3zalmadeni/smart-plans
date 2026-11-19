@@ -1546,11 +1546,11 @@ body.print-about .ab-go{display:none!important}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="assets/config.js?v=20261113b"></script>
-<script src="assets/store.js?v=20261117a"></script>
-<link rel="stylesheet" href="assets/coordinator.css?v=20261118n">
+<script src="assets/store.js?v=20261119a"></script>
+<link rel="stylesheet" href="assets/coordinator.css?v=20261119a">
 <link rel="stylesheet" href="assets/plans.css?v=20261113b">
 <link rel="stylesheet" href="assets/reports.css?v=20261113b">
-<link rel="stylesheet" href="assets/executor.css?v=20261118j">
+<link rel="stylesheet" href="assets/executor.css?v=20261119a">
 <style>
 /* ===== توحيد مقاس رأس الصفحات (الرئيسية وتعرف علينا وبقية الصفحات) ===== */
 @media (min-width:981px){
@@ -1852,7 +1852,10 @@ function bindStats(){
 }
 
 // ===== التنفيذات والشواهد (قاعدة بيانات الصفحة) =====
-let DB=null, ASSETS=null, DL=null, USER=null, EX=[], READY=false;
+let DB=null, ASSETS=null, DL=null, USER=null, EX=[], EXRAW=[], READY=false;
+/* النشر بعد الاعتماد فقط: غير المعتمد يراه أصحاب صلاحية الإضافة/التعديل والمنفذ صاحب التقرير، ولا يراه الزوار */
+const execVisible=e=>!e||!!e.approved_at||e.kind==='coordinator'||!!(window.SP&&((SP.can&&(SP.can('add')||SP.can('edit')))||(e.executor_staff_id&&SP.access&&SP.access.staff_id===e.executor_staff_id)));
+const syncEX=()=>{EX=EXRAW.filter(execVisible)};
 const exFor=id=>EX.filter(e=>e.programId===id).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
 const done=p=>exFor(p.id).length>0;
 const stat=p=>window.CD_DS?window.CD_DS(p):(done(p)?'مكتمل':p.status);
@@ -1865,7 +1868,7 @@ async function initRuntime(){
   setTimeout(()=>{if(!READY){READY=true;route(true)}},8000); // لا يبقى «جارٍ التحميل» إن تأخّر الاتصال
   if(!window.claude||!claude.use){READY=true;route(true);return}
   [DB,ASSETS,DL,USER]=await Promise.all(['db','assets','downloads','user'].map(n=>claude.use(n).catch(()=>null)));
-  if(DB){DB.collection('unplanned').onSnapshot(s=>{mergeUnplanned(s.docs.map(d=>({id:d.id,...d.data()})));if(!document.querySelector('.modal'))route(true)},()=>{});DB.collection('executions').onSnapshot(s=>{EX=s.docs.map(d=>({id:d.id,...d.data()})).map(e=>{const m=e.executor_staff_id&&window.SP&&SP.dir&&SP.dir[e.executor_staff_id];return m?{...e,executor:m.name}:e});READY=true;if(!document.querySelector('.modal'))route(true)},()=>{READY=true;route(true)})}
+  if(DB){DB.collection('unplanned').onSnapshot(s=>{mergeUnplanned(s.docs.map(d=>({id:d.id,...d.data()})));if(!document.querySelector('.modal'))route(true)},()=>{});DB.collection('executions').onSnapshot(s=>{EXRAW=s.docs.map(d=>({id:d.id,...d.data()})).map(e=>{const m=e.executor_staff_id&&window.SP&&SP.dir&&SP.dir[e.executor_staff_id];return m?{...e,executor:m.name}:e});syncEX();READY=true;if(!document.querySelector('.modal'))route(true)},()=>{READY=true;route(true)})}
   else{READY=true;route(true)}
 }
 async function shrink(file){ // تصغير الصورة قبل الرفع
@@ -2132,7 +2135,7 @@ function reportsNews(p,exs){const ed=DB&&ASSETS;exs.forEach(e=>{LBS['e'+e.id]=(e
   if(!exs.length)return `<section class="panel rn-sec" id="exsec" style="${C(PC(p.plan_id))}">${head}<div class="empty" style="padding:20px">لم يُوثَّق تنفيذ لهذا البرنامج بعد.${ed?' سجّل التنفيذ وأرفق الصور، فيُنشأ له خبر وتقرير جاهز للطباعة.':' يظهر هنا خبر التنفيذ وتقريره بعد توثيقه.'}</div></section>`;
   return `<section class="panel rn-sec" id="exsec" style="${C(PC(p.plan_id))}">${head}<div class="rn-list">${exs.slice().reverse().map(e=>{const im=e.images||[],id=esc(e.id);
     return `<article class="rn"><a class="rn-thumb" href="#report-${id}" aria-label="عرض تقرير التنفيذ ${esc(e.no||1)}"><i></i><b>${esc(p.name)}</b>${im[0]?`<img src="${esc(imgUrl(im[0]))}" alt="" loading="lazy">`:''}<em></em><em></em><em></em></a>
-    <div class="rn-b"><div class="rn-top">${p.approved_at?`<span class="rn-ok">${ic('check')} تقرير معتمد</span>`:'<span class="rn-wait">بانتظار الاعتماد</span>'}<span class="rn-no">التنفيذ ${fmt(e.no||1)} • ${esc(greg(e.date))}</span></div>
+    <div class="rn-b"><div class="rn-top">${e.approved_at?`<span class="rn-ok">${ic('check')} تقرير معتمد</span>`:'<span class="rn-wait">بانتظار الاعتماد • لا يظهر للزوار</span>'}<span class="rn-no">التنفيذ ${fmt(e.no||1)} • ${esc(greg(e.date))}</span></div>
      <h4><a href="#news-${id}">${esc(p.name)}${exs.length>1?` — التنفيذ ${fmt(e.no||1)}`:''}</a></h4>
      <p>${esc(newsText(p,e))}</p>
      <div class="rn-a"><a class="btn soft" href="#news-${id}">${ic('news')} الخبر</a><a class="btn soft" href="#report-${id}">${ic('rep')} التقرير</a>${im.length?`<button class="btn soft" type="button" data-lbset="e${id}" data-lbi="0">${ic('grid')} الصور (${fmt(im.length)})</button>`:''}${ed?`<button class="btn" type="button" data-del="${id}">حذف</button>`:''}</div></div></article>`}).join('')}</div></section>`}
@@ -2474,7 +2477,7 @@ function hxBind(){const h=document.querySelector('.hx,.pgh');if(!h)return;const 
   if(window._hxSc)removeEventListener('scroll',window._hxSc);
   window._hxSc=()=>{if(!document.body.contains(t)){removeEventListener('scroll',window._hxSc);return}if(scrollY<800)t.style.setProperty('--py',(scrollY*.1).toFixed(1)+'px')};addEventListener('scroll',window._hxSc,{passive:true})}
 
-function route(keep){const na=document.getElementById('cp');if(na)na.hidden=!(READY&&canAdd());const sy=scrollY;const h=(location.hash||'#home').slice(1);const v=document.getElementById('view');
+function route(keep){syncEX();const na=document.getElementById('cp');if(na)na.hidden=!(READY&&canAdd());const sy=scrollY;const h=(location.hash||'#home').slice(1);const v=document.getElementById('view');
  // صفحات لوحة التحكم تتولاها coordinator.js وexecutor.js بعد تحميلهما؛ هذا المسار الأول يسبقهما عند فتح الرابط مباشرة، فلا نعرض الصفحة الرئيسية مؤقتًا
  if(/^(admin|admin-alerts|admin-plans|admin-people|admin-trash|admin-portal|me|me-docs|notifications|dashboard|coord-plan)$/.test(h)){document.body.classList.add('cp-on');v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
  document.querySelectorAll('#nav a').forEach(a=>{const on=a.dataset.n===h||(h==='home'&&a.dataset.n==='home')||(a.dataset.n==='week'&&/^(week|month|timeline)/.test(h));a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
@@ -2487,9 +2490,9 @@ addEventListener('hashchange',()=>route());route();initRuntime();
 </script>
 <script src="assets/unified-bar.js?v=20261118a"></script>
 <script src="assets/unified-kit.js?v=20261117a"></script>
-<script src="assets/coordinator.js?v=20261118o"></script>
+<script src="assets/coordinator.js?v=20261119a"></script>
 <script src="assets/plans.js?v=20261115a"></script>
-<script src="assets/executor.js?v=20261118m"></script>
+<script src="assets/executor.js?v=20261119a"></script>
 <script>
 /* حركة: ظهور تدريجي للعناصر وعدّاد للأرقام عند فتح كل صفحة */
 (function(){

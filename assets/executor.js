@@ -56,7 +56,7 @@ function pageMe(){
   const lbl=(FT.find(x=>x[0]===S.f)||FT[0])[1];
   const item=p=>{const E=exs(p),k=kind(p);
     return `<div class="pb-r ex-pr" style="--sc:${k==='done'?'#2e9e5b':k==='due'?'#c0392b':k==='now'?'#2f6fd0':'#7a8a94'}"><div class="pb-rm"><a href="#p-${esc(String(p.id))}">${esc(p.name)}</a><small>${esc(p.plan_name||'')} • ${esc(when(p))}${p.location?' • '+esc(p.location):''}</small>${p.status==='متعثر'?`<em>السبب: ${esc(p.stall_note||'لم يُكتب سبب')}</em>`:''}
-      ${E.length?`<span class="ex-reps">${E.map(x=>`<a class="ex-rl" href="#report-${esc(x.id)}">${ic('rep')}<span>تنفيذ رقم ${esc(x.no||1)} • ${esc(greg(x.date))}</span><small>${(x.images||[]).length} صور${x.beneficiaries!=null?' • '+fmt(x.beneficiaries)+' مستفيد':''}</small></a>`).join('')}</span>`:''}</div>
+      ${E.length?`<span class="ex-reps">${E.map(x=>`<a class="ex-rl" href="#report-${esc(x.id)}">${ic('rep')}<span>تنفيذ رقم ${esc(x.no||1)} • ${esc(greg(x.date))}${x.approved_at?'':' • بانتظار اعتماد المنسق (لا يُنشر قبله)'}</span><small>${(x.images||[]).length} صور${x.beneficiaries!=null?' • '+fmt(x.beneficiaries)+' مستفيد':''}</small></a>`).join('')}</span>`:''}</div>
       <span class="pb-ra">${chip(p)}${k==='x'?'':docBtn(p)}${openBtn(p)}</span></div>`};
   return `<div class="cd cp-board pb">${head}${tiles}${spot}<section class="panel pb-list"><div class="pb-lh"><h3>${lbl}<b>${list.length}</b></h3></div>${list.length?list.map(item).join(''):`<p class="muted cp-empty">${S.f==='due'?'لا توجد برامج بانتظار التوثيق. أحسنت.':'لا توجد برامج في هذا التصنيف.'}</p>`}</section></div>`}
 

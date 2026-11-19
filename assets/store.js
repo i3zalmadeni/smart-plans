@@ -106,6 +106,18 @@
         },
         doc: function (id) {
           return {
+            // تحديث جزئي لبيانات السجل (مراجعة التقرير وتعديله قبل الاعتماد)؛ القيمة null تحذف الحقل
+            update: function (patch) {
+              return sb.from(TABLE).select('data').eq('id', id).maybeSingle().then(fail).then(function (r) {
+                if (!r.data) throw new Error('السجل غير موجود.');
+                var d = Object.assign({}, r.data.data || {});
+                Object.keys(patch).forEach(function (k) { if (patch[k] === null) delete d[k]; else d[k] = patch[k]; });
+                return sb.from(TABLE).update({ data: d }).eq('id', id).select('id').then(fail);
+              }).then(function (r) {
+                if (!r.data || !r.data.length) throw new Error('لا تملك صلاحية التعديل في الخطط الذكية.');
+                emit(col);
+              });
+            },
             delete: function () {
               // احذف صور السجل من التخزين ثم السجل نفسه
               return sb.from(TABLE).select('data').eq('id', id).maybeSingle().then(function (r) {

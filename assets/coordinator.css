@@ -572,3 +572,9 @@ html,body{overflow-x:clip}
   .cd-rings{flex-wrap:nowrap;overflow-x:auto}
   .cd-hic{font-size:.72rem;min-height:40px}
 }
+
+/* مراجعة التقرير قبل الاعتماد */
+.rv-th{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.rv-th figure{margin:0;display:flex;flex-direction:column;gap:6px;border:1px solid var(--line,#dfe6ea);border-radius:12px;padding:6px;background:#fff}
+.rv-th img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px}
+.rv-th input{width:100%;font:inherit;font-size:.82rem}

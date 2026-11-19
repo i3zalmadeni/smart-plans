@@ -133,6 +133,61 @@ async function saveEdit(p,fields,label){
   return true;
 }
 
+/* ---------- اعتماد التقارير: اطلاع وتحرير قبل الاعتماد، والنشر بعده فقط ---------- */
+const pend=p=>exFor(p.id).filter(e=>!e.approved_at);
+const apprNeeded=p=>p.status!=='ملغي'&&pend(p).length>0;
+const meName=()=>(window.SP&&SP.access&&SP.access.name)||WHO||'';
+async function approveExecs(p,list){
+  if(!DB)throw new Error('قاعدة البيانات غير متاحة');
+  for(const e of list)await DB.collection('executions').doc(e.id).update({approved_at:T(),approved_by:meName()});
+  await saveEdit(p,{status:'مكتمل',stall_note:'',approved_at:T()},'اعتُمد تقرير البرنامج');
+}
+function reviewReport(eid){
+  const e=EX.find(x=>String(x.id)===String(eid)),p=e&&P.find(x=>x.id===e.programId);if(!e||!p)return;
+  let imgs=(e.images||[]).map(a=>({...a})),removed=[];
+  const ok=!!e.approved_at,CA=canApprove();
+  const {m,close}=openModal(`<div class="cd-mh"><h3>مراجعة تقرير: ${esc(p.name)}</h3><button class="btn cd-sm" data-x aria-label="إغلاق">✕</button></div>
+   <p class="cx-intro" style="margin:0 0 10px">${ok?'هذا التقرير معتمد ومنشور. أي تعديل يُحفظ مباشرة، ويمكنك سحب الاعتماد لإخفائه.':'هذا التقرير غير منشور. عدّل ما يلزم ثم اعتمده لينشر في الموقع و«يحدث في لبيد».'}</p>
+   <div class="cd-fg">
+    <div class="f"><label for="rv-date">تاريخ التنفيذ</label><input id="rv-date" type="date" value="${esc(e.date||'')}"></div>
+    <div class="f"><label for="rv-exec">المنفذ</label>${ownerSelect(e.executor||p.owner_name||'','id="rv-exec"')}</div>
+    <div class="f"><label for="rv-loc">مكان التنفيذ</label><input id="rv-loc" type="text" value="${esc(e.location||'')}"></div>
+    <div class="f"><label for="rv-time">الوقت / المدة</label><input id="rv-time" type="text" value="${esc(e.time||'')}"></div>
+    <div class="f"><label for="rv-part">المشاركون والمساندون</label><input id="rv-part" type="text" value="${esc(e.participants||'')}"></div>
+    <div class="f"><label for="rv-ben">عدد المستفيدين</label><input id="rv-ben" type="number" min="0" value="${e.beneficiaries==null?'':esc(e.beneficiaries)}"></div>
+    <div class="f full"><label for="rv-desc">وصف ما تم تنفيذه</label><textarea id="rv-desc" rows="5">${esc(e.description||'')}</textarea></div>
+    <div class="f full"><label for="rv-out">النتائج والمخرجات</label><textarea id="rv-out" rows="3">${esc(e.outputs||'')}</textarea></div>
+    <div class="f"><label for="rv-ch">التحديات</label><textarea id="rv-ch" rows="2">${esc(e.challenges||'')}</textarea></div>
+    <div class="f"><label for="rv-co">الإجراءات التصحيحية / التوصيات</label><textarea id="rv-co" rows="2">${esc(e.corrective||'')}</textarea></div>
+    <div class="f full"><label>صور التنفيذ <small id="rv-n"></small></label><div class="rv-th" id="rv-th"></div></div>
+   </div><div class="cd-err" id="rv-err"></div>
+   <div class="cd-ma"><span>${ok&&CA?'<button class="btn cd-bad" id="rv-un">سحب الاعتماد</button>':''}</span><span><button class="btn" data-x>إلغاء</button><button class="btn" id="rv-save">حفظ التعديلات</button>${!ok&&CA?`<button class="btn pri" id="rv-ap">${ic('check')} حفظ واعتماد</button>`:''}</span></div>`);
+  const $=s=>m.querySelector(s);
+  const draw=()=>{$('#rv-n').textContent='('+imgs.length+')';$('#rv-th').innerHTML=imgs.map((a,i)=>`<figure><img src="${esc(imgUrl(a))}" alt="" loading="lazy"><input type="text" data-c="${i}" placeholder="وصف الصورة" value="${esc(a.caption||'')}"><button type="button" class="btn cd-sm cd-bad" data-d="${i}" aria-label="حذف الصورة">حذف</button></figure>`).join('')||'<p class="muted">لا توجد صور.</p>';
+    m.querySelectorAll('[data-c]').forEach(i=>i.oninput=()=>imgs[+i.dataset.c].caption=i.value);
+    m.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{removed.push(imgs[+b.dataset.d]);imgs.splice(+b.dataset.d,1);draw()})};
+  draw();
+  const run=async(btn,mode)=>{const er=$('#rv-err');er.textContent='';
+    if(mode==='approve'&&imgs.length<2){er.textContent='لا يُعتمد تقرير بأقل من صورتين. أبقِ صورتين على الأقل أو أعده للمنفذ.';return}
+    const ex=$('#rv-exec').value.trim();
+    const patch={date:$('#rv-date').value,executor:ex,executor_staff_id:staffIdByName(ex),location:$('#rv-loc').value.trim(),time:$('#rv-time').value.trim(),participants:$('#rv-part').value.trim(),
+      beneficiaries:$('#rv-ben').value===''?null:+$('#rv-ben').value,description:$('#rv-desc').value.trim(),outputs:$('#rv-out').value.trim(),challenges:$('#rv-ch').value.trim(),corrective:$('#rv-co').value.trim(),
+      images:imgs.map(a=>({id:a.id,url:a.url,caption:(a.caption||'').trim()})),edited_at:new Date().toISOString(),edited_by:meName()};
+    if(!patch.description){er.textContent='وصف ما تم تنفيذه مطلوب.';return}
+    if(mode==='approve'){patch.approved_at=T();patch.approved_by=meName()}
+    if(mode==='revoke'){patch.approved_at=null;patch.approved_by=null}
+    btn.disabled=true;
+    try{await DB.collection('executions').doc(e.id).update(patch);
+      const ids=removed.map(a=>a.id).filter(Boolean);if(ids.length&&window.SP&&SP.sb)SP.sb.storage.from('sp-evidence').remove(ids).catch(()=>{});
+      if(mode==='approve'){const rest=pend(p).filter(x=>String(x.id)!==String(e.id));if(!rest.length)await saveEdit(p,{status:'مكتمل',stall_note:'',approved_at:T()},'اعتُمد تقرير البرنامج')}
+      close();toast(mode==='approve'?'اعتُمد التقرير ونُشر':mode==='revoke'?'سُحب الاعتماد وأُخفي التقرير':'حُفظت التعديلات')}
+    catch(err){btn.disabled=false;er.textContent=err.message||'تعذّر الحفظ'}};
+  $('#rv-save').onclick=ev=>run(ev.currentTarget,'save');
+  const ap=$('#rv-ap');if(ap)ap.onclick=ev=>run(ev.currentTarget,'approve');
+  const un=$('#rv-un');if(un)un.onclick=ev=>run(ev.currentTarget,'revoke');
+}
+window.CD_reviewReport=reviewReport;
+
 /* ---------- الرسوم ---------- */
 function ring(v,label,sub,color){const r=40,c=2*Math.PI*r,pv=Math.max(0,Math.min(100,v||0));
   return `<div class="cd-ring" style="--sc:${color||'var(--brand)'}" role="img" aria-label="${esc(label)} ${Math.round(pv)}%"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--cd-track)" stroke-width="9"/><circle cx="50" cy="50" r="${r}" fill="none" stroke="${color||'var(--brand)'}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${(pv/100*c).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 50 50)"/><text x="50" y="50" text-anchor="middle" dominant-baseline="central" font-size="21" font-weight="800" fill="var(--ink)" font-family="var(--font)">${Math.round(pv)}%</text></svg><b>${esc(label)}</b><small>${esc(sub)}</small></div>`}
@@ -167,7 +222,7 @@ function weekChart(){const ws=CAL();if(!ws.length)return '';const cw=curWeek();
 function rowsHTML(list,showPlan,ED){
   return `<div class="cd-tw"><table class="cd-t"><thead><tr><th>البرنامج</th><th>من</th><th>إلى</th><th>الوقت</th><th>المنفذ</th><th>الحالة</th><th>التوثيق والاعتماد</th><th></th></tr></thead><tbody>${list.map(p=>{
     const s=ds(p),ex=exFor(p.id).length,id=esc(String(p.id));
-    const appr=p.approved_at?`<span class="cd-appr">${ic('check')} معتمد ${dmy(p.approved_at)}</span>`:(ED&&(ex||p.status==='مكتمل')?`<button class="btn soft cd-sm" data-approve="${id}">اعتماد</button>`:'');
+    const appr=(p.approved_at&&!pend(p).length)?`<span class="cd-appr">${ic('check')} معتمد ${dmy(p.approved_at)}</span>`:(ED&&(ex||p.status==='مكتمل')?`<button class="btn soft cd-sm" data-approve="${id}">اعتماد</button>`:'');
     return `<tr data-id="${id}" style="--sc:${SC[s]}"><td class="cd-nm"><a href="#p-${id}">${esc(p.name)}</a><small>${esc(p.code)}${showPlan?' • '+esc(p.plan_name):''}${p.location?' • '+esc(p.location):''}</small></td>
     <td>${ED?`<input type="date" data-f="planned_date" value="${esc(startOf(p))}" aria-label="من تاريخ">`:esc(dmy(startOf(p))||'—')}</td>
     <td>${ED?`<input type="date" data-f="planned_end" value="${esc(endOf(p))}" aria-label="إلى تاريخ">`:esc(dmy(endOf(p))||'—')}</td>
@@ -217,12 +272,12 @@ function buildDash(view){
   const dueL=L.filter(isDue),dueDone=dueL.filter(p=>ds(p)==='مكتمل').length;
   const passed=CAL().filter(w=>w.end_date<today).length;
   const need=L.filter(needs).sort((a,b)=>endOf(a).localeCompare(endOf(b))),stl=L.filter(p=>p.status==='متعثر');
-  const appr=L.filter(p=>!p.approved_at&&p.status!=='ملغي'&&exFor(p.id).length).sort((a,b)=>endOf(a).localeCompare(endOf(b)));
+  const appr=L.filter(apprNeeded).sort((a,b)=>endOf(a).localeCompare(endOf(b)));
   const pid=p=>esc(String(p.id));
   const row=(p,kind,meta,acts)=>`<div class="cd-al" style="--sc:${SC[kind]}"><i></i><a href="#p-${pid(p)}">${esc(p.name)}</a>${meta}${acts?`<span class="acts">${acts}</span>`:''}</div>`;
   const lateRow=p=>row(p,'متأخر',`<span class="m">انتهت فترته ${dmy(endOf(p))} • منذ ${daysBetween(endOf(p),today)} يومًا • ${esc(ownerOf(p))} • ${esc(p.plan_name)}</span>`,ED?`<button class="btn pri cd-sm" data-doc="${pid(p)}">${ic('rep')} توثيق</button><button class="btn cd-sm" data-stall="${pid(p)}">تسجيل التعثر</button><button class="btn cd-sm" data-edit="${pid(p)}">تعديل الموعد</button>${wa(p,'late')}`:'');
   const stallRow=p=>row(p,'متعثر',`<span class="why">السبب: ${esc(p.stall_note||'لم يُكتب سبب')}</span><span class="m">${esc(ownerOf(p))} • ${esc(p.plan_name)}</span>`,ED?`<button class="btn cd-sm" data-stall="${pid(p)}">تعديل السبب</button><button class="btn cd-sm" data-edit="${pid(p)}">إعادة جدولة</button>`:'');
-  const apprRow=p=>{const ex=exFor(p.id),last=ex[ex.length-1]||{};return row(p,'مكتمل',`<span class="m">وُثّق ${ex.length>1?ex.length+' مرات':''} • آخر تنفيذ ${dmy(last.date||'')} • ${esc(last.executor||ownerOf(p))} • ${(last.images||[]).length} صور</span>`,`<a class="btn cd-sm" href="#p-${pid(p)}">مراجعة التوثيق</a>${ED&&canApprove()?`<button class="btn pri cd-sm" data-approve="${pid(p)}">${ic('check')} اعتماد</button>`:''}`)};
+  const apprRow=p=>{const ex=exFor(p.id),last=ex[ex.length-1]||{};return row(p,'مكتمل',`<span class="m">وُثّق ${ex.length>1?ex.length+' مرات':''} • ${pend(p).length} بانتظار الاعتماد • آخر تنفيذ ${dmy(last.date||'')} • ${esc(last.executor||ownerOf(p))} • ${(last.images||[]).length} صور</span>`,`${pend(p).map((x,i,a)=>`<button class="btn cd-sm" data-review="${esc(String(x.id))}">${ic('rep')} ${ED?'اطلاع وتحرير':'اطلاع'}${a.length>1?' '+(i+1):''}</button>`).join('')}${ED&&canApprove()?`<button class="btn pri cd-sm" data-approve="${pid(p)}">${ic('check')} اعتماد</button>`:''}`)};
   if(!['late','stall','appr'].includes(D.at))D.at='late';
   const TABS=[['late','متأخرة التوثيق',need.length,'متأخر'],['stall','متعثرة',stl.length,'متعثر'],['appr','بانتظار الاعتماد',appr.length,'مكتمل']];
   const lists={late:need,stall:stl,appr},cur=lists[D.at],shown=D.all?cur:cur.slice(0,6),rf={late:lateRow,stall:stallRow,appr:apprRow}[D.at];
@@ -571,7 +626,8 @@ function bind(v){
   const add=v.querySelector('#cd-add');if(add)add.onclick=()=>{if(D.mode==='week'){const w=wkInfo(D.week)||curWeek();editor(null,w?{planned_date:w.start_date,planned_end:w.end_date}:{})}else editor(null,D.mode==='domain'?{domain:D.dom==='مجالات أخرى'?'':D.dom}:D.mode==='owner'?{owner_name:D.own==='غير محدد'?'':D.own}:{plan_id:+D.plan||(PL[0]||{}).id})};
   v.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editor(b.dataset.edit));
   v.querySelectorAll('[data-stall]').forEach(b=>b.onclick=()=>stallDialog(b.dataset.stall));
-  v.querySelectorAll('[data-approve]').forEach(b=>b.onclick=async()=>{const p=P.find(x=>String(x.id)===b.dataset.approve);if(!p)return;b.disabled=true;try{await saveEdit(p,{status:'مكتمل',stall_note:'',approved_at:T()},'اعتُمد البرنامج مكتملًا');toast('اعتُمد البرنامج')}catch(e){b.disabled=false;toast(e.message||'تعذّر الاعتماد')}});
+  v.querySelectorAll('[data-review]').forEach(b=>b.onclick=()=>reviewReport(b.dataset.review));
+  v.querySelectorAll('[data-approve]').forEach(b=>b.onclick=async()=>{const p=P.find(x=>String(x.id)===b.dataset.approve);if(!p)return;b.disabled=true;try{await approveExecs(p,pend(p));toast('اعتُمد التقرير ونُشر')}catch(e){b.disabled=false;toast(e.message||'تعذّر الاعتماد')}});
   v.querySelectorAll('tr[data-id] [data-f]').forEach(el=>el.onchange=async()=>{const p=P.find(x=>String(x.id)===el.closest('tr').dataset.id);if(!p)return;const f=el.dataset.f,val=el.value.trim();
     if(f==='status'&&val==='متعثر'){el.value=p.status||'لم يبدأ';stallDialog(p.id);return}
     if(f==='name'&&!val){el.value=p.name;toast('اسم البرنامج لا يكون فارغًا');return}
@@ -614,7 +670,7 @@ const roleName=()=>{const a=(window.SP&&SP.access)||{};return a.admin?'مدير 
 const PB='coord-plan';
 const myPlans=()=>{const id=isExec()?SP.access.staff_id:null;return id?PL.filter(x=>x.owner_staff_id===id):[]};
 const isPlanCoord=()=>READY&&myPlans().length>0;
-const pbAppr=p=>p.status!=='ملغي'&&!p.approved_at&&exFor(p.id).length>0;
+const pbAppr=apprNeeded;
 const pbAttn=p=>p.status!=='ملغي'&&(needs(p)||p.status==='متعثر'||pbAppr(p));
 const PBT=[['all','جميع البرامج','layers'],['قيد التنفيذ','قيد التنفيذ','clock'],['لم يبدأ','قادمة','cal'],['مكتمل','مكتملة','check'],['attn','تحتاج متابعتك','bell']];
 const pbIs=(p,k)=>p.status!=='ملغي'&&(k==='all'||(k==='attn'?pbAttn(p):ds(p)===k));
@@ -641,7 +697,7 @@ function planBoardPage(){
   const list=L.filter(p=>pbIs(p,f)&&(!q||(p.name+ownerOf(p)+(p.code||'')).includes(q))).sort(f==='attn'?byEnd:(a,b)=>(startOf(a)||'9').localeCompare(startOf(b)||'9')||a.name.localeCompare(b.name,'ar'));
   const row=p=>{const s=ds(p),id=pid(p),st=startOf(p),en=endOf(p),late=needs(p),ap=pbAppr(p);
     const note=s==='متعثر'?'السبب: '+(p.stall_note||'لم يُكتب سبب'):late?`انتهت ${dmy(en)} • منذ ${daysBetween(en,today)} يومًا`:ap?'موثق بانتظار الاعتماد':p.approved_at?'معتمد '+dmy(p.approved_at):'';
-    const acts=(late?wa(p,'late'):'')+(ap?(ED&&canApprove()?`<button class="btn pri cd-sm" data-approve="${id}">${ic('check')} اعتماد</button>`:`<a class="btn cd-sm" href="#p-${id}">مراجعة</a>`):'')+(ED?(late?`<button class="btn cd-sm" data-stall="${id}">تعثّر</button>`:'')+`<button class="btn cd-sm" data-edit="${id}">تعديل</button>`:'');
+    const acts=(late?wa(p,'late'):'')+(ap&&ED?pend(p).map(x=>`<button class="btn cd-sm" data-review="${esc(String(x.id))}">${ic('rep')} اطلاع وتحرير</button>`).join(''):'')+(ap?(ED&&canApprove()?`<button class="btn pri cd-sm" data-approve="${id}">${ic('check')} اعتماد</button>`:`<a class="btn cd-sm" href="#p-${id}">مراجعة</a>`):'')+(ED?(late?`<button class="btn cd-sm" data-stall="${id}">تعثّر</button>`:'')+`<button class="btn cd-sm" data-edit="${id}">تعديل</button>`:'');
     return `<div class="pb-r" style="--sc:${SC[s]}"><div class="pb-rm"><a href="#p-${id}">${esc(p.name)}</a><small>${st?dmy(st)+(en&&en!==st?' – '+dmy(en):''):'بلا موعد'} • <span class="cd-pn sm">${avatar(ownerOf(p),20)}${esc(ownerOf(p))}</span></small>${note?`<em>${esc(note)}</em>`:''}</div><span class="pb-ra">${pill(s)}${acts}</span></div>`};
   const lbl=(PBT.find(x=>x[0]===f)||PBT[0])[1];
   const empty=f==='attn'&&!q?'لا شيء يحتاج متابعتك الآن.':L.length?'لا توجد برامج مطابقة.':'لا توجد برامج في هذه الخطة بعد.';
@@ -664,13 +720,13 @@ function notifs(){
     const mine=new Set(myPlans().map(x=>String(x.id)));
     for(const p of P){
       if(!mine.has(String(p.plan_id))||p.owner_staff_id===mid||p.status==='ملغي')continue;
-      if(!p.approved_at&&exFor(p.id).length)out.push({id:'pc:appr:'+p.id+':'+exFor(p.id).length,tone:'ok',o:1,d:endOf(p),t:p.name,s:'في خطتك: موثّق بانتظار الاعتماد • '+ownerOf(p),href:'#coord-plan'});
+      if(apprNeeded(p))out.push({id:'pc:appr:'+p.id+':'+pend(p).length+':'+p.id,tone:'ok',o:1,d:endOf(p),t:p.name,s:'في خطتك: موثّق بانتظار الاعتماد • '+ownerOf(p),href:'#coord-plan'});
       else if(p.status==='متعثر')out.push({id:'pc:stall:'+p.id,tone:'warn',o:1,d:endOf(p),t:p.name,s:'في خطتك: متعثر • '+(p.stall_note||'لم يُكتب سبب'),href:'#coord-plan'});
       else if(needs(p))out.push({id:'pc:late:'+p.id+':'+endOf(p),tone:'bad',o:0,d:endOf(p),t:p.name,s:'في خطتك: متأخر التوثيق منذ '+daysBetween(endOf(p),t)+' يومًا • '+ownerOf(p),href:'#coord-plan'})}}
   if(READY&&canAdd()){
     for(const p of P){
       if(p.status==='ملغي')continue;
-      if(!p.approved_at&&exFor(p.id).length)out.push({id:'c:appr:'+p.id+':'+exFor(p.id).length,tone:'ok',o:1,d:endOf(p),t:p.name,s:'موثّق بانتظار الاعتماد • '+ownerOf(p),href:'#p-'+p.id});
+      if(apprNeeded(p))out.push({id:'c:appr:'+p.id+':'+pend(p).length+':'+p.id,tone:'ok',o:1,d:endOf(p),t:p.name,s:'موثّق بانتظار الاعتماد • '+ownerOf(p),href:'#p-'+p.id});
       else if(p.status==='متعثر')out.push({id:'c:stall:'+p.id,tone:'warn',o:1,d:endOf(p),t:p.name,s:'متعثر • '+(p.stall_note||'لم يُكتب سبب'),href:'#p-'+p.id});
       else if(needs(p)&&!skip.has(p.id))out.push({id:'c:late:'+p.id+':'+endOf(p),tone:'bad',o:0,d:endOf(p),t:p.name,s:'متأخر التوثيق منذ '+daysBetween(endOf(p),t)+' يومًا • '+ownerOf(p),href:'#p-'+p.id})}}
   return out.sort((a,b)=>a.o-b.o||String(a.d).localeCompare(String(b.d)))}
