@@ -1957,10 +1957,24 @@ function fitReport(){const w=document.querySelector('.rpv-wrap'),r=document.getE
 function bindReport(id){
   const e=EX.find(x=>String(x.id)===String(id)),p=e&&P.find(x=>x.id===e.programId);
   fitReport();setTimeout(fitReport,300);
-  const pr=document.getElementById('rpv-print');if(pr)pr.onclick=()=>{document.body.classList.add('print-report');const done=()=>{document.body.classList.remove('print-report');removeEventListener('afterprint',done)};addEventListener('afterprint',done);try{window.print()}catch(err){done();toast('الطباعة غير متاحة في هذا العرض')}setTimeout(()=>{if(!matchMedia('print').matches)done()},1500)};
-  const dl=document.getElementById('rpv-dl');if(dl&&p)dl.onclick=()=>downloadReport(p,e,dl);
+  const pr=document.getElementById('rpv-print');if(pr&&p)pr.onclick=()=>kitReport(p,e);
+  const dl=document.getElementById('rpv-dl');if(dl&&p)dl.onclick=()=>kitReport(p,e);
   const na=document.querySelector('#nav a[data-n="reports"]');if(na)na.classList.add('on')}
 addEventListener('resize',()=>{if(document.getElementById('rpv'))fitReport()});
+/* تقرير التنفيذ بالهوية الموحدة للنواة الرقمية (ترويسة وتذييل ورمز تحقق في كل صفحة) */
+function kitReport(p,e){
+  if(!window.ReportKit){toast('أداة الطباعة لم تُحمّل بعد، أعد المحاولة');return}
+  const im=e.images||[],ev=(p.required_evidence||'').split(/[؛;]/).map(s=>s.trim()).filter(Boolean),att=e.attachments||[];
+  const kv=rows=>{const r=rows.filter(x=>x[1]||x[1]===0);return r.length?`<div class="kv">${r.map(([k,v])=>`<div>${esc(k)}</div><div>${esc(v)}</div>`).join('')}</div>`:''};
+  const box=(t,v)=>v?`<h2>${t}</h2><div class="box">${esc(v)}</div>`:'';
+  const body=`<h2>بيانات البرنامج</h2>${kv([['رقم التقرير',`${p.code}-${String(e.no||1).padStart(2,'0')}`],['الخطة',p.plan_name],['المجال',p.domain],['الفئة المستفيدة',p.beneficiary],['الموعد المخطط',p.planned_text],['الهدف',p.goal||p.standard_goal],['مؤشر التنفيذ',p.indicator]])}
+   <h2>بيانات التنفيذ</h2>${kv([['تاريخ التنفيذ',`${greg(e.date)} (${hijri(e.date)})`],['المنفذ',e.executor||p.owner_name],['المكان',e.location||p.location],['المستفيدون',e.beneficiaries!=null&&e.beneficiaries!==''?fmt(e.beneficiaries):''],['الوقت / المدة',e.time],['المشاركون والمساندون',e.participants],['رقم التنفيذ',e.no||1]])}
+   ${box('ما تم تنفيذه',e.description)}${box('النتائج والمخرجات',e.outputs)}${box('التحديات والإجراءات التصحيحية',[e.challenges,e.corrective].filter(Boolean).join(' — '))}
+   ${im.length?`<h2>الشواهد المصورة (${fmt(im.length)})</h2><div class="gal">${im.map(a=>`<figure><img src="${esc(imgUrl(a))}" alt=""><figcaption>${esc(a.caption||'من تنفيذ البرنامج')}</figcaption></figure>`).join('')}</div>`:''}
+   ${ev.length?`<h2>الشواهد المطلوبة في الخطة</h2><ul>${ev.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${att.length?`<h2>المرفقات (${fmt(att.length)})</h2><ul>${att.map(a=>`<li>${esc(a.name||'مرفق')}</li>`).join('')}</ul>`:''}
+   <h2>الاعتماد</h2>${kv([['منفذ البرنامج',e.executor||p.owner_name||''],['منسق التقويم الذاتي','عبدالعزيز بن يوسف المديني'],['مدير المدرسة','خالد بن عبدالرحمن الباش']])}`;
+  ReportKit.print({system:'smart_plans',systemName:'الخطط الذكية',systemLogo:new URL('assets/favicon.svg',location.href).href,title:'تقرير تنفيذ برنامج',sub:p.name,body,fname:`Report_${p.code}_${e.date}`,publicFull:true});
+}
 async function downloadReport(p,e,btn){
   const old=btn.innerHTML;btn.disabled=true;btn.textContent='جارٍ إعداد الملف…';
   const box=document.getElementById('sheet');
@@ -2488,6 +2502,7 @@ addEventListener('hashchange',()=>route());route();initRuntime();
 /* قائمة الجوال: زر يفتح صفحات الموقع ويُغلق عند الانتقال */
 (function(){const hd=document.getElementById('hdr'),mb=document.getElementById('menuB');if(!hd||!mb)return;const set=o=>{hd.classList.toggle('open',o);mb.setAttribute('aria-expanded',String(o))};mb.onclick=()=>set(!hd.classList.contains('open'));addEventListener('hashchange',()=>set(false));document.getElementById('nav').addEventListener('click',e=>{if(e.target.closest('a'))set(false)});document.addEventListener('keydown',e=>{if(e.key==='Escape')set(false)});document.addEventListener('click',e=>{if(hd.classList.contains('open')&&!hd.contains(e.target))set(false)})})();
 </script>
+<script src="https://i3zalmadeni.github.io/digital-core/assets/report-kit.js?v=20261120a"></script>
 <script src="assets/unified-bar.js?v=20261119z"></script>
 <script src="assets/unified-kit.js?v=20261117a"></script>
 <script src="assets/coordinator.js?v=20261119z"></script>
