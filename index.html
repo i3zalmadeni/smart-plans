@@ -1966,17 +1966,66 @@ function bindReport(id){
   const na=document.querySelector('#nav a[data-n="reports"]');if(na)na.classList.add('on')}
 addEventListener('resize',()=>{if(document.getElementById('rpv'))fitReport()});
 /* تقرير التنفيذ بالهوية الموحدة للنواة الرقمية (ترويسة وتذييل ورمز تحقق في كل صفحة) */
+/* محتوى تقرير التنفيذ: صورة رئيسية مع بطاقات الأرقام، ثم البرنامج وأهدافه، ثم السرد، ثم النتائج والتحديات متجاورتين،
+   ثم معرض الشواهد، ثم قائمة الشواهد المطلوبة والمرفقات، ثم التوقيعات. الترويسة والتذييل من الأداة الموحدة للنواة الرقمية */
+const SPR_CSS=`#rkRoot .spr-hero{display:grid;grid-template-columns:1.25fr 1fr;gap:10px;margin:2px 0 12px}
+#rkRoot .spr-ph{position:relative;border-radius:14px;overflow:hidden;min-height:62mm;background:linear-gradient(135deg,#0f8a94,#0d2b45)}
+#rkRoot .spr-ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#rkRoot .spr-ph .spr-tag{position:absolute;bottom:8px;right:8px;background:rgba(13,43,69,.82);color:#fff;font-size:10.5px;font-weight:700;padding:3px 12px;border-radius:999px}
+#rkRoot .spr-noimg{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px;opacity:.85}
+#rkRoot .spr-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#rkRoot .spr-tile{position:relative;border:1px solid #d6e6ea;border-radius:12px;padding:8px 10px 7px;background:#fff;overflow:hidden;line-height:1.45}
+#rkRoot .spr-tile::before{content:"";position:absolute;top:0;right:0;left:0;height:3px;background:#0f8a94}
+#rkRoot .spr-tile.g::before{background:#f0b34a}#rkRoot .spr-tile.r::before{background:#8f1d1d}#rkRoot .spr-tile.n::before{background:#0d2b45}
+#rkRoot .spr-tile i{display:flex;align-items:center;gap:5px;font-style:normal;font-size:10.5px;color:#71859a;font-weight:700}
+#rkRoot .spr-tile i svg{width:13px;height:13px;stroke:#0f8a94}
+#rkRoot .spr-tile b{display:block;font-size:13.5px;color:#0d2b45;margin-top:3px}
+#rkRoot .spr-tile em{display:block;font-style:normal;font-size:10px;color:#71859a}
+#rkRoot .spr-tile.big b{font-size:26px;color:#8f1d1d;line-height:1.1}
+#rkRoot .spr-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:0 0 12px}
+#rkRoot .spr-chips span{border:1px solid #d6e6ea;background:#f4fafb;border-radius:999px;padding:2px 12px;font-size:11px;color:#3d566b}#rkRoot .spr-chips b{color:#0c6f82}
+#rkRoot .spr-two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 8px}
+#rkRoot .spr-card{border:1px solid #d6e6ea;border-radius:12px;padding:10px 12px;background:#fff;break-inside:avoid}
+#rkRoot .spr-card h4{display:flex;align-items:center;gap:7px;margin:0 0 4px;font-size:13px;color:#0d2b45}
+#rkRoot .spr-card h4 span{display:grid;place-items:center;width:24px;height:24px;border-radius:8px;background:#e3f6f7}
+#rkRoot .spr-card h4 svg{width:14px;height:14px;stroke:#0c6f82}
+#rkRoot .spr-card p{margin:0;white-space:pre-wrap;font-size:12.5px;line-height:1.8}
+#rkRoot .spr-card.ok{border-top:4px solid #1f7a50}#rkRoot .spr-card.ok h4 span{background:#e5f5ec}#rkRoot .spr-card.ok h4 svg{stroke:#1f7a50}
+#rkRoot .spr-card.wa{border-top:4px solid #c88a12}#rkRoot .spr-card.wa h4 span{background:#fff4e0}#rkRoot .spr-card.wa h4 svg{stroke:#9a6100}
+#rkRoot .spr-meta{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0 0 6px;font-size:11.5px;color:#3d566b}#rkRoot .spr-meta b{color:#0d2b45}
+#rkRoot .spr-q{position:relative;margin:4px 0 8px;padding:12px 16px 12px 40px;border-radius:12px;background:linear-gradient(270deg,#f1f9fa,#fff);border:1px solid #d6e6ea;white-space:pre-wrap;line-height:1.95}
+#rkRoot .spr-q::before{content:"”";position:absolute;left:10px;top:-6px;font:800 48px/1 Georgia,serif;color:#f0b34a;opacity:.8}
+#rkRoot .spr-checks{list-style:none;padding:0;margin:4px 0 8px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#rkRoot .spr-checks li{display:flex;gap:7px;align-items:flex-start;border:1px dashed #c9dbe1;border-radius:10px;padding:6px 9px;font-size:12px;line-height:1.6;break-inside:avoid}
+#rkRoot .spr-checks li svg{flex:none;width:15px;height:15px;margin-top:2px;stroke:#1f7a50}#rkRoot .spr-checks.f li svg{stroke:#0c6f82}
+#rkRoot .spr-sig{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:6px 0 4px}
+#rkRoot .spr-sig div{border:1px solid #d6e6ea;border-radius:12px;padding:9px 10px 8px;text-align:center;line-height:1.5;background:#fbfdfd}
+#rkRoot .spr-sig small{display:block;color:#71859a;font-size:10.5px;font-weight:700}#rkRoot .spr-sig b{display:block;font-size:12.5px;color:#0d2b45;min-height:19px}
+#rkRoot .spr-sig i{display:block;margin:14px 10px 0;border-top:1.5px dotted #9fb4bf;font-style:normal;font-size:9.5px;color:#9fb4bf;padding-top:2px}`;
 function kitOpts(p,e){
   const im=e.images||[],ev=(p.required_evidence||'').split(/[؛;]/).map(s=>s.trim()).filter(Boolean),att=e.attachments||[];
-  const kv=rows=>{const r=rows.filter(x=>x[1]||x[1]===0);return r.length?`<div class="kv">${r.map(([k,v])=>`<div>${esc(k)}</div><div>${esc(v)}</div>`).join('')}</div>`:''};
-  const box=(t,v)=>v?`<h2>${t}</h2><div class="box">${esc(v)}</div>`:'';
-  const body=`<h2>بيانات البرنامج</h2>${kv([['رقم التقرير',`${p.code}-${String(e.no||1).padStart(2,'0')}`],['الخطة',p.plan_name],['المجال',p.domain],['الفئة المستفيدة',p.beneficiary],['الموعد المخطط',p.planned_text],['الهدف',p.goal||p.standard_goal],['مؤشر التنفيذ',p.indicator]])}
-   <h2>بيانات التنفيذ</h2>${kv([['تاريخ التنفيذ',`${greg(e.date)} (${hijri(e.date)})`],['المنفذ',e.executor||p.owner_name],['المكان',e.location||p.location],['المستفيدون',e.beneficiaries!=null&&e.beneficiaries!==''?fmt(e.beneficiaries):''],['الوقت / المدة',e.time],['المشاركون والمساندون',e.participants],['رقم التنفيذ',e.no||1]])}
-   ${box('ما تم تنفيذه',e.description)}${box('النتائج والمخرجات',e.outputs)}${box('التحديات والإجراءات التصحيحية',[e.challenges,e.corrective].filter(Boolean).join(' — '))}
-   ${im.length?`<h2>الشواهد المصورة (${fmt(im.length)})</h2><div class="gal">${im.map(a=>`<figure><img src="${esc(imgUrl(a))}" alt=""><figcaption>${esc(a.caption||'من تنفيذ البرنامج')}</figcaption></figure>`).join('')}</div>`:''}
-   ${ev.length?`<h2>الشواهد المطلوبة في الخطة</h2><ul>${ev.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${att.length?`<h2>المرفقات (${fmt(att.length)})</h2><ul>${att.map(a=>`<li>${esc(a.name||'مرفق')}</li>`).join('')}</ul>`:''}
-   <h2>الاعتماد</h2>${kv([['منفذ البرنامج',e.executor||p.owner_name||''],['منسق التقويم الذاتي','عبدالعزيز بن يوسف المديني'],['مدير المدرسة','خالد بن عبدالرحمن الباش']])}`;
-  return {system:'smart_plans',systemName:'الخطط الذكية',systemLogo:new URL('assets/favicon.svg',location.href).href,title:'تقرير تنفيذ برنامج',sub:p.name,body,fname:`Report_${p.code}_${e.date}`,publicFull:true};
+  const I={cal:'<path d="M4 6h16v14H4zM4 10h16M9 3v4M15 3v4"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',pin:'<path d="M12 21s-7-6.5-7-12a7 7 0 0114 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.6a3.5 3.5 0 010 6.8M18 14.8c1.9.7 3.2 2.3 3.5 5.2"/>',target:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/>',gauge:'<path d="M4 18a8 8 0 1116 0"/><path d="M12 18l4-6"/>',star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',flag:'<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',check:'<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 10"/>',file:'<path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4"/>'};
+  const sv=n=>`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${I[n]}</svg>`;
+  const has=v=>v!=null&&String(v).trim()!=='';
+  const rno=`${p.code}-${String(e.no||1).padStart(2,'0')}`, ben=has(e.beneficiaries)?fmt(e.beneficiaries):'—';
+  const tile=(ic,k,v,sub,cls='')=>`<div class="spr-tile ${cls}"><i>${sv(ic)}${k}</i><b>${esc(v||'—')}</b>${sub?`<em>${esc(sub)}</em>`:''}</div>`;
+  const hero=`<div class="spr-hero"><div class="spr-ph">${im[0]?`<img src="${esc(imgUrl(im[0]))}" alt=""><span class="spr-tag">${esc(im[0].caption||'من تنفيذ البرنامج')}</span>`:'<div class="spr-noimg">لم تُرفق صور للتنفيذ</div>'}</div>
+    <div class="spr-tiles">${tile('cal','تاريخ التنفيذ',greg(e.date),hijri(e.date))}${tile('users','المستفيدون',ben,p.beneficiary||'','big g')}${tile('user','المنفذ',e.executor||p.owner_name,'','n')}${tile('pin','المكان',e.location||p.location,e.time?clip(e.time,40):'','r')}</div></div>`;
+  const chips=`<div class="spr-chips"><span>رقم التقرير <b dir="ltr">${esc(rno)}</b></span>${p.plan_name?`<span>الخطة <b>${esc(p.plan_name)}</b></span>`:''}${p.domain?`<span>المجال <b>${esc(p.domain)}</b></span>`:''}<span>التنفيذ رقم <b>${esc(e.no||1)}</b></span>${p.planned_text?`<span>الموعد المخطط <b>${esc(p.planned_text)}</b></span>`:''}</div>`;
+  const card=(ic,t,v,cls='')=>has(v)?`<div class="spr-card ${cls}"><h4><span>${sv(ic)}</span>${t}</h4><p>${esc(v)}</p></div>`:'';
+  const pair=(a,b)=>{const items=[a,b].filter(Boolean);if(!items.length)return '';return items.length===2?`<div class="spr-two">${items.join('')}</div>`:items[0]};
+  const goal=p.goal||p.standard_goal, ch=[e.challenges,e.corrective].filter(has).join('\n— ');
+  const long=v=>has(v)&&String(v).length>650;   // النص الطويل يُعرض كاملًا بعرض الصفحة ليُقسَّم بين الصفحات عند الحاجة
+  const twoOrStack=(a,b,av,bv)=>long(av)||long(bv)?[a,b].filter(Boolean).join(''):pair(a,b);
+  const body=`${hero}${chips}
+   ${has(goal)||has(p.indicator)?`<h2>البرنامج وأهدافه</h2>${twoOrStack(card('target','الهدف',goal),card('gauge','مؤشر التنفيذ',p.indicator),goal,p.indicator)}`:''}
+   ${has(e.description)?`<h2>ما تم تنفيذه</h2>${has(e.participants)||has(e.time)?`<div class="spr-meta">${has(e.time)?`<span>الوقت / المدة: <b>${esc(e.time)}</b></span>`:''}${has(e.participants)?`<span>المشاركون والمساندون: <b>${esc(e.participants)}</b></span>`:''}</div>`:''}<div class="spr-q">${esc(e.description)}</div>`:''}
+   ${has(e.outputs)||has(ch)?`<h2>النتائج والتحديات</h2>${twoOrStack(card('star','النتائج والمخرجات',e.outputs,'ok'),card('flag','التحديات والإجراءات التصحيحية',ch,'wa'),e.outputs,ch)}`:''}
+   ${im.length>1?`<h2>الشواهد المصورة (${fmt(im.length)})</h2><div class="gal">${im.slice(1).map(a=>`<figure><img src="${esc(imgUrl(a))}" alt=""><figcaption>${esc(a.caption||'من تنفيذ البرنامج')}</figcaption></figure>`).join('')}</div>`:''}
+   ${ev.length?`<h2>الشواهد المطلوبة في الخطة</h2><ul class="spr-checks">${ev.map(x=>`<li>${sv('check')}<span>${esc(x)}</span></li>`).join('')}</ul>`:''}
+   ${att.length?`<h2>المرفقات (${fmt(att.length)})</h2><ul class="spr-checks f">${att.map(a=>`<li>${sv('file')}<span>${esc(a.name||'مرفق')}</span></li>`).join('')}</ul>`:''}
+   <h2>الاعتماد</h2><div class="spr-sig"><div><small>منفذ البرنامج</small><b>${esc(e.executor||p.owner_name||'')}</b><i>التوقيع</i></div><div><small>منسق التقويم الذاتي</small><b>عبدالعزيز بن يوسف المديني</b><i>التوقيع</i></div><div><small>مدير المدرسة</small><b>خالد بن عبدالرحمن الباش</b><i>التوقيع</i></div></div>`;
+  return {system:'smart_plans',systemName:'الخطط الذكية',systemLogo:new URL('assets/favicon.svg',location.href).href,title:'تقرير تنفيذ برنامج',sub:p.name,body,styles:SPR_CSS,fname:`Report_${p.code}_${e.date}`,publicFull:true};
 }
 function kitReport(p,e){if(!window.ReportKit){toast('أداة الطباعة لم تُحمّل بعد، أعد المحاولة');return}ReportKit.print(kitOpts(p,e))}
 async function downloadReport(p,e,btn){
