@@ -638,11 +638,11 @@ function bind(v){
     el.disabled=true;try{await saveEdit(p,ch,null);toast('حُفظ التعديل')}catch(e){el.disabled=false;toast(e.message||'تعذّر الحفظ')}});
 }
 
-/* ---------- رابط «لوحة التحكم» في قائمة الموقع ---------- */
+/* ---------- رابط القائمة: «تسجيل الدخول» للزائر، و«لوحة التحكم» لمن سجّل دخوله ---------- */
 const isExec=()=>!!(window.SP&&SP.access&&SP.access.executor&&SP.access.staff_id);
 function updBell(){
   const al=document.querySelector('#nav a[data-n="admin"]');
-  if(al){const adm=READY&&canAdd(),ex=isExec();al.hidden=!(adm||ex);al.textContent='لوحة التحكم';al.setAttribute('href',adm||!ex?'#admin':'#me')}
+  if(al){const adm=READY&&canAdd(),ex=isExec(),sg=!!(window.SP&&SP.signedIn);al.hidden=false;al.textContent=sg?'لوحة التحكم':'تسجيل الدخول';al.setAttribute('href',adm||!ex?'#admin':'#me');al.onclick=sg?null:e=>{if(window.SP&&SP.login){e.preventDefault();SP.login()}}}
   const cp=document.getElementById('cp');if(cp)cp.hidden=true;
   const old=document.getElementById('cd-tools');if(old)old.remove()}
 
