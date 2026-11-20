@@ -265,7 +265,8 @@ const showPhone=d=>!d?'':/^9665\d{8}$/.test(d)?'0'+d.slice(3):'+'+d;
 const waLink=(phone,text)=>`https://wa.me/${phone||''}${text?'?text='+encodeURIComponent(text):''}`;
 const wa=(p,kind)=>{const t=kind==='late'?`تذكير من منسق الخطة: برنامج «${p.name}» (${p.plan_name}) انتهت فترته في ${dmy(endOf(p))} ولم يُوثَّق تنفيذه بعد. نأمل رفع التوثيق والشواهد في بوابة الخطط الذكية، أو إفادتنا بسبب التأخر.`:`تذكير من منسق الخطة: موعد برنامج «${p.name}» ${startOf(p)?'يبدأ '+dayName(startOf(p))+' '+dmy(startOf(p)):''}${p.time?' في '+plbl(p):''}${p.location?' في '+p.location:''}. نأمل التنفيذ في موعده ورفع التوثيق والشواهد بعده.`;const ph=(PEOPLE[ownerOf(p)]||{}).phone;return `<a class="btn cd-sm cd-wa" href="${waLink(ph,t)}" target="_blank" rel="noopener" title="فتح واتساب برسالة تذكير جاهزة">${ic('bell')} تذكير</a>`};
 const dayName=d=>{try{return new Date(d+'T12:00:00').toLocaleDateString('ar-SA-u-ca-gregory-nu-latn',{weekday:'long'})}catch(e){return ''}};
-const tasksPage=()=>buildDash('tasks'),alertsPage=()=>buildDash('alerts');
+// الرئيسية = النظرة الشاملة، ومتابعة البرامج = العمل اليومي (كانتا صفحة واحدة «مكتبي الإلكتروني»)؛ «التنبيهات» حُذفت لأنها تكرار للمتابعة
+const homePage=()=>buildDash('home'),followPage=()=>buildDash('follow');
 function buildDash(view){
   if(!READY)return '<div class="empty">جارٍ تحميل بيانات المتابعة…</div>';
   const ED=canAdd(),today=T(),cw=curWeek(),L=P,total=L.length,cnt=countBy(L);
@@ -321,8 +322,8 @@ function buildDash(view){
   const prog=(p,extra)=>{const s=ds(p),ex=exFor(p.id).length;
     return `<div class="cd-al dk-row" style="--sc:${SC[s]}"><i></i><a href="#p-${pid(p)}">${esc(p.name)}</a><span class="m">${esc(p.plan_name)} • ${startOf(p)?dmy(startOf(p))+(endOf(p)&&endOf(p)!==startOf(p)?' – '+dmy(endOf(p)):''):'بلا موعد'}${plbl(p)?' • '+esc(plbl(p)):''}${p.location?' • '+esc(p.location):''} • ${esc(ownerOf(p))}${ex?' • موثق':''}${p.approved_at?' • معتمد':''}</span>
     <span class="acts">${pill(s)}${extra||''}<button class="btn cd-sm" data-edit="${pid(p)}">تفاصيل / تعديل</button>${wa(p,s==='متأخر'?'late':'up')}${wc(p)}</span></div>`};
-  const dkTabs=[['week','cal','هذا الأسبوع',thisN,'قيد التنفيذ'],['late','rep','تحتاج توثيقًا',need.length,'متأخر'],['appr','check','بانتظار الاعتماد',appr.length,'مكتمل'],['stall','x','متعثرة',stl.length,'متعثر'],['all','layers','كل البرامج',live.length,'']];
-  if(unassigned.length+legacyN.size)dkTabs.push(['own','users','بلا منفذ',unassigned.length+legacyN.size,'متعثر']);
+  const dkTabs=[['week','cal','هذا الأسبوع',thisN,'قيد التنفيذ'],['late','rep','تحتاج توثيقًا',need.length,'متأخر'],['appr','check','بانتظار الاعتماد',appr.length,'مكتمل'],['stall','x','متعثرة',stl.length,'متعثر']];
+  if(unassigned.length)dkTabs.push(['own','users','بلا منفذ',unassigned.length,'متعثر']);
   if(!dkTabs.some(t=>t[0]===D.dk))D.dk='week';
   const tabsHTML=`<div class="dk-tabs" role="tablist" aria-label="أقسام مكتبي الإلكتروني">${dkTabs.map(([k,i,t,n,sc])=>`<button type="button" role="tab" aria-selected="${D.dk===k}" class="dk-tab${D.dk===k?' on':''}${n&&['late','stall','own'].includes(k)?' alert':''}" style="--sc:${sc?SC[sc]:'var(--brand)'}" data-dk="${k}"><i>${ic(i)}</i><span>${t}</span><b class="${n?'':'z'}">${n}</b></button>`).join('')}</div>`;
   let body='';
@@ -341,7 +342,7 @@ function buildDash(view){
   }else if(D.dk==='late')body=need.length?`<p class="muted small dk-note">برامج انتهت فترتها دون توثيق. ذكّر المنفذ أو راسل المنسق أو سجّل التعثر.</p>`+need.map(p=>lateRow(p).replace('</span></div>',`${wc(p)}</span></div>`)).join(''):'<p class="muted cp-empty">لا توجد برامج متأخرة. كل ما انتهت فترته موثق أو مسجّلة حالته.</p>';
   else if(D.dk==='appr')body=appr.length?appr.map(apprRow).join(''):'<p class="muted cp-empty">لا توجد برامج موثقة بانتظار الاعتماد.</p>';
   else if(D.dk==='stall')body=stl.length?stl.map(p=>stallRow(p).replace(/<\/span><\/div>$/,`${wc(p)}</span></div>`)).join(''):'<p class="muted cp-empty">لا توجد برامج مسجّلة متعثرة.</p>';
-  else if(D.dk==='own')body=(legacyN.size?`<div class="cd-al" style="--sc:var(--warn)"><i></i><span class="m">${legacyN.size} اسمًا مكتوبًا يدويًا تحتاج ربطًا بمنسوبي النواة</span><span class="acts"><a class="btn pri cd-sm" href="#admin-people">${ic('users')} ربط الأسماء</a></span></div>`:'')+(unassigned.length?unassigned.map(unRow).join(''):'');
+  else if(D.dk==='own')body=unassigned.length?unassigned.map(unRow).join(''):'<p class="muted cp-empty">كل البرامج لها منفذ.</p>';
   else{
     const q=(D.dkq||'').trim(),fl=p=>(!D.dks||ds(p)===D.dks)&&(!D.dkp||String(p.plan_id)===String(D.dkp))&&(!q||(p.name+(p.code||'')+(p.owner_name||'')+(p.location||'')+(p.plan_name||'')).includes(q));
     const res=live.filter(fl).sort((a,b)=>(startOf(a)||'9').localeCompare(startOf(b)||'9')),shown=D.all?res:res.slice(0,30);
@@ -354,7 +355,7 @@ function buildDash(view){
   const winsHTML=`<section class="panel cd-wins"><div class="cd-ph"><h2>${ic('check')} أحدث المنجزات</h2><a class="btn soft cd-sm" href="#reports">كل التقارير المنفذة</a></div>${wins.length?`<div class="cd-wl">${wins.map(({e,p})=>`<a class="cd-w" href="#p-${esc(String(p.id))}"><span class="im"><img src="${esc(imgUrl(e.images[0]))}" alt="" loading="lazy"><em>${ic('rep')} ${e.images.length}</em></span><b>${esc(p.name)}</b><small>${esc(dmy(e.date||''))} • ${esc(p.plan_name)}</small></a>`).join('')}</div>`:'<div class="cd-empty">لم يُوثَّق تنفيذ بالصور بعد. تظهر هنا أحدث البرامج المنفذة فور توثيقها.</div>'}</section>`;
   const dashHTML=`<div class="cd-dash">
   <section class="cd-hero"><div><span class="cd-eyebrow">لوحة التحكم</span><h1>متابعة تنفيذ الخطط والبرامج</h1><p class="muted">${esc(greg(today))} • ${esc(hijri(today))}</p>
-   <div class="cd-chips">${cw?`<span class="cd-chip now">${ic('cal')} الأسبوع ${cw.number} من ${CAL().length}</span>`:`<span class="cd-chip">${ic('cal')} خارج أسابيع الدراسة</span>`}<span class="cd-chip">${ic('layers')} ${plansUsed.length} خطط • ${total} برنامجًا</span>${need.length?`<a class="cd-chip cd-chip-al" href="#admin-alerts">${ic('bell')} ${need.length} تحتاج إجراء</a>`:''}</div>
+   <div class="cd-chips">${cw?`<span class="cd-chip now">${ic('cal')} الأسبوع ${cw.number} من ${CAL().length}</span>`:`<span class="cd-chip">${ic('cal')} خارج أسابيع الدراسة</span>`}<span class="cd-chip">${ic('layers')} ${plansUsed.length} خطط • ${total} برنامجًا</span>${need.length?`<a class="cd-chip cd-chip-al" href="#admin-follow">${ic('bell')} ${need.length} تحتاج إجراء</a>`:''}</div>
    </div>
    <div class="cd-rings">${ring(total?cnt['مكتمل']/total*100||0:0,'نسبة الإنجاز',`${cnt['مكتمل']||0} من ${total} برنامجًا`,'var(--ok)')}${ring(dueL.length?dueDone/dueL.length*100:100,'الالتزام بالجدول',`${dueDone} من ${dueL.length} حان موعدها`,'var(--brand)')}${ring(CAL().length?passed/CAL().length*100:0,'الزمن المنقضي',`${passed} من ${CAL().length} أسبوعًا`,'var(--info)')}</div></section>
   <div class="cd-kpis">${kpi('','كل البرامج',total,'var(--brand)')}${kpi('مكتمل','مكتمل',cnt['مكتمل']||0,SC['مكتمل'])}${kpi('قيد التنفيذ','قيد التنفيذ',cnt['قيد التنفيذ']||0,SC['قيد التنفيذ'])}${kpi('لم يبدأ','مخطط',cnt['لم يبدأ']||0,'var(--cd-gray)')}${kpi('متأخر','متأخر التوثيق',cnt['متأخر']||0,SC['متأخر'])}${kpi('متعثر','متعثر',cnt['متعثر']||0,SC['متعثر'])}</div>
@@ -376,7 +377,8 @@ function buildDash(view){
   <section class="panel" id="cd-people"><div class="cd-ph"><h2>منفذو البرامج</h2><span class="muted">${ownAll.length} منفذًا • الأكثر حاجة للمتابعة أولًا${ED?' • أضف الصفة والصورة من زر «تعديل»':''}</span></div>
    <div class="cd-tw"><table class="cd-t cd-pt"><thead><tr><th>المنفذ</th><th>الصفة</th><th>البرامج</th><th>مكتمل</th><th>متأخر / متعثر</th><th>الإنجاز</th><th></th></tr></thead><tbody>${ownAll.map(o=>{const pp=PEOPLE[o.n]||{};return `<tr><td><span class="cd-pn">${avatar(o.n,40)}<b>${esc(o.n)}</b></span></td><td>${pp.role?esc(pp.role):'<span class="muted small">لم تُحدد</span>'}</td><td>${o.t}</td><td>${o.d}</td><td class="${o.b?'cd-badn':''}">${o.b||'—'}</td><td><span class="cd-pb">${stack(o.c,o.t)}<small>${Math.round(o.d/o.t*100)}%</small></span></td><td><span class="cd-dcell"><button class="btn soft cd-sm" data-own="${esc(o.n)}">برامجه</button>${ED?`<button class="btn cd-sm" data-person="${esc(o.n)}">${ic('edit')} تعديل</button>`:''}</span></td></tr>`}).join('')}</tbody></table></div></section>
   </div>`;
-  return `<div class="cd dk-desk">${dashHTML}${sh('cd-s-work','متابعة البرامج','ابدأ بما يحتاج إجراءً: هذا الأسبوع، التوثيق، الاعتماد، ثم كل البرامج')}${tabsHTML}<section class="panel dk-panel" role="tabpanel">${body}</section></div>`;
+  if(view==='home')return `<div class="cd dk-desk">${dashHTML}</div>`;
+  return `<div class="cd dk-desk">${tabsHTML}<section class="panel dk-panel" role="tabpanel">${body}</section></div>`;
 }
 
 /* ---------- النوافذ ---------- */
@@ -513,42 +515,27 @@ function plansPage(){
    ${list.map(row).join('')||`<tr><td colspan="7"><div class="cd-empty">${q?'لا توجد برامج مطابقة للبحث.':'لا توجد برامج في هذه الخطة بعد.'}</div></td></tr>`}
    ${ED&&!ALL?`<tr class="cd-newrow"><td class="cd-num">${ic('plus')}</td><td><input id="np-name" class="nm" placeholder="اسم برنامج جديد" aria-label="اسم البرنامج الجديد"></td><td>${ownerSelect('','id="np-own" aria-label="منفذ البرنامج الجديد"')}</td><td><input type="date" id="np-s" aria-label="تاريخ البداية"></td><td><input type="date" id="np-e" aria-label="تاريخ النهاية"></td><td><input id="np-ben" class="bn" list="cd-bens" placeholder="الفئة المستهدفة" aria-label="الفئة المستهدفة"></td><td><button class="btn pri cd-sm" type="button" id="np-add">إضافة</button></td></tr><tr class="cd-newrow cd-nr2"><td></td><td colspan="6"><div class="cd-nf"><select id="np-fac" aria-label="مرفق التنفيذ"><option value="">— مرفق التنفيذ (من المتاحة للحجز) —</option>${FAC.filter(x=>x.bookable).map(x=>`<option value="${esc(x.id)}">${esc(facLabel(x))}</option>`).join('')}</select><span id="np-per" class="cd-rs" style="margin:0"></span><small id="np-pn" class="muted">اختر المرفق والتاريخ لتظهر الحصص المتاحة.</small></div></td></tr>`:''}
    </tbody></table></div><div class="cd-err" id="np-err"></div>
-   <p class="muted small" style="margin:6px 0 0">${ED?'يُحفظ تعديل أي خانة فور تغييرها، ويظهر في كل صفحات الموقع ولوحة التحكم. البرنامج المحذوف ينتقل إلى صفحة «المحذوفات» في شريط لوحة التحكم ويمكن استعادته منها.':'سجّل الدخول من «دخول المحررين» لتعديل الخطة وإضافة البرامج.'}</p></section>
-  ${ED?`<a class="panel cd-trlink" href="#admin-people">${ic('users')} <span>المنفذون</span><small>ربط الأسماء بمنسوبي النواة وإسناد البرامج</small></a>`:''}${ED&&REMOVED.length?`<a class="panel cd-trlink" href="#admin-trash">${ic('x')} <span>المحذوفات</span><b>${REMOVED.length}</b><small>اضغط لعرضها واستعادتها</small></a>`:''}</div>`}
+   <p class="muted small" style="margin:6px 0 0">${ED?'يُحفظ تعديل أي خانة فور تغييرها، ويظهر في كل صفحات الموقع ولوحة التحكم. البرنامج المحذوف ينتقل إلى «إدارة البوابة ← المحذوفات» ويمكن استعادته منها.':'سجّل الدخول من «دخول المحررين» لتعديل الخطة وإضافة البرامج.'}</p></section>
+  </div>`}
+
+/* ---------- إدارة البوابة ← 1. الخطط ومنسقوها ---------- */
+function plansSetupPage(){
+  if(!READY)return '<div class="empty">جارٍ التحميل…</div>';
+  const rows=PL.map(pl=>{const l=P.filter(p=>String(p.plan_id)===String(pl.id)&&p.status!=='ملغي'),dn=l.filter(p=>ds(p)==='مكتمل').length;
+    return `<tr><td><span class="pl-dot" style="${C(PC(pl.id))}"></span> <b>${esc(pl.name)}</b>${pl.desc?`<br><small class="muted">${esc(pl.desc)}</small>`:''}</td>
+    <td>${pl.owner&&pl.owner.trim()?esc(pl.owner):'<span class="cd-doc no">لم يُحدَّد</span>'}</td><td>${esc(pl.year||'—')}</td><td>${l.length}</td><td>${l.length?Math.round(dn/l.length*100)+'%':'—'}</td>
+    <td class="acts"><button class="btn cd-sm" type="button" data-pl-edit="${esc(String(pl.id))}">${ic('edit')} تعديل الخطة</button><button class="btn soft cd-sm" type="button" data-plan="${esc(String(pl.id))}">${ic('plan')} برامجها</button></td></tr>`}).join('');
+  const noCoord=PL.filter(pl=>!(pl.owner||'').trim()).length;
+  return `<div class="cd"><section class="panel"><div class="cd-mgh"><h2>${ic('layers')} الخطط ومنسقوها</h2><button class="btn pri cd-sm" type="button" data-pl-new>${ic('plus')} خطة جديدة</button></div>
+  ${noCoord?`<p class="cd-err" style="margin:0 0 10px">${noCoord} ${noCoord===1?'خطة بلا منسق':'خطط بلا منسق'}: منسق الخطة يتابع برامجها في «نبض الخطة»، فحدّده من «تعديل الخطة».</p>`:''}
+  <div class="cd-tw"><table class="cd-t"><thead><tr><th>الخطة</th><th>منسق الخطة</th><th>العام</th><th>البرامج</th><th>الإنجاز</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="6"><div class="cd-empty">لا توجد خطط بعد. ابدأ بـ«خطة جديدة».</div></td></tr>'}</tbody></table></div>
+  <p class="muted small" style="margin:8px 0 0">تُضبط الخطط مرة في بداية العام، وتبقى متاحة للتعديل. البرامج تُضاف وتُعدَّل من «إدارة الخطة».</p></section></div>`}
 
 /* ---------- صفحة المحذوفات ---------- */
 function trashPage(){
   if(!READY)return '<div class="empty">جارٍ التحميل…</div>';
   return `<div class="cd"><p class="cx-intro">البرامج المحذوفة لا تظهر في صفحات الموقع. «استعادة» تعيد البرنامج كما كان، ببياناته وتوثيقه وصوره.</p>
   <section class="panel">${REMOVED.length?`<div class="cd-tw"><table class="cd-t cd-trt"><thead><tr><th>البرنامج</th><th>الخطة</th><th>المنفذ</th><th>التوثيق</th><th>تاريخ الحذف</th><th></th></tr></thead><tbody>${REMOVED.map(r=>`<tr><td><b>${esc(r.name)}</b></td><td>${esc(r.plan||'—')}</td><td>${esc(r.owner||'—')}</td><td>${r.docs?`<span class="cd-doc ok">${ic('check')} موثق</span>`:'<span class="cd-doc">—</span>'}</td><td>${r.at?esc((d=>`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`)(new Date(r.at))):'—'}${r.by&&r.by.includes('@')?`<small class="cd-by">${esc(r.by)}</small>`:''}</td><td><button class="btn pri cd-sm" data-restore="${esc(r.id)}" data-rname="${esc(r.name)}">استعادة</button></td></tr>`).join('')}</tbody></table></div>`:`<div class="cd-empty">${ic('check')}<br>لا توجد برامج محذوفة. عند حذف برنامج من جداول لوحة التحكم يظهر هنا ويمكن استعادته.</div>`}</section></div>`}
-
-/* ---------- صفحة المنفذين — منسوبو النواة المسندة إليهم برامج ---------- */
-const sugg=n=>{const t=new Set(normN(n).split(' ').filter(w=>w.length>1&&!['بن','ابن','عبد'].includes(w)));let best=null,bs=0;
-  for(const m of ((window.SP&&SP.staff)||[])){let k=0;for(const w of normN(m.name).split(' '))if(t.has(w))k++;if(k>bs){bs=k;best=m}}
-  return bs>=2||(bs>=1&&t.size===1)?best:null};
-function peoplePage(){
-  if(!READY)return '<div class="empty">جارٍ تحميل المنفذين…</div>';
-  const ED=canAdd(),DIR=dirOf(),q=(D.uq||'').trim(),cnt={},legacy={};let none=0;
-  for(const p of P){const n=ownerOf(p);if(n==='غير محدد'){none++;continue}if(p.owner_staff_id&&DIR[p.owner_staff_id])cnt[p.owner_staff_id]=(cnt[p.owner_staff_id]||0)+1;else if(!OGROUP[n])legacy[n]=(legacy[n]||0)+1}
-  const rows=Object.keys(cnt).map(id=>DIR[id]).filter(m=>!q||(m.name+(m.title||'')).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'ar'));
-  const lg=Object.entries(legacy).sort((a,b)=>b[1]-a[1]),st=(window.SP&&SP.staff)||[];
-  const pn=t=>t===1?'برنامج واحد':t===2?'برنامجان':t+(t<=10?' برامج':' برنامجًا');
-  const lgRows=lg.map(([n,t],i)=>{const sg=sugg(n);return `<tr><td><b>${esc(n)}</b><div class="muted small">اسم مكتوب يدويًا قبل الربط بالنواة</div></td><td><button class="btn soft cd-sm" data-own="${esc(n)}">${pn(t)}</button></td>
-    <td>${ED?`<select class="cd-olsel" data-ol="${esc(n)}" aria-label="منسوب النواة الموافق لـ ${esc(n)}"><option value="">— اختر منسوب النواة —</option>${st.map(m=>`<option value="${esc(m.id)}"${sg&&sg.id===m.id?' selected':''}>${esc(m.name)}${m.title?' — '+esc(m.title):''}</option>`).join('')}</select>`:'<span class="muted small">غير مرتبط</span>'}</td>
-    <td>${ED?`<span style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn pri cd-sm" data-olink="${esc(n)}">${ic('check')} ربط</button><button class="btn cd-sm" data-ogroup="${esc(n)}" title="اسم فريق أو جهة أو مجموعة وليس شخصًا">جهة أو مجموعة</button></span>`:''}</td></tr>`}).join('');
-  return `<div class="cd">
-  <section class="panel"><div class="cd-mgh"><input type="search" class="cd-srch" id="cd-uq" placeholder="ابحث بالاسم أو المسمى" value="${esc(D.uq||'')}" aria-label="بحث في المنفذين"><span class="muted small">${rows.length} منفذًا من منسوبي النواة${none?' • '+none+' برنامجًا بلا منفذ':''}</span></div>
-   <div class="cd-tw"><table class="cd-t cd-ut"><thead><tr><th>الصورة</th><th>الاسم</th><th>المسمى الوظيفي</th><th>التواصل</th><th>البرامج</th></tr></thead><tbody>
-   ${rows.map(m=>{const pp=PEOPLE[m.name]||{};return `<tr><td>${avatar(m.name,44)}</td><td><b>${esc(m.name)}</b></td><td>${esc(m.title||'—')}</td>
-    <td>${pp.phone?`<a class="cd-wab" href="${waLink(pp.phone,'')}" target="_blank" rel="noopener" title="مراسلة ${esc(m.name)} على واتساب" aria-label="واتساب ${esc(m.name)}">${WAICON}</a>`:'<span class="muted small">—</span>'}</td>
-    <td><button class="btn soft cd-sm" data-own="${esc(m.name)}">${pn(cnt[m.id])}</button></td></tr>`}).join('')||'<tr><td colspan="5"><div class="cd-empty">لا يوجد منفذون مرتبطون بالنواة بعد. أسند برنامجًا إلى أحد المنسوبين من «إدارة الخطة».</div></td></tr>'}
-   </tbody></table></div>
-   <p class="muted small" style="margin:6px 0 0">الاسم والمسمى والصورة تُدار من النواة الرقمية وتتحدث هنا تلقائيًا؛ يُسنَد المنفذ من قائمة المنسوبين عند إضافة البرنامج أو تعديله.</p></section>
-  ${lg.length?`<section class="panel" id="cd-legacy"><div class="cd-mgh"><h2 style="margin:0;font-size:1.05rem">أسماء تحتاج ربطًا بالنواة</h2><span class="muted small">${lg.length} اسمًا</span></div>
-   <p class="muted small" style="margin:0 0 8px">أسماء المنفذين المكتوبة يدويًا في الخطة. اربط كل اسم بمنسوبه في النواة (الاقتراح التلقائي من تشابه الاسم) فينتقل الربط إلى كل برامجه.</p>
-   <div class="cd-tw"><table class="cd-t"><thead><tr><th>الاسم الحالي</th><th>البرامج</th><th>منسوب النواة</th><th></th></tr></thead><tbody>${lgRows}</tbody></table></div><div class="cd-err" id="ol-err"></div></section>`:''}
-  </div>`}
-async function upPhoto(f){if(!ASSETS)throw new Error('رفع الصور يتطلب تسجيل الدخول');if(!/^image\//.test(f.type))throw new Error('اختر ملف صورة.');const r=await ASSETS.upload(await shrink(f).catch(()=>f));return {id:r.id,url:r.url}}
 
 /* ---------- الربط ---------- */
 let tip=null;
@@ -586,7 +573,7 @@ function bind(v){
   v.querySelectorAll('[data-dks]').forEach(b=>b.onclick=()=>{D.dks=D.dks===b.dataset.dks?'':b.dataset.dks;D.all=false;route(true)});
   const dkp=v.querySelector('#dk-plan');if(dkp)dkp.onchange=()=>{D.dkp=dkp.value;D.all=false;route(true)};
   v.querySelectorAll('[data-pbadd]').forEach(b=>b.onclick=()=>editor(null,{plan_id:+b.dataset.pbadd||b.dataset.pbadd}));
-  v.querySelectorAll('[data-dkplan]').forEach(b=>b.onclick=()=>{D.dkp=b.dataset.dkplan;D.dk='all';D.dks='';D.all=false;route(true);setTimeout(()=>{const t=document.querySelector('.dk-tabs');t&&t.scrollIntoView({behavior:'smooth',block:'start'})},50)});
+  v.querySelectorAll('[data-dkplan]').forEach(b=>b.onclick=()=>toPlans('plan',{mplan:b.dataset.dkplan,plan:b.dataset.dkplan,pq:''}));   // «كل برامج الخطة» في إدارة الخطة
   const dka=v.querySelector('[data-dkadd]');if(dka)dka.onclick=()=>{const [x,y]=dka.dataset.dkadd.split('|');editor(null,{planned_date:x,planned_end:y})};
   v.querySelectorAll('[data-pbplan]').forEach(b=>b.onclick=()=>{D.pb=b.dataset.pbplan;D.pbf='';D.pbq='';saveUI();route(true)});
   v.querySelectorAll('[data-pbf]').forEach(b=>b.onclick=()=>{D.pbf=D.pbf===b.dataset.pbf?'all':b.dataset.pbf;route(true)});
@@ -647,19 +634,24 @@ function updBell(){
   const old=document.getElementById('cd-tools');if(old)old.remove()}
 
 /* ---------- ترويسة لوحة التحكم الموحدة (هوية النواة): للمنسق والمنفذ معًا ---------- */
-Object.assign(IC,{pulse:'<path d="M3 12h4l2.5-6.5 4 13 2.5-6.5H21"/>',desk:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',refresh:'<path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 4v7h-7"/>',trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'});
-const ADM=['admin','admin-alerts','admin-plans','admin-people','admin-trash','admin-portal'],EXP=['me','me-docs'],NTF='notifications';
-const TITLES={notifications:'الإشعارات','coord-plan':'نبض الخطة',me:'برامجي','me-docs':'توثيق برامجي','admin-alerts':'التنبيهات',admin:'مكتبي الإلكتروني','admin-plans':'إدارة الخطة','admin-people':'المنفذون','admin-trash':'المحذوفات','admin-portal':'إعدادات البوابة'};
+Object.assign(IC,{gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',pulse:'<path d="M3 12h4l2.5-6.5 4 13 2.5-6.5H21"/>',desk:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',refresh:'<path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 4v7h-7"/>',trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'});
+// لوحة المنسق: أربعة أقسام بالنمط الموحد. الأسماء القديمة (admin-alerts، admin-people) تحوّل في الموجّه
+const ADM=['admin','admin-follow','admin-plans','admin-portal','admin-ann','admin-trash'],EXP=['me'],NTF='notifications';
+// القسم الرئيسي لكل صفحة، وتبويبات القسم الفرعية [الصفحة، الاسم، الأيقونة]
+const SEC={'admin-ann':'admin-portal','admin-trash':'admin-portal'};
+const SUBS={'admin-portal':[['admin-portal','1. الخطط ومنسقوها','layers'],['admin-ann','2. الإعلانات','bell'],['admin-trash','3. المحذوفات','trash']]};
+const SECICON={admin:'home','admin-follow':'pulse','admin-plans':'plan','admin-portal':'gear',me:'desk','coord-plan':'pulse',notifications:'bell'};
+const TITLES={notifications:'الإشعارات','coord-plan':'نبض الخطة',me:'مكتبي',admin:'الرئيسية','admin-follow':'متابعة البرامج','admin-plans':'إدارة الخطة','admin-portal':'إدارة البوابة','admin-ann':'إدارة البوابة','admin-trash':'إدارة البوابة'};
 const PINFO={
   notifications:'ما ينتظر إجراءك ونتائج طلباتك ومستجدات الخطط الذكية.',
   'coord-plan':'خطتك وبرامجها: ما يحتاج متابعتك الآن وما تبقى.',
-  me:'برامجك المسندة إليك: ما يحتاج توثيقًا، وما يجري، وما هو قادم، مع توثيق التنفيذ وتقاريره في صفحة واحدة.',
-  'me-docs':'وثّق تنفيذ برامجك واطّلع على تقارير التنفيذ السابقة.',
-  admin:'مكتبك كمدير للبوابة: برامج هذا الأسبوع وتقويمه، وما يحتاج توثيقًا أو اعتمادًا، وكل البرامج مع مراسلة المنسق لتعديلها.',
-  'admin-alerts':'البرامج التي تحتاج تدخلك: المتأخرة في التوثيق، والمتعثرة وأسباب تعثرها، والقادمة قريبًا.',
-  'admin-plans':'تحرير برامج كل خطة وتوثيقها واعتمادها، وإضافة الخطط وإرفاق ملفاتها، ومنها تصل إلى المنفذين والمحذوفات.',
-  'admin-people':'منفذو البرامج من منسوبي النواة، وربط الأسماء المكتوبة يدويًا بمنسوبيها.',
-  'admin-trash':'ما حُذف من البرامج والخطط، مع إمكانية استعادته.','admin-portal':'إدارة إعلانات البوابة: المركزية لكل الأنظمة، والخاصة بالخطط الذكية.'};
+  me:'برامجك المسندة إليك في صفحة واحدة: ما يحتاج توثيقًا وما يجري وما هو قادم، مع توثيق التنفيذ وتقاريره.',
+  admin:'نظرة شاملة على الخطط: الإنجاز ومسار التنفيذ وتقدّم كل خطة والإنجاز حسب المجال وفريق التنفيذ وأحدث المنجزات.',
+  'admin-follow':'العمل اليومي على البرامج: هذا الأسبوع، وما يحتاج توثيقًا أو اعتمادًا، والمتعثرة، وما بلا منفذ، مع تذكير المنفذ ومراسلة المنسق عبر واتساب.',
+  'admin-plans':'تحرير برامج كل خطة وتوثيقها واعتمادها، حسب الخطة أو الأسبوع أو المجال أو المنفذ.',
+  'admin-portal':'الخطوة الأولى: الخطط ومنسقوها — إنشاء الخطة وتحديد منسقها ولونها وعامها.',
+  'admin-ann':'الخطوة الثانية: إعلانات البوابة، المركزية لكل الأنظمة والخاصة بالخطط الذكية.',
+  'admin-trash':'الخطوة الثالثة: ما حُذف من البرامج والخطط، مع إمكانية استعادته.'};
 const panelHash=h=>!!h&&(ADM.includes(h)||EXP.includes(h)||h===NTF||h==='coord-plan'||h==='dashboard');
 const hhmm=d=>{try{return d.toLocaleTimeString('ar-SA-u-ca-gregory-nu-latn',{hour:'2-digit',minute:'2-digit'})}catch(e){return ''}};
 const roleName=()=>{const a=(window.SP&&SP.access)||{};return a.admin?'مدير النواة الرقمية':a.coordinator?'منسق الخطط الذكية':canAdd()?'محرر الخطط الذكية':(READY&&myPlans().length)?'منسق الخطة':'منفذ البرامج'};
@@ -713,7 +705,7 @@ function notifs(){
   const out=[],t=T(),mid=isExec()?SP.access.staff_id:null,skip=new Set();
   if(mid){const soon=addDays(t,7);
     for(const p of P){if(p.owner_staff_id!==mid||p.status==='ملغي'||done(p))continue;const s=startOf(p),e=endOf(p)||s;if(!s)continue;
-      if(e<=t){skip.add(p.id);out.push({id:'x:due:'+p.id+':'+e,tone:'bad',o:0,d:e,t:p.name,s:'بانتظار توثيقك • انتهت فترته '+dmy(e),href:'#me-docs'})}
+      if(e<=t){skip.add(p.id);out.push({id:'x:due:'+p.id+':'+e,tone:'bad',o:0,d:e,t:p.name,s:'بانتظار توثيقك • انتهت فترته '+dmy(e),href:'#me'})}
       else if(s<=t)out.push({id:'x:now:'+p.id+':'+s,tone:'info',o:2,d:s,t:p.name,s:'برنامجك جارٍ الآن حتى '+dmy(e),href:'#me'})
       else if(s<=soon)out.push({id:'x:soon:'+p.id+':'+s,tone:'info',o:3,d:s,t:p.name,s:'برنامجك القادم • يبدأ '+dmy(s),href:'#me'})}}
   if(READY&&!canAdd()&&mid){/* منسق خطة بلا صلاحية تحرير: ينبّه على متابعة برامج خطته (غير المسندة إليه كمنفذ) */
@@ -731,18 +723,19 @@ function notifs(){
       else if(needs(p)&&!skip.has(p.id))out.push({id:'c:late:'+p.id+':'+endOf(p),tone:'bad',o:0,d:endOf(p),t:p.name,s:'متأخر التوثيق منذ '+daysBetween(endOf(p),t)+' يومًا • '+ownerOf(p),href:'#p-'+p.id})}}
   return out.sort((a,b)=>a.o-b.o||String(a.d).localeCompare(String(b.d)))}
 function barHTML(h){
-  const N=notifs(),seen=getSeen(),un=N.filter(n=>!seen.has(n.id)).length,adm=READY&&canAdd(),ex=isExec(),pc=isPlanCoord(),cur=h==='admin-alerts'?'admin':(h==='admin-people'||h==='admin-trash')?'admin-plans':h;
+  const N=notifs(),seen=getSeen(),un=N.filter(n=>!seen.has(n.id)).length,adm=READY&&canAdd(),ex=isExec(),pc=isPlanCoord(),cur=SEC[h]||h;
   const it=(href,icon,label,badge)=>`<a href="#${href}" class="${cur===href?'on':''}"${cur===href?' aria-current="page"':''}>${ic(icon)}<span>${label}</span>${badge?`<b>${badge}</b>`:''}</a>`;
   const nm=(window.SP&&SP.access&&SP.access.name)||WHO||'';
   return `<div class="cp-top"><div class="wrap cp-topin">
     <a class="cp-sys" href="#${adm?'admin':ex?'me':'admin'}"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M30 4c2 14 8 20 24 24-16 4-22 10-24 26-2-16-8-22-24-26 16-4 22-10 24-24z" fill="#0f8a94"/><path d="M50 4c.8 5 3 7.2 8 8-5 .8-7.2 3-8 8-.8-5-3-7.2-8-8 5-.8 7.2-3 8-8z" fill="#f0b34a"/></svg><span><b>الخطط الذكية</b><small>متوسطة لبيد بن ربيعة</small></span></a>
     <span class="cp-idl"><a class="cp-site" href="#home">الموقع الإلكتروني</a><i class="cp-vsep" aria-hidden="true"></i><a class="coreid" href="https://i3zalmadeni.github.io/digital-core" title="النواة الرقمية"><img src="assets/core-logo.svg" alt="" width="36" height="36"><span><b>النواة الرقمية</b><small>الهوية الموحدة</small></span></a><span class="moe"><b>وزارة التعليم</b><small>Ministry of Education</small></span></span></div></div>
   <div class="cp-strip" aria-hidden="true"></div>
-  <div class="cp-sub"><div class="wrap cp-subin"><button type="button" class="dmb" id="dmb" aria-expanded="false" aria-controls="cpNav"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span class="dmb-t">القائمة</span><svg class="dmb-ch" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><nav class="cp-nav" id="cpNav" aria-label="صفحات لوحة التحكم">${adm?it('admin','desk','مكتبي الإلكتروني'):''}${ex&&!SP.rvCoord?it('me','user','برامجي'):''}${pc&&!SP.rvCoord?it(PB,'pulse','نبض الخطة'):''}${adm?it('admin-plans','plan','إدارة الخطة')+it('admin-portal','bell','إعدادات البوابة'):''}</nav>
+  <div class="cp-sub"><div class="wrap cp-subin"><button type="button" class="dmb" id="dmb" aria-expanded="false" aria-controls="cpNav"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span class="dmb-t">القائمة</span><svg class="dmb-ch" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><nav class="cp-nav" id="cpNav" aria-label="صفحات لوحة التحكم">${adm?it('admin','home','الرئيسية')+it('admin-follow','pulse','متابعة البرامج'):''}${ex&&!SP.rvCoord?it('me','desk','مكتبي'):''}${pc&&!SP.rvCoord?it(PB,'pulse','نبض الخطة'):''}${adm?it('admin-plans','plan','إدارة الخطة')+it('admin-portal','gear','إدارة البوابة'):''}</nav>
     <span class="cp-user">${ubBarHTML(nm, adm ? '#admin' : '#me')}</span></div></div>
-  <div class="cp-page"><div class="wrap cp-pagein"><div class="cp-pt"><small>${roleName()}</small><h1>${TITLES[h]||''}</h1></div><p class="cp-pd">${PINFO[h]||''}</p>
+  <div class="cp-page"><div class="wrap cp-pagein"><div class="cp-pt"><small>${roleName()}</small><h1>${SECICON[SEC[h]||h]?ic(SECICON[SEC[h]||h]):''}${TITLES[h]||''}</h1></div><p class="cp-pd">${PINFO[h]||''}</p>
     <div class="cp-pm"><span class="cp-up">آخر تحديث ${hhmm(LASTUP)}</span><button type="button" class="btn cd-sm" id="cp-refresh">${ic('refresh')} تحديث</button></div></div>
-    ${ADM.includes(h)&&h!=='admin-portal'?`<div class="wrap cp-acts" role="group" aria-label="إضافة سريعة"><button type="button" class="cx-pri" data-cx-add="plan">${ic('plus')}<span>برنامج في الخطة</span></button><button type="button" data-cx-add="unplanned">${ic('plus')}<span>برنامج غير مدرج</span></button><button type="button" data-cx-add="newplan">${ic('plus')}<span>خطة جديدة</span></button></div>`:''}</div>`}
+    ${SUBS[SEC[h]||h]?`<div class="wrap cp-subnav-w"><div class="subnav" role="navigation" aria-label="${TITLES[h]}">${SUBS[SEC[h]||h].map(([k,n,i])=>`<a href="#${k}" class="${k===h?'on':''}"${k===h?' aria-current="page"':''}>${ic(i)}${n}</a>`).join('')}</div></div>`:''}
+    ${h==='admin-plans'?`<div class="wrap cp-acts" role="group" aria-label="إضافة سريعة"><button type="button" class="cx-pri" data-cx-add="plan">${ic('plus')}<span>برنامج في الخطة</span></button><button type="button" data-cx-add="unplanned">${ic('plus')}<span>برنامج غير مدرج</span></button><button type="button" data-cx-add="newplan">${ic('plus')}<span>خطة جديدة</span></button></div>`:''}</div>`}
 const shell=(h,inner)=>inner;
 let BARH=null;
 function showBar(h){if(h!==BARH){NOPEN=false;BARH=h}let bar=document.getElementById('cx-bar');const on=!!(h&&READY&&(ADM.includes(h)?canAdd():EXP.includes(h)?isExec():h===PB?isPlanCoord():h===NTF&&(canAdd()||isExec())));
@@ -753,7 +746,7 @@ function showBar(h){if(h!==BARH){NOPEN=false;BARH=h}let bar=document.getElementB
   bar.hidden=false;bar.innerHTML=barHTML(h);bindBar(bar,h);
   if(window.PK&&window.SP&&SP.sb){const ex=isExec(),nm=(SP.access&&SP.access.name)||WHO||'';PK.use(SP.sb);PK.fitNav(bar.querySelector('.cp-nav'));PK.mountAnnouncements({sb:SP.sb,system:'smart_plans',page:(h==='admin'||h==='me')?'home':'all',after:'#cx-bar'});
     if(h==='admin')PK.welcome('#view',{mode:'before',sb:SP.sb,name:nm,role:roleName()});else document.querySelectorAll('.pk-wcw').forEach(e=>e.remove());
-    if(h==='admin-portal'){/* إدارة الخطة: قسم الإعلانات أسفل المحتوى */PK.mountAdminSection({sb:SP.sb,system:'smart_plans',central:true,after:'#view'})}else document.querySelectorAll('.pk-admwrap').forEach(e=>e.remove())}
+    if(h==='admin-ann'){/* إدارة البوابة ← الإعلانات: قسم الإعلانات أسفل المحتوى */PK.mountAdminSection({sb:SP.sb,system:'smart_plans',central:true,after:'#view'})}else document.querySelectorAll('.pk-admwrap').forEach(e=>e.remove())}
   // الجوال: التبويب الحالي يُمرَّر إلى وسط الشريط دون تحريك الصفحة، وتظليل الحافة يدل على وجود تبويبات أخرى
   const nv=bar.querySelector('.cp-nav'),on2=nv&&nv.querySelector('a.on');
   if(nv){if(on2&&innerWidth<=760)nv.scrollLeft+=on2.getBoundingClientRect().left+on2.offsetWidth/2-(nv.getBoundingClientRect().left+nv.clientWidth/2);
@@ -800,6 +793,9 @@ route=function(keep){
   if(h==='login'){const v=document.getElementById('view');showBar(null);tip&&tip.remove();
     if(!(window.SP&&SP.loginPage)){v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
     SP.loginPage(v);return}
+  // الروابط القديمة: «التنبيهات» ← متابعة البرامج، و«المنفذون» حُذفت (الربط بالنواة الرقمية) ← إدارة البوابة
+  if(h==='admin-alerts'){location.replace('#admin-follow');return}
+  if(h==='admin-people'){location.replace('#admin-portal');return}
   if(h==='dashboard'){const v=document.getElementById('view');if(!READY){showBar(h);v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
     location.replace(canAdd()?'#admin':'#me');return}
   if(h===PB&&READY&&window.SP&&SP.rvCoord){location.replace('#admin');return}   // لوحة المنسق: بلا صفحات المنفّذ
@@ -817,12 +813,12 @@ route=function(keep){
   updBell();
   document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.n==='admin'));
   const sy=scrollY,v=document.getElementById('view');tip&&tip.remove();
-  showBar(h);v.style.minHeight=h==='admin-portal'?'0':'';v.style.paddingBottom=h==='admin-portal'?'0':'';
+  showBar(h);v.style.minHeight=h==='admin-ann'?'0':'';v.style.paddingBottom=h==='admin-ann'?'0':'';
   if(!READY){v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
   if(!canAdd()&&window.SP&&SP.rvCan&&!SP.rvCoord){location.replace('#me');return}   // لوحة المنفّذ: صفحات المنسق تُحوَّل إلى «برامجي»
   if(!canAdd()){const sg=!!(window.SP&&SP.signedIn);
     v.innerHTML=`<div class="cd-lockpage">${ic('user')}<h2>${sg?'لا تملك صلاحية لوحة التحكم':'لوحة التحكم لمنسوبي النواة المصرّح لهم'}</h2><p class="muted">${sg?'حسابك في النواة الرقمية لا يحمل صلاحية الخطط الذكية. يمنحها مدير النواة من صفحة «الصلاحيات» في النواة الرقمية.':'سجّل الدخول بحساب النواة الرقمية لعرض لوحة التحكم وإدارة الخطة والمنفذين.'}</p><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${sg?'':'<button class="btn pri" type="button" id="cd-login">دخول</button>'}<a class="btn soft" href="#home">الرئيسية</a></span></div>`;const lb=document.getElementById('cd-login');if(lb)lb.onclick=()=>{if(window.SP&&SP.login)SP.login()};return}
-  v.innerHTML=shell(h,h==='admin-plans'?plansPage():h==='admin-people'?peoplePage():h==='admin-trash'?trashPage():h==='admin-portal'?'<div class="cd"><section class="panel"><p class="muted" style="margin:0">أضف الإعلانات وعدّلها وأوقفها من الأقسام أدناه، وتظهر للمستخدمين في أعلى صفحات النظام.</p></section></div>':h==='admin-alerts'?alertsPage():tasksPage());bind(v);
+  v.innerHTML=shell(h,h==='admin-plans'?plansPage():h==='admin-trash'?trashPage():h==='admin-portal'?plansSetupPage():h==='admin-ann'?'<div class="cd"><section class="panel"><p class="muted" style="margin:0">أضف الإعلانات وعدّلها وأوقفها من الأقسام أدناه، وتظهر للمستخدمين في أعلى صفحات النظام.</p></section></div>':h==='admin-follow'?followPage():homePage());bind(v);
   if(keep===true)window.scrollTo(0,sy);else window.scrollTo(0,0);
 };
 route(true);
