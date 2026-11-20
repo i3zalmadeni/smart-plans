@@ -175,41 +175,50 @@
     };
 
     /* ---------- الدخول الموحد (النواة الرقمية): معرّف دخول وكلمة مرور ---------- */
-    var esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
     var goHome = function () { location.replace(location.pathname + location.search); };
     SP.signOut = function () { return sb.auth.signOut().then(goHome, goHome); };
+    /* صفحة الدخول (#login) بهوية صفحات الدخول في بقية الأنظمة، بدل النافذة المنبثقة.
+       SP.login يحفظ الصفحة الحالية ثم ينتقل إلى #login؛ وبعد الدخول يعود إليها (أو إلى لوحة التحكم). */
+    var NEXT_KEY = 'sp_login_next';
     SP.login = function () {
-      if (document.getElementById('lg-modal')) return;
-      var m = document.createElement('div'); m.className = 'modal'; m.id = 'lg-modal';
-      m.innerHTML = '<div role="dialog" aria-modal="true" aria-labelledby="lg-t" style="width:100%;max-width:400px">' +
-        '<img src="assets/core-logo.svg" alt="النواة الرقمية" width="72" height="72" style="display:block;margin:0 auto 8px">' +
-        '<h3 id="lg-t" style="text-align:center;margin:0 0 4px">النواة الرقمية</h3>' +
-        '<p style="text-align:center;font-weight:800;font-size:1.05rem;color:var(--brand2,#0c6f82);margin:2px 0 4px">الخطط الذكية</p>' +
-        '<p class="muted small" style="text-align:center;margin:0 0 14px">تسجيل الدخول · متوسطة لبيد بن ربيعة</p>' +
-        '<form class="frm" id="lg-f" style="grid-template-columns:1fr">' +
-        '<div><label for="lg-e">معرّف الدخول</label><input id="lg-e" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required dir="ltr" placeholder="أرقام أو حروف إنجليزية"></div>' +
-        '<div><label for="lg-p">كلمة المرور</label><input id="lg-p" type="password" autocomplete="current-password" required dir="ltr"></div>' +
-        '</form>' + '<label style="display:flex;align-items:flex-start;gap:10px;margin:12px 0 6px;cursor:pointer;font-weight:500" for="lg-rm"><input id="lg-rm" form="lg-f" type="checkbox" style="width:auto;margin-top:4px"><span>حفظ معلوماتي<small class="sub" style="display:block;font-weight:400">يحفظ معرّف الدخول على هذا الجهاز فقط، ولا تُحفظ كلمة المرور.</small></span></label>' + '<div id="lg-m" role="alert"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn pri" type="submit" form="lg-f" id="lg-b">دخول</button><button class="btn" type="button" data-x>إلغاء</button></div></div>';
-      document.body.append(m);
-      var close = function () { m.remove(); };
-      m.querySelector('[data-x]').onclick = close;
-      m.onclick = function (e) { if (e.target === m) close(); };
-      try { var sv = localStorage.getItem('dc_login_id'); if (sv) { m.querySelector('#lg-e').value = sv; m.querySelector('#lg-rm').checked = true; } } catch (x) {}
-      m.querySelector('#lg-e').focus();
-      m.querySelector('#lg-f').onsubmit = function (e) {
+      var h = location.hash || '#home';
+      try { if (h !== '#login') sessionStorage.setItem(NEXT_KEY, h === '#home' || h === '#' ? '#dashboard' : h); } catch (x) {}
+      if (location.hash !== '#login') location.hash = '#login';
+    };
+    var goNext = function () {
+      var n = '#dashboard';
+      try { n = sessionStorage.getItem(NEXT_KEY) || n; sessionStorage.removeItem(NEXT_KEY); } catch (x) {}
+      if (!/^#[a-z0-9-]+$/i.test(n) || n === '#login') n = '#dashboard';
+      history.replaceState(null, '', location.pathname + location.search + n);
+      location.reload();
+    };
+    SP.loginPage = function (v) {
+      if (!v) return;
+      document.querySelectorAll('#nav a').forEach(function (a) { a.classList.toggle('on', a.dataset.n === 'admin'); });
+      if (SP.signedIn) { location.replace('#dashboard'); return; }
+      SP.ready.then(function () { if (SP.signedIn && location.hash === '#login') location.replace('#dashboard'); });
+      v.innerHTML = '<div class="sp-login"><img class="lgi" src="assets/core-logo.svg" alt="" width="84" height="84">' +
+        '<h2>النواة الرقمية</h2><p class="to">الخطط الذكية</p><p class="sub">تسجيل الدخول · متوسطة لبيد بن ربيعة</p>' +
+        '<form id="lg-f"><label for="lg-e">معرّف الدخول</label><input id="lg-e" type="text" required autocomplete="username" dir="ltr" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="أرقام أو حروف إنجليزية">' +
+        '<label for="lg-p">كلمة المرور</label><input id="lg-p" type="password" required autocomplete="current-password" dir="ltr">' +
+        '<label class="lgchk" for="lg-rm"><input id="lg-rm" type="checkbox"><span>حفظ معلوماتي<small>يحفظ معرّف الدخول على هذا الجهاز فقط، ولا تُحفظ كلمة المرور.</small></span></label>' +
+        '<p class="err" id="lg-m" role="alert"></p><button class="btn pri" id="lg-b">دخول</button></form></div>';
+      window.scrollTo(0, 0);
+      var $ = function (i) { return v.querySelector('#' + i); };
+      try { var sv = localStorage.getItem('dc_login_id'); if (sv) { $('lg-e').value = sv; $('lg-rm').checked = true; $('lg-p').focus(); } else $('lg-e').focus(); } catch (x) {}
+      $('lg-f').onsubmit = function (e) {
         e.preventDefault();
-        var b = m.querySelector('#lg-b'), msg = m.querySelector('#lg-m');
-        b.disabled = true; b.textContent = 'جارٍ الدخول…'; msg.innerHTML = '';
-        sb.auth.signInWithPassword({ email: toAuthEmail(m.querySelector('#lg-e').value), password: m.querySelector('#lg-p').value })
+        var b = $('lg-b'), msg = $('lg-m'); if (b.disabled) return;
+        b.disabled = true; b.textContent = 'جارٍ الدخول…'; msg.textContent = '';
+        sb.auth.signInWithPassword({ email: toAuthEmail($('lg-e').value), password: $('lg-p').value })
           .then(function (r) {
             if (r.error) throw r.error;
-            try { if (m.querySelector('#lg-rm').checked) localStorage.setItem('dc_login_id', m.querySelector('#lg-e').value.trim().toLowerCase()); else localStorage.removeItem('dc_login_id'); } catch (x) {}
-            location.reload();
+            try { if ($('lg-rm').checked) localStorage.setItem('dc_login_id', $('lg-e').value.trim().toLowerCase()); else localStorage.removeItem('dc_login_id'); } catch (x) {}
+            goNext();
           }).catch(function (err) {
             b.disabled = false; b.textContent = 'دخول';
-            var t = /banned/.test((err && err.code) || '') ? 'هذا الحساب موقوف. راجع مدير النواة.'
+            msg.textContent = /banned/.test((err && err.code) || '') ? 'هذا الحساب موقوف. راجع مدير النواة.'
               : (err && (err.code === 'invalid_credentials' || err.status === 400)) ? 'بيانات الدخول غير صحيحة.' : 'تعذّر الاتصال بالخادم، حاول مرة أخرى.';
-            msg.innerHTML = '<div class="msg err">' + esc(t) + '</div>';
           });
       };
     };
@@ -224,8 +233,7 @@
           box.innerHTML = '<button class="btn" type="button" id="lg-out">خروج</button>';
           box.querySelector('#lg-out').onclick = function () { SP.signOut(); };
         } else {
-          box.innerHTML = '<button class="btn soft" type="button" id="lg-in">دخول</button>';
-          box.querySelector('#lg-in').onclick = SP.login;
+          box.innerHTML = '';   // الدخول من رابط «تسجيل الدخول» في قائمة الموقع (صفحة #login)
         }
       });
     };

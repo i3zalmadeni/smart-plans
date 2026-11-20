@@ -165,3 +165,26 @@
   .cp-acts button{flex:none;min-height:44px;white-space:nowrap}
 }
 @media (prefers-reduced-motion:reduce){#hdr::after,.cp-strip,.cp-npop{animation:none}}
+
+/* صفحة الدخول (#login) بهوية صفحات الدخول في أنظمة النواة الرقمية */
+.sp-login{margin:50px auto;max-width:420px;border-radius:30px;border-top:5px solid var(--brand,#0f8a94);background:linear-gradient(160deg,#e3f6f7,#fff 130%);box-shadow:0 10px 28px rgba(13,59,102,.12);position:relative;overflow:hidden;padding:30px;color:#0d3b66}
+.sp-login::after{content:"";position:absolute;inset:auto auto -50px -40px;width:150px;height:150px;border-radius:50%;background:rgba(15,138,148,.1);pointer-events:none}
+.sp-login .lgi{width:84px;height:84px;margin:0 auto 10px;display:block}
+.sp-login h2,.sp-login .sub,.sp-login .to{text-align:center}
+.sp-login h2{margin:0 0 2px}
+.sp-login .to{font-weight:800;font-size:1.05rem;color:var(--brand2,#0c6f82);margin:2px 0 4px}
+.sp-login .sub{color:#5b7083;margin:0 0 6px;font-size:.92rem}
+.sp-login form{position:relative;z-index:1}
+.sp-login label{display:block;margin:12px 0 4px;font-weight:700}
+.sp-login input[type=text],.sp-login input[type=password]{width:100%;box-sizing:border-box;font:inherit;padding:11px 14px;border:1px solid #cfdde4;border-radius:12px;background:#fff;color:#0d3b66;outline:none;transition:border-color .15s,box-shadow .15s}
+.sp-login input[type=text]:focus,.sp-login input[type=password]:focus{border-color:var(--brand,#0f8a94);box-shadow:0 0 0 3px rgba(15,138,148,.18)}
+.sp-login input::placeholder{color:#9aaab5}
+.sp-login .lgchk{display:flex;gap:10px;align-items:flex-start;margin:12px 0 4px;font-weight:500;cursor:pointer}
+.sp-login .lgchk input{width:auto;margin-top:4px;accent-color:var(--brand,#0f8a94)}
+.sp-login .lgchk span{flex:1}
+.sp-login .lgchk small{display:block;font-weight:400;color:#5b7083}
+.sp-login .err{color:#c0392b;min-height:1.2em;margin:8px 0}
+.sp-login .btn{width:100%;border-radius:16px;justify-content:center}
+@media (max-width:520px){.sp-login{margin:24px 12px;padding:24px 18px}}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .sp-login{background:linear-gradient(160deg,#12333d,#0e2230 130%);color:var(--ink,#e3f0f5)}:root:not([data-theme=light]) .sp-login input[type=text],:root:not([data-theme=light]) .sp-login input[type=password]{background:#0f2230;border-color:#1f3a48;color:#e3f0f5}}
+:root[data-theme=dark] .sp-login{background:linear-gradient(160deg,#12333d,#0e2230 130%);color:var(--ink,#e3f0f5)}:root[data-theme=dark] .sp-login input[type=text],:root[data-theme=dark] .sp-login input[type=password]{background:#0f2230;border-color:#1f3a48;color:#e3f0f5}

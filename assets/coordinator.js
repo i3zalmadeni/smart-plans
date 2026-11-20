@@ -642,7 +642,7 @@ function bind(v){
 const isExec=()=>!!(window.SP&&SP.access&&SP.access.executor&&SP.access.staff_id);
 function updBell(){
   const al=document.querySelector('#nav a[data-n="admin"]');
-  if(al){const adm=READY&&canAdd(),ex=isExec(),sg=!!(window.SP&&SP.signedIn);al.hidden=false;al.textContent=sg?'لوحة التحكم':'تسجيل الدخول';al.setAttribute('href',adm||!ex?'#admin':'#me');al.onclick=sg?null:e=>{if(window.SP&&SP.login){e.preventDefault();SP.login()}}}
+  if(al){const adm=READY&&canAdd(),ex=isExec(),sg=!!(window.SP&&SP.signedIn);al.hidden=false;al.textContent=sg?'لوحة التحكم':'تسجيل الدخول';al.setAttribute('href',sg?(adm||!ex?'#admin':'#me'):'#login');al.onclick=sg?null:e=>{if(window.SP&&SP.login){e.preventDefault();SP.login()}}}
   const cp=document.getElementById('cp');if(cp)cp.hidden=true;
   const old=document.getElementById('cd-tools');if(old)old.remove()}
 
@@ -797,6 +797,9 @@ route=function(keep){
   updBell();
   const h=(location.hash||'#home').slice(1);
   // #dashboard: مدخل لوحة التحكم من الأنظمة الأخرى، يفتح «مكتبي الإلكتروني» بحسب الدور (المنسق/المدير #admin، والمنفّذ #me)
+  if(h==='login'){const v=document.getElementById('view');showBar(null);tip&&tip.remove();
+    if(!(window.SP&&SP.loginPage)){v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
+    SP.loginPage(v);return}
   if(h==='dashboard'){const v=document.getElementById('view');if(!READY){showBar(h);v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
     location.replace(canAdd()?'#admin':'#me');return}
   if(h===PB&&READY&&window.SP&&SP.rvCoord){location.replace('#admin');return}   // لوحة المنسق: بلا صفحات المنفّذ
@@ -808,7 +811,7 @@ route=function(keep){
     if(!READY||!(window.SP&&SP.access!==undefined)){showBar(h);v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
     if(!isPlanCoord()){const sg=!!(window.SP&&SP.signedIn);showBar(null);
       v.innerHTML=`<div class="cd-lockpage">${ic('user')}<h2>${sg?'نبض الخطة لمنسقي الخطط':'سجّل الدخول لعرض نبض خطتك'}</h2><p class="muted">${sg?'تظهر هذه اللوحة لمن أُسندت إليه خطة بصفته منسقًا لها. يحدد مدير النواة أو منسق الخطط الذكية منسق كل خطة من «إدارة الخطة ← تعديل الخطة ← منسق الخطة».':'الدخول موحد بمعرّف الدخول نفسه في النواة الرقمية.'}</p><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${sg?'':'<button class="btn pri" type="button" id="cd-login">دخول</button>'}<a class="btn soft" href="#home">الرئيسية</a></span></div>`;
-      const lb=document.getElementById('cd-login');if(lb)lb.onclick=()=>{const x=document.getElementById('lg-in');if(x)x.click();else if(window.SP&&SP.login)SP.login()};return}
+      const lb=document.getElementById('cd-login');if(lb)lb.onclick=()=>{if(window.SP&&SP.login)SP.login()};return}
     showBar(h);v.innerHTML=planBoardPage();bind(v);window.scrollTo(0,keep===true?sy:0);return}
   if(!ADM.includes(h)){showBar(null);const r=_route(keep);updBell();try{decorate(document.getElementById('view'))}catch(e){console.error(e)}return r}
   updBell();
@@ -818,7 +821,7 @@ route=function(keep){
   if(!READY){v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}
   if(!canAdd()&&window.SP&&SP.rvCan&&!SP.rvCoord){location.replace('#me');return}   // لوحة المنفّذ: صفحات المنسق تُحوَّل إلى «برامجي»
   if(!canAdd()){const sg=!!(window.SP&&SP.signedIn);
-    v.innerHTML=`<div class="cd-lockpage">${ic('user')}<h2>${sg?'لا تملك صلاحية لوحة التحكم':'لوحة التحكم لمنسوبي النواة المصرّح لهم'}</h2><p class="muted">${sg?'حسابك في النواة الرقمية لا يحمل صلاحية الخطط الذكية. يمنحها مدير النواة من صفحة «الصلاحيات» في النواة الرقمية.':'سجّل الدخول بحساب النواة الرقمية لعرض لوحة التحكم وإدارة الخطة والمنفذين.'}</p><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${sg?'':'<button class="btn pri" type="button" id="cd-login">دخول</button>'}<a class="btn soft" href="#home">الرئيسية</a></span></div>`;const lb=document.getElementById('cd-login');if(lb)lb.onclick=()=>{const x=document.getElementById('lg-in');if(x)x.click();else if(window.SP&&SP.login)SP.login()};return}
+    v.innerHTML=`<div class="cd-lockpage">${ic('user')}<h2>${sg?'لا تملك صلاحية لوحة التحكم':'لوحة التحكم لمنسوبي النواة المصرّح لهم'}</h2><p class="muted">${sg?'حسابك في النواة الرقمية لا يحمل صلاحية الخطط الذكية. يمنحها مدير النواة من صفحة «الصلاحيات» في النواة الرقمية.':'سجّل الدخول بحساب النواة الرقمية لعرض لوحة التحكم وإدارة الخطة والمنفذين.'}</p><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${sg?'':'<button class="btn pri" type="button" id="cd-login">دخول</button>'}<a class="btn soft" href="#home">الرئيسية</a></span></div>`;const lb=document.getElementById('cd-login');if(lb)lb.onclick=()=>{if(window.SP&&SP.login)SP.login()};return}
   v.innerHTML=shell(h,h==='admin-plans'?plansPage():h==='admin-people'?peoplePage():h==='admin-trash'?trashPage():h==='admin-portal'?'<div class="cd"><section class="panel"><p class="muted" style="margin:0">أضف الإعلانات وعدّلها وأوقفها من الأقسام أدناه، وتظهر للمستخدمين في أعلى صفحات النظام.</p></section></div>':h==='admin-alerts'?alertsPage():tasksPage());bind(v);
   if(keep===true)window.scrollTo(0,sy);else window.scrollTo(0,0);
 };
