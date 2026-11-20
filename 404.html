@@ -2024,8 +2024,10 @@ function kitOpts(p,e){
    ${im.length>1?`<h2>الشواهد المصورة (${fmt(im.length)})</h2><div class="gal">${im.slice(1).map(a=>`<figure><img src="${esc(imgUrl(a))}" alt=""><figcaption>${esc(a.caption||'من تنفيذ البرنامج')}</figcaption></figure>`).join('')}</div>`:''}
    ${ev.length?`<h2>الشواهد المطلوبة في الخطة</h2><ul class="spr-checks">${ev.map(x=>`<li>${sv('check')}<span>${esc(x)}</span></li>`).join('')}</ul>`:''}
    ${att.length?`<h2>المرفقات (${fmt(att.length)})</h2><ul class="spr-checks f">${att.map(a=>`<li>${sv('file')}<span>${esc(a.name||'مرفق')}</span></li>`).join('')}</ul>`:''}
-   <h2>الاعتماد</h2><div class="spr-sig"><div><small>منفذ البرنامج</small><b>${esc(e.executor||p.owner_name||'')}</b><i>التوقيع</i></div><div><small>منسق التقويم الذاتي</small><b>عبدالعزيز بن يوسف المديني</b><i>التوقيع</i></div><div><small>مدير المدرسة</small><b>خالد بن عبدالرحمن الباش</b><i>التوقيع</i></div></div>`;
-  return {system:'smart_plans',systemName:'الخطط الذكية',systemLogo:new URL('assets/favicon.svg',location.href).href,title:'تقرير تنفيذ برنامج',sub:p.name,body,styles:SPR_CSS,fname:`Report_${p.code}_${e.date}`,publicFull:true};
+   <h2>الاعتماد</h2>`;
+  return {system:'smart_plans',systemName:'الخطط الذكية',systemLogo:new URL('assets/favicon.svg',location.href).href,title:'تقرير تنفيذ برنامج',sub:p.name,body,styles:SPR_CSS,fname:`Report_${p.code}_${e.date}`,publicFull:true,
+    // التوقيعات الإلكترونية من النواة الرقمية: المنفذ (بحسابه، وإلا باسمه)، ومنسق التقويم الذاتي، ومدير المدرسة
+    signers:[e.executor_staff_id?{label:'منفذ البرنامج',staff_id:e.executor_staff_id}:{label:'منفذ البرنامج',name:e.executor||p.owner_name||'—'},{label:'منسق التقويم الذاتي',role:'coordinator:self_evaluation'},{label:'مدير المدرسة',role:'principal'}]};
 }
 function kitReport(p,e){if(!window.ReportKit){toast('أداة الطباعة لم تُحمّل بعد، أعد المحاولة');return}ReportKit.print(kitOpts(p,e))}
 async function downloadReport(p,e,btn){
@@ -2555,7 +2557,7 @@ addEventListener('hashchange',()=>route());route();initRuntime();
 /* قائمة الجوال: زر يفتح صفحات الموقع ويُغلق عند الانتقال */
 (function(){const hd=document.getElementById('hdr'),mb=document.getElementById('menuB');if(!hd||!mb)return;const set=o=>{hd.classList.toggle('open',o);mb.setAttribute('aria-expanded',String(o))};mb.onclick=()=>set(!hd.classList.contains('open'));addEventListener('hashchange',()=>set(false));document.getElementById('nav').addEventListener('click',e=>{if(e.target.closest('a'))set(false)});document.addEventListener('keydown',e=>{if(e.key==='Escape')set(false)});document.addEventListener('click',e=>{if(hd.classList.contains('open')&&!hd.contains(e.target))set(false)})})();
 </script>
-<script src="https://i3zalmadeni.github.io/digital-core/assets/report-kit.js?v=20261120a"></script>
+<script src="https://i3zalmadeni.github.io/digital-core/assets/report-kit.js?v=20261120c"></script>
 <script src="assets/unified-bar.js?v=20261119z"></script>
 <script src="assets/unified-kit.js?v=20261117a"></script>
 <script src="assets/coordinator.js?v=20261119z"></script>
