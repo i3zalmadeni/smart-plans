@@ -67,6 +67,7 @@ route=function(keep){
   const h=(location.hash||'#home').slice(1);
   if(h==='me-docs'){location.replace('#me');return}
   if(!PAGES[h])return _route(keep);
+  if(window.SP&&SP.rvCoord){location.replace('#admin');return}   // لوحة المنسق: «برامجي» في لوحة المعلم فقط
   const v=document.getElementById('view'),sy=scrollY;
   document.querySelectorAll('#nav a').forEach(a=>a.classList.remove('on'));
   if(!READY||!(window.SP&&SP.access!==undefined)){showBar(h);v.innerHTML='<div class="empty">جارٍ التحميل…</div>';return}

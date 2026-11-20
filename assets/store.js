@@ -53,6 +53,14 @@
       SP.signedIn = !!s;
       if (s) {
         try { var r = await sb.rpc('sp_my_access'); SP.access = (r && r.data) || {}; } catch (e) { SP.access = {}; }
+        // تبديل الدور: منسق الخطط الذكية (ومن يملك الإضافة أو التعديل أو الاعتماد) يختار بين لوحة المنسق ولوحة المنفّذ (برامجي ونبض خطتي)
+        var A0 = SP.access || {};
+        SP.rvCan = !!(A0.admin || A0.coordinator || A0.add || A0.edit || A0.approve);
+        SP.rvView = window.RoleSwitch ? RoleSwitch.view('smart_plans', s.user.id, SP.rvCan) : 'coord';
+        SP.rvCoord = SP.rvCan && SP.rvView === 'coord';
+        if (SP.rvCan && !SP.rvCoord) SP.access = Object.assign({}, A0, { admin: false, coordinator: false, add: false, edit: false, approve: false });
+        if (window.RoleSwitch) RoleSwitch.mount({ sys: 'smart_plans', uid: s.user.id, can: SP.rvCan, view: SP.rvView, teacherDesc: 'برامجي وتوثيقها ونبض خطتي', coordDesc: 'إدارة الخطط والاعتماد والمتابعة',
+          onSwitch: function (v) { location.hash = v === 'coord' ? '#admin' : '#me'; location.reload(); } });
       }
       // أسماء المنفذين المرتبطين فقط (عام): الاسم والمسمى والصورة المنشورة
       try {
