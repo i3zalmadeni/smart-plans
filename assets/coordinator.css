@@ -586,3 +586,26 @@ html,body{overflow-x:clip}
 .dk-tab.on{background:none;box-shadow:none;color:var(--brand2);border-bottom-color:var(--idgold,#f0b34a)}
 .dk-tab i{color:currentColor}
 .pl-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--f,var(--brand));vertical-align:middle}
+
+/* نافذة تعديل/مراجعة التقرير: حقول وخطوط أكبر وأوضح */
+.modal>div.big:has(.cd-rvf){max-width:980px;padding:26px 28px}
+.modal>div.big:has(.cd-rvf) .cd-mh h3{font-size:1.4rem;line-height:1.5}
+.modal>div.big:has(.cd-rvf) .cd-mh .cd-sm{width:44px;height:44px;padding:0;display:grid;place-items:center}
+.modal>div.big:has(.cd-rvf) .cd-mh .cd-sm svg{width:22px!important;height:22px!important}
+.modal>div.big:has(.cd-rvf) .cx-intro{font-size:1.05rem;line-height:1.9;margin-bottom:16px}
+.cd-rvf{gap:18px 20px}
+.cd-rvf .f{gap:8px}
+.cd-rvf label{font-size:1.05rem;font-weight:800;color:var(--ink)}
+.cd-rvf input,.cd-rvf select,.cd-rvf textarea{font-size:1.1rem;line-height:1.8;padding:13px 16px;border-width:1.5px;border-radius:12px;min-height:52px}
+.cd-rvf textarea{min-height:150px}
+.cd-rvf #rv-desc{min-height:210px}
+.cd-rvf input:focus,.cd-rvf select:focus,.cd-rvf textarea:focus{outline:3px solid color-mix(in srgb,var(--brand) 30%,transparent);border-color:var(--brand)}
+.cd-rvf .rv-th{grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.cd-rvf .rv-th figure{padding:10px;gap:10px;border-radius:14px}
+.cd-rvf .rv-th input{font-size:1rem;min-height:46px;padding:10px 12px}
+.cd-rvf .rv-th .btn{font-size:1rem;min-height:44px}
+.cd-rvf label small{font-weight:600;color:var(--muted)}
+.modal>div.big:has(.cd-rvf) .cd-ma .btn{font-size:1.05rem;min-height:50px;padding:10px 22px}
+.modal>div.big:has(.cd-rvf) .cd-ma .btn svg{width:20px;height:20px}
+.modal>div.big:has(.cd-rvf) .cd-err{font-size:1rem}
+@media (max-width:640px){.modal>div.big:has(.cd-rvf){padding:18px 16px}.cd-rvf input,.cd-rvf textarea{font-size:1.05rem}}

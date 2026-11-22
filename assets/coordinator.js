@@ -152,7 +152,7 @@ function reviewReport(eid){
   const ok=!!e.approved_at,CA=canApprove();
   const {m,close}=openModal(`<div class="cd-mh"><h3>${ok?'تعديل تقرير معتمد':'مراجعة تقرير'}: ${esc(p.name)}</h3><button class="btn cd-sm" data-x aria-label="إغلاق"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;display:block"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
    <p class="cx-intro" style="margin:0 0 10px">${ok?'هذا التقرير معتمد ومنشور. يمكنك تصحيح أي خطأ فيه، ويبقى معتمدًا ويظهر التعديل للزوار فور الحفظ. ويمكنك سحب الاعتماد لإخفائه.':'هذا التقرير غير منشور. عدّل ما يلزم ثم اعتمده لينشر في الموقع و«يحدث في لبيد».'}</p>
-   <div class="cd-fg">
+   <div class="cd-form cd-rvf">
     <div class="f"><label for="rv-date">تاريخ التنفيذ</label><input id="rv-date" type="date" value="${esc(e.date||'')}"></div>
     <div class="f"><label for="rv-exec">المنفذ</label>${ownerSelect(e.executor||p.owner_name||'','id="rv-exec"')}</div>
     <div class="f"><label for="rv-loc">مكان التنفيذ</label><input id="rv-loc" type="text" value="${esc(e.location||'')}"></div>
