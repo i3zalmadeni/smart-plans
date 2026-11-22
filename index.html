@@ -1952,7 +1952,7 @@ function reportPage(id){
   if(!READY)return '<div class="empty">جارٍ تحميل التقرير…</div>';
   const e=EX.find(x=>String(x.id)===String(id)),p=e&&P.find(x=>x.id===e.programId);
   if(!e||!p)return '<div class="empty">التقرير غير موجود. <a href="#reports">البرامج المنفذة</a></div>';
-  return `<div class="rpv-bar"><a class="btn soft" href="#news-${esc(e.id)}">${ic('arrow')} صفحة الخبر</a><span class="rpv-t">${ic('rep')} تقرير تنفيذ: ${esc(p.name)}</span><span class="rpv-a"><button class="btn pri" type="button" id="rpv-print">${ic('rep')} طباعة / حفظ PDF</button><button class="btn" type="button" id="rpv-dl">${ic('download')} تنزيل PDF</button></span></div>
+  return `<div class="rpv-bar"><a class="btn soft" href="#news-${esc(e.id)}">${ic('arrow')} صفحة الخبر</a><span class="rpv-t">${ic('rep')} تقرير تنفيذ: ${esc(p.name)}</span><span class="rpv-a">${editRepBtn(e)}<button class="btn pri" type="button" id="rpv-print">${ic('rep')} طباعة / حفظ PDF</button><button class="btn" type="button" id="rpv-dl">${ic('download')} تنزيل PDF</button></span></div>
   <p class="rpv-hint">معاينة التقرير بالهوية الموحدة للنواة الرقمية. عند «طباعة / حفظ PDF» يُسجَّل التقرير برقم تحقق ورمز QR في تذييل كل صفحة، ثم اختر «حفظ بتنسيق PDF».</p>
   <div class="rpv-wrap"><div class="rpv" id="rpv"><div class="rpv-load" id="rpv-load">جارٍ إعداد المعاينة…</div><iframe id="rpv-f" title="معاينة التقرير" hidden></iframe></div></div>`}
 function fitReport(){const w=document.querySelector('.rpv-wrap'),r=document.getElementById('rpv');if(!w||!r)return;r.style.transform='';const s=Math.min(1,(w.clientWidth-4)/r.offsetWidth);r.style.transform=s<1?`scale(${s})`:'';w.style.height=s<1?(r.offsetHeight*s+8)+'px':''}
@@ -2167,6 +2167,9 @@ function openLB(items,i){if(!items||!items.length)return;const m=document.create
   const draw=()=>{const a=items[i];m.innerHTML=`<div class="lb-in"><img src="${esc(imgUrl(a))}" alt="${esc(a.caption||'صورة من التنفيذ')}"><div class="lb-bar"><span>${esc(a.caption||'')}${a.date?`${a.caption?' • ':''}${esc(greg(a.date))}`:''}</span><span>${i+1} / ${items.length}</span></div>${items.length>1?`<button type="button" class="lb-nav lb-p" data-d="-1" aria-label="الصورة السابقة">›</button><button type="button" class="lb-nav lb-n" data-d="1" aria-label="الصورة التالية">‹</button>`:''}<button type="button" class="lb-x" aria-label="إغلاق">✕</button></div>`;
     m.querySelectorAll('[data-d]').forEach(b=>b.onclick=ev=>{ev.stopPropagation();go(+b.dataset.d)});m.querySelector('.lb-x').onclick=close;m.querySelector('.lb-x').focus()};
   m.onclick=ev=>{if(ev.target===m)close()};document.addEventListener('keydown',key);document.body.append(m);draw()}
+/* تعديل التقرير بعد اعتماده: لمن يملك صلاحية التعديل فقط، ويستخدم نافذة المراجعة نفسها في لوحة التحكم */
+const editRepBtn=(e,cls)=>(e&&e.approved_at&&window.CD_canEditReport&&window.CD_reviewReport&&CD_canEditReport())?`<button class="btn ${cls||''}" type="button" data-editrep="${esc(e.id)}">${ic('edit')} تعديل التقرير</button>`:'';
+document.addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.closest('[data-editrep]');if(!b||!window.CD_reviewReport)return;ev.preventDefault();CD_reviewReport(b.dataset.editrep)});
 document.addEventListener('click',ev=>{const b=ev.target.closest('[data-lbset]');if(!b)return;ev.preventDefault();openLB(LBS[b.dataset.lbset],+b.dataset.lbi||0)});
 
 /* الواجهة الرئيسية */
@@ -2208,7 +2211,7 @@ function reportsNews(p,exs){const ed=DB&&ASSETS;exs.forEach(e=>{LBS['e'+e.id]=(e
     <div class="rn-b"><div class="rn-top">${e.approved_at?`<span class="rn-ok">${ic('check')} تقرير معتمد</span>`:'<span class="rn-wait">بانتظار الاعتماد • لا يظهر للزوار</span>'}<span class="rn-no">التنفيذ ${fmt(e.no||1)} • ${esc(greg(e.date))}</span></div>
      <h4><a href="#news-${id}">${esc(p.name)}${exs.length>1?` — التنفيذ ${fmt(e.no||1)}`:''}</a></h4>
      <p>${esc(newsText(p,e))}</p>
-     <div class="rn-a"><a class="btn soft" href="#news-${id}">${ic('news')} الخبر</a><a class="btn soft" href="#report-${id}">${ic('rep')} التقرير</a>${im.length?`<button class="btn soft" type="button" data-lbset="e${id}" data-lbi="0">${ic('grid')} الصور (${fmt(im.length)})</button>`:''}${ed?`<button class="btn" type="button" data-del="${id}">حذف</button>`:''}</div></div></article>`}).join('')}</div></section>`}
+     <div class="rn-a"><a class="btn soft" href="#news-${id}">${ic('news')} الخبر</a><a class="btn soft" href="#report-${id}">${ic('rep')} التقرير</a>${im.length?`<button class="btn soft" type="button" data-lbset="e${id}" data-lbi="0">${ic('grid')} الصور (${fmt(im.length)})</button>`:''}${editRepBtn(e,'soft')}${ed?`<button class="btn" type="button" data-del="${id}">حذف</button>`:''}</div></div></article>`}).join('')}</div></section>`}
 
 function exLog(p,exs){const ed=DB&&ASSETS;
   const head=`<div class="exh"><h3>${ic('clock')} سجل التنفيذ والتقارير</h3>${ed?`<span class="exh-a">${p.unplanned?'<button class="btn" type="button" id="delUP">حذف البرنامج</button>':''}<button class="btn pri" type="button" id="addEx">${ic('plus')} تسجيل تنفيذ</button></span>`:''}</div>`;
@@ -2220,7 +2223,7 @@ function exLog(p,exs){const ed=DB&&ASSETS;
      <div class="meta">${e.executor?`<span>${ic('user')}${esc(e.executor)}</span>`:''}${e.location?`<span>${ic('pin')}${esc(e.location)}</span>`:''}${e.time?`<span>${ic('clock')}${esc(e.time)}</span>`:''}${e.beneficiaries!=null?`<span>${ic('users')}${fmt(e.beneficiaries)} مستفيدًا</span>`:''}</div>
      ${e.description?`<p>${esc(e.description)}</p>`:''}${e.outputs?`<p class="exv-o"><b>النتائج والمخرجات:</b> ${esc(e.outputs)}</p>`:''}
      ${(e.attachments||[]).length?`<div class="attl">${e.attachments.map(attChip).join('')}</div>`:''}
-     <div class="exv-a"><button class="btn pri" type="button" data-rep="${esc(e.id)}">${ic('rep')} تقرير PDF</button>${ed?`<button class="btn" type="button" data-del="${esc(e.id)}">حذف</button>`:''}</div></div></article>`}).join('')}</div></section>`}
+     <div class="exv-a"><button class="btn pri" type="button" data-rep="${esc(e.id)}">${ic('rep')} تقرير PDF</button>${editRepBtn(e)}${ed?`<button class="btn" type="button" data-del="${esc(e.id)}">حذف</button>`:''}</div></div></article>`}).join('')}</div></section>`}
 
 /* صفحة التقارير المنفذة: صورة وخبر لكل تنفيذ موثّق */
 /* صفحة البرامج المنفذة: عرض حسب التنفيذ أو الخطة أو المنفذ أو المجال */
@@ -2515,7 +2518,7 @@ function newsPage(id){
    </div>
    <aside class="nx-side">
     ${owner?`<div class="nx-box nx-own"><small>منفذ البرنامج</small><div class="meta big"><span>${ic('user')}${esc(owner)}</span></div>${e.executor&&e.executor!==owner?`<small style="margin-top:6px">نفّذه: ${esc(e.executor)}</small>`:''}</div>`:''}
-    <div class="nx-box nx-act"><a class="btn pri" href="#report-${esc(e.id)}">${ic('rep')} التقرير (طباعة / PDF)</a><a class="btn" href="#p-${esc(p.id)}">${ic('plan')} صفحة البرنامج</a><div class="nx-share"><a class="btn" href="https://wa.me/?text=${waTxt}" target="_blank" rel="noopener">${ic('phone')} واتساب</a><button class="btn" type="button" id="art-copy">${ic('link')} نسخ الرابط</button></div></div>
+    <div class="nx-box nx-act"><a class="btn pri" href="#report-${esc(e.id)}">${ic('rep')} التقرير (طباعة / PDF)</a>${editRepBtn(e)}<a class="btn" href="#p-${esc(p.id)}">${ic('plan')} صفحة البرنامج</a><div class="nx-share"><a class="btn" href="https://wa.me/?text=${waTxt}" target="_blank" rel="noopener">${ic('phone')} واتساب</a><button class="btn" type="button" id="art-copy">${ic('link')} نسخ الرابط</button></div></div>
     <div class="nx-box art-facts">${fact('الخطة',p.plan_name,'plan')}${fact('المجال',p.domain,'layers')}${fact('الفئة المستفيدة',p.beneficiary,'users')}${fact('المكان',e.location,'pin')}${fact('الوقت / المدة',e.time,'clock')}</div>
    </aside>
   </div>
@@ -2561,7 +2564,7 @@ addEventListener('hashchange',()=>route());route();initRuntime();
 <script src="https://i3zalmadeni.github.io/digital-core/assets/report-kit.js?v=20261120c"></script>
 <script src="assets/unified-bar.js?v=20261119z"></script>
 <script src="assets/unified-kit.js?v=20261117a"></script>
-<script src="assets/coordinator.js?v=20261120u"></script>
+<script src="assets/coordinator.js?v=20261122ed"></script>
 <script src="assets/plans.js?v=20261115a"></script>
 <script src="assets/executor.js?v=20261120u"></script>
 <script>

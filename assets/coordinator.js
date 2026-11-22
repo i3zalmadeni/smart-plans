@@ -136,6 +136,10 @@ async function saveEdit(p,fields,label){
 /* ---------- اعتماد التقارير: اطلاع وتحرير قبل الاعتماد، والنشر بعده فقط ---------- */
 const pend=p=>exFor(p.id).filter(e=>!e.approved_at);
 const apprNeeded=p=>p.status!=='ملغي'&&pend(p).length>0;
+/* التقارير المعتمدة تبقى قابلة للتعديل بعد الاعتماد (تصحيح الأخطاء بعد المراجعة) لمن يملك صلاحية التعديل */
+const apprd=p=>exFor(p.id).filter(e=>e.approved_at);
+const canEditRpt=()=>canAdd()&&(!(window.SP&&SP.can)||SP.can('edit'));
+window.CD_canEditReport=canEditRpt;
 const meName=()=>(window.SP&&SP.access&&SP.access.name)||WHO||'';
 async function approveExecs(p,list){
   if(!DB)throw new Error('قاعدة البيانات غير متاحة');
@@ -146,8 +150,8 @@ function reviewReport(eid){
   const e=EX.find(x=>String(x.id)===String(eid)),p=e&&P.find(x=>x.id===e.programId);if(!e||!p)return;
   let imgs=(e.images||[]).map(a=>({...a})),removed=[];
   const ok=!!e.approved_at,CA=canApprove();
-  const {m,close}=openModal(`<div class="cd-mh"><h3>مراجعة تقرير: ${esc(p.name)}</h3><button class="btn cd-sm" data-x aria-label="إغلاق"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;display:block"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-   <p class="cx-intro" style="margin:0 0 10px">${ok?'هذا التقرير معتمد ومنشور. أي تعديل يُحفظ مباشرة، ويمكنك سحب الاعتماد لإخفائه.':'هذا التقرير غير منشور. عدّل ما يلزم ثم اعتمده لينشر في الموقع و«يحدث في لبيد».'}</p>
+  const {m,close}=openModal(`<div class="cd-mh"><h3>${ok?'تعديل تقرير معتمد':'مراجعة تقرير'}: ${esc(p.name)}</h3><button class="btn cd-sm" data-x aria-label="إغلاق"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;display:block"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+   <p class="cx-intro" style="margin:0 0 10px">${ok?'هذا التقرير معتمد ومنشور. يمكنك تصحيح أي خطأ فيه، ويبقى معتمدًا ويظهر التعديل للزوار فور الحفظ. ويمكنك سحب الاعتماد لإخفائه.':'هذا التقرير غير منشور. عدّل ما يلزم ثم اعتمده لينشر في الموقع و«يحدث في لبيد».'}</p>
    <div class="cd-fg">
     <div class="f"><label for="rv-date">تاريخ التنفيذ</label><input id="rv-date" type="date" value="${esc(e.date||'')}"></div>
     <div class="f"><label for="rv-exec">المنفذ</label>${ownerSelect(e.executor||p.owner_name||'','id="rv-exec"')}</div>
@@ -279,10 +283,13 @@ function buildDash(view){
   const lateRow=p=>row(p,'متأخر',`<span class="m">انتهت فترته ${dmy(endOf(p))} • منذ ${daysBetween(endOf(p),today)} يومًا • ${esc(ownerOf(p))} • ${esc(p.plan_name)}</span>`,ED?`<button class="btn pri cd-sm" data-doc="${pid(p)}">${ic('rep')} توثيق</button><button class="btn cd-sm" data-stall="${pid(p)}">تسجيل التعثر</button><button class="btn cd-sm" data-edit="${pid(p)}">تعديل الموعد</button>${wa(p,'late')}`:'');
   const stallRow=p=>row(p,'متعثر',`<span class="why">السبب: ${esc(p.stall_note||'لم يُكتب سبب')}</span><span class="m">${esc(ownerOf(p))} • ${esc(p.plan_name)}</span>`,ED?`<button class="btn cd-sm" data-stall="${pid(p)}">تعديل السبب</button><button class="btn cd-sm" data-edit="${pid(p)}">إعادة جدولة</button>`:'');
   const apprRow=p=>{const ex=exFor(p.id),last=ex[ex.length-1]||{};return row(p,'مكتمل',`<span class="m">وُثّق ${ex.length>1?ex.length+' مرات':''} • ${pend(p).length} بانتظار الاعتماد • آخر تنفيذ ${dmy(last.date||'')} • ${esc(last.executor||ownerOf(p))} • ${(last.images||[]).length} صور</span>`,`${pend(p).map((x,i,a)=>`<button class="btn cd-sm" data-review="${esc(String(x.id))}">${ic('rep')} ${ED?'اطلاع وتحرير':'اطلاع'}${a.length>1?' '+(i+1):''}</button>`).join('')}${ED&&canApprove()?`<button class="btn pri cd-sm" data-approve="${pid(p)}">${ic('check')} اعتماد</button>`:''}`)};
-  if(!['late','stall','appr'].includes(D.at))D.at='late';
-  const TABS=[['late','متأخرة التوثيق',need.length,'متأخر'],['stall','متعثرة',stl.length,'متعثر'],['appr','بانتظار الاعتماد',appr.length,'مكتمل']];
-  const lists={late:need,stall:stl,appr},cur=lists[D.at],shown=D.all?cur:cur.slice(0,6),rf={late:lateRow,stall:stallRow,appr:apprRow}[D.at];
-  const empt={late:'لا توجد برامج متأخرة. كل البرامج التي انتهت فترتها موثقة أو مسجّلة الحالة.',stall:'لا توجد برامج مسجّلة متعثرة.',appr:'لا توجد برامج موثقة بانتظار الاعتماد.'}[D.at];
+  // تقارير معتمدة: تبقى قابلة للتعديل بعد الاعتماد لتصحيح الأخطاء
+  const doneL=L.filter(p=>p.status!=='ملغي'&&apprd(p).length).sort((a,b)=>{const la=apprd(a).map(x=>x.approved_at).sort().pop()||'',lb=apprd(b).map(x=>x.approved_at).sort().pop()||'';return lb.localeCompare(la)});
+  const doneRow=p=>{const a=apprd(p);return row(p,'مكتمل',`<span class="m">${a.length} ${a.length>1?'تقارير معتمدة':'تقرير معتمد'} • ${esc(p.plan_name)} • ${esc(ownerOf(p))}</span>`,a.map((x,i)=>`<button class="btn cd-sm" data-review="${esc(String(x.id))}" title="اعتُمد ${dmy(x.approved_at)}${x.approved_by?' بواسطة '+esc(x.approved_by):''}${x.edited_at?' • آخر تعديل '+dmy(x.edited_at):''}">${ic('rep')} ${canEditRpt()?'تعديل التقرير':'اطلاع'}${a.length>1?' '+dmy(x.date||''):''}</button>`).join(''))};
+  if(!['late','stall','appr','done'].includes(D.at))D.at='late';
+  const TABS=[['late','متأخرة التوثيق',need.length,'متأخر'],['stall','متعثرة',stl.length,'متعثر'],['appr','بانتظار الاعتماد',appr.length,'مكتمل'],['done','تقارير معتمدة',doneL.length,'مكتمل']];
+  const lists={late:need,stall:stl,appr,done:doneL},cur=lists[D.at],shown=D.all?cur:cur.slice(0,6),rf={late:lateRow,stall:stallRow,appr:apprRow,done:doneRow}[D.at];
+  const empt={late:'لا توجد برامج متأخرة. كل البرامج التي انتهت فترتها موثقة أو مسجّلة الحالة.',stall:'لا توجد برامج مسجّلة متعثرة.',appr:'لا توجد برامج موثقة بانتظار الاعتماد.',done:'لا توجد تقارير معتمدة بعد.'}[D.at];
   // القادم: هذا الأسبوع والأسبوع التالي
   const wl=CAL(),ci=cw?wl.findIndex(w=>w.number===cw.number):wl.findIndex(w=>w.start_date>today);
   const upW=cw?{this:wl[ci],next:wl[ci+1]}:{this:null,next:ci>=0?wl[ci]:null};
@@ -322,7 +329,7 @@ function buildDash(view){
   const prog=(p,extra)=>{const s=ds(p),ex=exFor(p.id).length;
     return `<div class="cd-al dk-row" style="--sc:${SC[s]}"><i></i><a href="#p-${pid(p)}">${esc(p.name)}</a><span class="m">${esc(p.plan_name)} • ${startOf(p)?dmy(startOf(p))+(endOf(p)&&endOf(p)!==startOf(p)?' – '+dmy(endOf(p)):''):'بلا موعد'}${plbl(p)?' • '+esc(plbl(p)):''}${p.location?' • '+esc(p.location):''} • ${esc(ownerOf(p))}${ex?' • موثق':''}${p.approved_at?' • معتمد':''}</span>
     <span class="acts">${pill(s)}${extra||''}<button class="btn cd-sm" data-edit="${pid(p)}">تفاصيل / تعديل</button>${wa(p,s==='متأخر'?'late':'up')}${wc(p)}</span></div>`};
-  const dkTabs=[['week','cal','هذا الأسبوع',thisN,'قيد التنفيذ'],['late','rep','تحتاج توثيقًا',need.length,'متأخر'],['appr','check','بانتظار الاعتماد',appr.length,'مكتمل'],['stall','x','متعثرة',stl.length,'متعثر']];
+  const dkTabs=[['week','cal','هذا الأسبوع',thisN,'قيد التنفيذ'],['late','rep','تحتاج توثيقًا',need.length,'متأخر'],['appr','check','بانتظار الاعتماد',appr.length,'مكتمل'],['done','rep','تقارير معتمدة',doneL.length,'مكتمل'],['stall','x','متعثرة',stl.length,'متعثر']];
   if(unassigned.length)dkTabs.push(['own','users','بلا منفذ',unassigned.length,'متعثر']);
   if(!dkTabs.some(t=>t[0]===D.dk))D.dk='week';
   const tabsHTML=`<div class="dk-tabs" role="tablist" aria-label="أقسام مكتبي الإلكتروني">${dkTabs.map(([k,i,t,n,sc])=>`<button type="button" role="tab" aria-selected="${D.dk===k}" class="dk-tab${D.dk===k?' on':''}${n&&['late','stall','own'].includes(k)?' alert':''}" style="--sc:${sc?SC[sc]:'var(--brand)'}" data-dk="${k}"><i>${ic(i)}</i><span>${t}</span><b class="${n?'':'z'}">${n}</b></button>`).join('')}</div>`;
@@ -340,6 +347,7 @@ function buildDash(view){
       ${undated.length?`<p class="muted small" style="margin:10px 0 4px">برامج الأسبوع بلا يوم محدد (${undated.length}): ${undated.map(p=>`<a href="#p-${pid(p)}">${esc(p.name)}</a>`).join('، ')}</p>`:''}
       <h3 class="dk-h">برامج الأسبوع ${dw.number}</h3>${wkL.length?wkL.map(p=>prog(p)).join(''):'<p class="muted cp-empty">لا برامج مجدولة في هذا الأسبوع.</p>'}`}
   }else if(D.dk==='late')body=need.length?`<p class="muted small dk-note">برامج انتهت فترتها دون توثيق. ذكّر المنفذ أو راسل المنسق أو سجّل التعثر.</p>`+need.map(p=>lateRow(p).replace('</span></div>',`${wc(p)}</span></div>`)).join(''):'<p class="muted cp-empty">لا توجد برامج متأخرة. كل ما انتهت فترته موثق أو مسجّلة حالته.</p>';
+  else if(D.dk==='done')body=doneL.length?`<p class="muted small dk-note">تقارير معتمدة ومنشورة. افتح أي تقرير لتصحيح أخطائه، ويبقى معتمدًا ويظهر التعديل في الموقع فور الحفظ.</p>`+doneL.map(doneRow).join(''):'<p class="muted cp-empty">لا توجد تقارير معتمدة بعد.</p>';
   else if(D.dk==='appr')body=appr.length?appr.map(apprRow).join(''):'<p class="muted cp-empty">لا توجد برامج موثقة بانتظار الاعتماد.</p>';
   else if(D.dk==='stall')body=stl.length?stl.map(p=>stallRow(p).replace(/<\/span><\/div>$/,`${wc(p)}</span></div>`)).join(''):'<p class="muted cp-empty">لا توجد برامج مسجّلة متعثرة.</p>';
   else if(D.dk==='own')body=unassigned.length?unassigned.map(unRow).join(''):'<p class="muted cp-empty">كل البرامج لها منفذ.</p>';
@@ -689,7 +697,7 @@ function planBoardPage(){
   const list=L.filter(p=>pbIs(p,f)&&(!q||(p.name+ownerOf(p)+(p.code||'')).includes(q))).sort(f==='attn'?byEnd:(a,b)=>(startOf(a)||'9').localeCompare(startOf(b)||'9')||a.name.localeCompare(b.name,'ar'));
   const row=p=>{const s=ds(p),id=pid(p),st=startOf(p),en=endOf(p),late=needs(p),ap=pbAppr(p);
     const note=s==='متعثر'?'السبب: '+(p.stall_note||'لم يُكتب سبب'):late?`انتهت ${dmy(en)} • منذ ${daysBetween(en,today)} يومًا`:ap?'موثق بانتظار الاعتماد':p.approved_at?'معتمد '+dmy(p.approved_at):'';
-    const acts=(late?wa(p,'late'):'')+(ap&&ED?pend(p).map(x=>`<button class="btn cd-sm" data-review="${esc(String(x.id))}">${ic('rep')} اطلاع وتحرير</button>`).join(''):'')+(ap?(ED&&canApprove()?`<button class="btn pri cd-sm" data-approve="${id}">${ic('check')} اعتماد</button>`:`<a class="btn cd-sm" href="#p-${id}">مراجعة</a>`):'')+(ED?(late?`<button class="btn cd-sm" data-stall="${id}">تعثّر</button>`:'')+`<button class="btn cd-sm" data-edit="${id}">تعديل</button>`:'');
+    const acts=(late?wa(p,'late'):'')+(canEditRpt()?apprd(p).map(x=>`<button class="btn cd-sm" data-review="${esc(String(x.id))}">${ic('rep')} تعديل التقرير المعتمد</button>`).join(''):'')+(ap&&ED?pend(p).map(x=>`<button class="btn cd-sm" data-review="${esc(String(x.id))}">${ic('rep')} اطلاع وتحرير</button>`).join(''):'')+(ap?(ED&&canApprove()?`<button class="btn pri cd-sm" data-approve="${id}">${ic('check')} اعتماد</button>`:`<a class="btn cd-sm" href="#p-${id}">مراجعة</a>`):'')+(ED?(late?`<button class="btn cd-sm" data-stall="${id}">تعثّر</button>`:'')+`<button class="btn cd-sm" data-edit="${id}">تعديل</button>`:'');
     return `<div class="pb-r" style="--sc:${SC[s]}"><div class="pb-rm"><a href="#p-${id}">${esc(p.name)}</a><small>${st?dmy(st)+(en&&en!==st?' – '+dmy(en):''):'بلا موعد'} • <span class="cd-pn sm">${avatar(ownerOf(p),20)}${esc(ownerOf(p))}</span></small>${note?`<em>${esc(note)}</em>`:''}</div><span class="pb-ra">${pill(s)}${acts}</span></div>`};
   const lbl=(PBT.find(x=>x[0]===f)||PBT[0])[1];
   const empty=f==='attn'&&!q?'لا شيء يحتاج متابعتك الآن.':L.length?'لا توجد برامج مطابقة.':'لا توجد برامج في هذه الخطة بعد.';
