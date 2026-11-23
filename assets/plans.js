@@ -45,6 +45,7 @@ function plansIndex(){
    ${PL.length?`<div class="pln-grid">${PL.map(planCard).join('')}</div>`:'<div class="empty">لا توجد خطط بعد.</div>'}`}
 
 function planPage(id){const pl=PL.find(x=>String(x.id)===String(id));
+  if(!pl&&window.CD_coLoaded&&!window.CD_coLoaded())return '<div class="empty">جارٍ تحميل الخطة…</div>';
   if(!pl)return `<div class="empty">الخطة غير موجودة. <a href="#plans">عرض كل الخطط</a></div>`;
   const s=sums(pl),pdf=pl.pdf&&pl.pdf.url?pl.pdf:null,[t1,t2]=splitName(pl.name),page='plan-'+pl.id,ed=editor();
   const facts=[[ic('layers'),'عدد البرامج',progsWord(s.l.length)],[ic('check'),'البرامج المكتملة',`${fmt(s.d)} من ${fmt(s.l.length)}`],[ic('chart'),'نسبة الإنجاز',s.r+'%'],[ic('target'),'المجالات',s.doms.length?fmt(s.doms.length)+' مجالات':'—'],[ic('cal'),'فترة التنفيذ',s.w0!=null?(s.w0===s.w1?`الأسبوع ${s.w0}`:`الأسابيع ${s.w0} – ${s.w1}`):'—'],[ic('clock'),'العام الدراسي',esc(pl.year||'1448هـ')]];
@@ -84,6 +85,7 @@ function bind(v){
 
 const _route=route;
 route=function(keep){const h=(location.hash||'#home').slice(1);
+  try{window.CD_ensureSub&&window.CD_ensureSub()}catch(e){}
   if(h!=='plans'&&!/^plan-[^/]+$/.test(h))return _route.apply(this,arguments);
   const v=document.getElementById('view'),sy=scrollY;
   document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.n==='plans'));

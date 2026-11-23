@@ -791,9 +791,13 @@ window.CD_showBar=h=>showBar(h);window.CD_decorate=v=>decorate(v);
 const _rl=renderList;renderList=function(){_rl.apply(this,arguments);decorate(document.getElementById('view'))};
 
 /* ---------- الربط بالموجّه الأصلي دون تغييره ---------- */
+/* الاشتراك في سجلات المنسق (الخطط والبرامج المضافة) يبدأ من أي موجّه، حتى لو فُتح رابط خطة مباشرةً */
+let CO_LOADED=false;
+function ensureSub(){if(DB&&!SUB){SUB=true;DB.collection(CO_COL).onSnapshot(s=>{CO=s.docs.map(d=>({id:d.id,...d.data()})).filter(d=>d.kind==='coordinator');CO_LOADED=true;apply();updBell();if(!document.querySelector('.modal'))route(true)},()=>{CO_LOADED=true;if(!document.querySelector('.modal'))route(true)})}}
+window.CD_ensureSub=ensureSub;window.CD_coLoaded=()=>CO_LOADED||!DB;
 const _route=route;
 route=function(keep){
-  if(DB&&!SUB){SUB=true;DB.collection(CO_COL).onSnapshot(s=>{CO=s.docs.map(d=>({id:d.id,...d.data()})).filter(d=>d.kind==='coordinator');apply();updBell();if(!document.querySelector('.modal'))route(true)},()=>{})}
+  ensureSub();
   if(EX.some(e=>e&&e.kind==='coordinator'))EX=EX.filter(e=>!e||e.kind!=='coordinator');
   updBell();
   const h=(location.hash||'#home').slice(1);
